@@ -1,0 +1,9 @@
+{
+  "name": "korripay",
+  "version": "1.0.0",
+  "description": "KorriPay Fintech Application Root Runner",
+  "scripts": {
+    "start": "npm --prefix backend start",
+    "dev": "npm --prefix backend run dev"
+  }
+}
