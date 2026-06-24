@@ -1,28 +1,28 @@
-# KorriPay 💳
+# KorriPay
 
 > **Institutional-grade fintech dashboard** — multi-asset management, real-time swaps, KYC verification, and seamless money transfers. Built with a modern design system and a lightweight Express backend.
 
-![KorriPay Dashboard](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square) ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square) ![Node](https://img.shields.io/badge/Node.js-18%2B-green?style=flat-square) ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v3-38bdf8?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square) ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square) ![Node](https://img.shields.io/badge/Node.js-18%2B-green?style=flat-square) ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v3-38bdf8?style=flat-square)
 
 ---
 
-## ✨ Features
+## Features
 
 | Feature | Description |
 |---|---|
-| 🏠 **Dashboard** | Live balance overview, quick actions, recent transactions |
-| 💸 **Send Money** | 3-step wizard — recipient selection, amount entry, review & confirm |
-| 🔄 **Asset Swap** | Institutional exchange engine — BTC, ETH, USDC, USD with live rate countdown |
-| 🎉 **Swap Success** | Celebratory confetti animation with full transaction receipt |
-| 📊 **Portfolio** | Multi-asset breakdown with donut allocation chart and real-time valuations |
-| 🧾 **Transaction History** | Filterable activity feed with type, status, and category |
-| 🪪 **KYC Verification** | 6-step identity flow with liveness check and camera capture |
-| 🌙 **Dark Mode** | System-aware theme toggle across all views |
-| 📱 **Responsive** | Mobile-first layout with bottom nav + desktop sidebar |
+| **Dashboard** | Live balance overview, quick actions, recent transactions |
+| **Send Money** | 3-step wizard — recipient selection, amount entry, review & confirm |
+| **Asset Swap** | Institutional exchange engine — BTC, ETH, USDC, USD with live rate countdown |
+| **Swap Success** | Celebratory confetti animation with full transaction receipt |
+| **Portfolio** | Multi-asset breakdown with donut allocation chart and real-time valuations |
+| **Transaction History** | Filterable activity feed with type, status, and category |
+| **KYC Verification** | 6-step identity flow with liveness check and camera capture |
+| **Dark Mode** | System-aware theme toggle across all views |
+| **Responsive** | Mobile-first layout with bottom nav and desktop sidebar |
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 KorriPay/
@@ -39,11 +39,11 @@ KorriPay/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
-- **Node.js** v18 or higher
-- **npm** v9+
+- Node.js v18 or higher
+- npm v9+
 
 ### Installation
 
@@ -69,7 +69,7 @@ Then open **http://localhost:5000** in your browser.
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
@@ -82,7 +82,7 @@ Then open **http://localhost:5000** in your browser.
 
 ---
 
-## 💱 Supported Assets
+## Supported Assets
 
 | Asset | Symbol | Network |
 |---|---|---|
@@ -93,16 +93,15 @@ Then open **http://localhost:5000** in your browser.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend** — HTML5, Vanilla JS, TailwindCSS (CDN), Google Fonts (Inter), Material Symbols
 - **Backend** — Node.js, Express.js
 - **State** — In-memory (backend) + `localStorage` fallback (offline mode)
-- **Auth** — Session-based (mock for demo)
 
 ---
 
-## 📸 App Views
+## App Views
 
 | View | Route |
 |---|---|
@@ -117,6 +116,6 @@ Then open **http://localhost:5000** in your browser.
 
 ---
 
-## 📄 License
+## License
 
 MIT © [0xaje](https://github.com/0xaje)
