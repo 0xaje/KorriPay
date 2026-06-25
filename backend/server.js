@@ -71,7 +71,8 @@ async function requireAuth(req, res, next) {
       return res.status(401).json({ error: "Unauthorized. User not found." });
     }
 
-    req.user = user;
+    req.user   = user;
+    req.userId = user.id;   // convenience alias used by wallet & FX controllers
     next();
   } catch (err) {
     res.status(500).json({ error: err.message });
