@@ -164,7 +164,8 @@ function bindConnectButtons() {
 
       const name = btn.getAttribute("data-name") ?? "";
 
-      let type = "metamask";
+      let type = "injected";
+      if (name.toLowerCase().includes("metamask"))          type = "metamask";
       if (name.toLowerCase().includes("coinbase"))          type = "coinbase";
       if (name.toLowerCase().includes("walletconnect"))     type = "walletconnect";
 
