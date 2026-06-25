@@ -406,6 +406,7 @@ function showToast(message, type = "success") {
     toast.classList.remove("opacity-100");
   }, 3000);
 }
+window.showToast = showToast;
 
 function saveLocalState() {
   localStorage.setItem("korripay_state", JSON.stringify(localState));

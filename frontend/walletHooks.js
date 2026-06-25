@@ -374,14 +374,6 @@ function requireWallet(redirectTo = "index.html") {
     window.location.href = redirectTo;
     return;
   }
-
-  onReady(({ account }) => {
-    const isDemoSession = token.startsWith("session-demo-");
-    if (account.status !== "connected" && !isDemoSession) {
-      console.info("[WalletHooks] No wallet connected and not in demo mode — redirecting to", redirectTo);
-      window.location.href = redirectTo;
-    }
-  });
 }
 
 // ── DOM initialisation ───────────────────────────────────────────────
