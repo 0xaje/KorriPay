@@ -29,35 +29,17 @@ let localState = {
   btcBalance: 14.82,
   ethBalance: 2.45,
   usdcBalance: 2450.00,
-  mockkrwBalance: 500000.00, // default ₩500,000 mock
+  mockkrwBalance: 500000.00,
+  currencies: {
+    USD:     { available: 1250.00, locked: 0, pending: 0 },
+    KRW:     { available: 0,       locked: 0, pending: 0 },
+    NGN:     { available: 0,       locked: 0, pending: 0 },
+    MockKRW: { available: 500000,  locked: 0, pending: 0 },
+  },
   transactions: [
-    {
-      id: "tx-1",
-      title: "Sent to John",
-      type: "send",
-      amount: 240.00,
-      date: "Today • 10:45 AM",
-      timestamp: Date.now() - 3600000 * 2,
-      category: "Transfer"
-    },
-    {
-      id: "tx-2",
-      title: "Received from Sarah",
-      type: "receive",
-      amount: 1500.00,
-      date: "Yesterday • 4:20 PM",
-      timestamp: Date.now() - 3600000 * 24,
-      category: "Completed"
-    },
-    {
-      id: "tx-3",
-      title: "Starbucks Coffee",
-      type: "bill",
-      amount: 6.50,
-      date: "May 24 • 8:12 AM",
-      timestamp: Date.now() - 3600000 * 24 * 30,
-      category: "Merchant"
-    }
+    { id: "tx-1", title: "Sent to John",        type: "send",    amount: 240.00,  date: "Today • 10:45 AM",    timestamp: Date.now() - 3600000 * 2,      category: "Transfer" },
+    { id: "tx-2", title: "Received from Sarah", type: "receive", amount: 1500.00, date: "Yesterday • 4:20 PM", timestamp: Date.now() - 3600000 * 24,     category: "Completed" },
+    { id: "tx-3", title: "Starbucks Coffee",    type: "bill",    amount: 6.50,   date: "May 24 • 8:12 AM",   timestamp: Date.now() - 3600000 * 24 * 30, category: "Merchant" }
   ]
 };
 
@@ -69,6 +51,12 @@ let state = {
   ethBalance: 0,
   usdcBalance: 0,
   mockkrwBalance: 0,
+  currencies: {
+    USD:     { available: 0, locked: 0, pending: 0 },
+    KRW:     { available: 0, locked: 0, pending: 0 },
+    NGN:     { available: 0, locked: 0, pending: 0 },
+    MockKRW: { available: 0, locked: 0, pending: 0 },
+  },
   transactions: []
 };
 
@@ -481,6 +469,11 @@ async function loadData() {
     const data = await res.json();
     
     state = data;
+    // Hydrate multi-currency balances from API response
+    if (data.currencies) {
+      state.currencies = data.currencies;
+    }
+    _walletBalanceFetched = false; // allow wallet/summary to refresh
     isBackendConnected = true;
     updateStatus(true);
   } catch (err) {
@@ -505,7 +498,7 @@ async function loadData() {
 }
 
 function renderUI() {
-  // Update Balance
+  // Update Balance (legacy USD hero display)
   const totalBalanceEl = document.getElementById("total-balance");
   if (totalBalanceEl) {
     totalBalanceEl.textContent = `$${state.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -517,6 +510,9 @@ function renderUI() {
     savingsValEl.textContent = state.savings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  // Multi-currency wallet display
+  renderWalletBalances();
+
   // Render recent transactions (Home Tab)
   const recentListEl = document.getElementById("recent-transactions-list");
   if (recentListEl) {
@@ -525,16 +521,13 @@ function renderUI() {
       recentListEl.innerHTML = `<div class="p-sm text-center text-on-surface-variant/70">No recent transactions</div>`;
     } else {
       const top3 = state.transactions.slice(0, 3);
-      top3.forEach(tx => {
-        recentListEl.appendChild(createTransactionRow(tx));
-      });
+      top3.forEach(tx => { recentListEl.appendChild(createTransactionRow(tx)); });
     }
   }
 
-  // Render full list in History Tab
   filterAndRenderHistory();
 
-  // Update KYC Badge based on backend status
+  // Update KYC Badge
   const badge = document.getElementById("profile-kyc-badge");
   if (badge) {
     if (state.kycStatus === "Verified") {
@@ -549,9 +542,78 @@ function renderUI() {
     }
   }
 
-  // Render Portfolio Calculations
   updatePortfolioUI();
 }
+
+// ── Multi-Currency Wallet Balance Renderer ─────────────────────────────────
+const _CURRENCY_META = {
+  USD:     { symbol: '$',  flag: '🇺🇸', name: 'US Dollar',            decimals: 2,  color: 'text-blue-500',   bg: 'bg-blue-50 dark:bg-blue-900/20' },
+  KRW:     { symbol: '₩', flag: '🇰🇷', name: 'Korean Won',            decimals: 0,  color: 'text-rose-500',   bg: 'bg-rose-50 dark:bg-rose-900/20' },
+  NGN:     { symbol: '₦', flag: '🇳🇬', name: 'Nigerian Naira',        decimals: 2,  color: 'text-green-500',  bg: 'bg-green-50 dark:bg-green-900/20' },
+  MockKRW: { symbol: '₩', flag: '🔗', name: 'MockKRW (On-chain)',     decimals: 2,  color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+};
+
+function renderWalletBalances() {
+  const container = document.getElementById('wallet-multicurrency-grid');
+  if (!container) return;
+
+  const currencies = state.currencies || {};
+  const token = localStorage.getItem('korripay_session_token');
+
+  container.innerHTML = Object.entries(_CURRENCY_META).map(([code, meta]) => {
+    const bal     = currencies[code] ?? { available: 0, locked: 0, pending: 0 };
+    const fmt     = (n) => Number(n).toLocaleString('en-US', { minimumFractionDigits: meta.decimals, maximumFractionDigits: meta.decimals });
+    const total   = (bal.available ?? 0) + (bal.locked ?? 0) + (bal.pending ?? 0);
+    const hasLock = (bal.locked ?? 0) > 0;
+    const hasPend = (bal.pending ?? 0) > 0;
+
+    return `
+      <div class="${meta.bg} border border-outline-variant/20 dark:border-outline/10 rounded-2xl p-4 flex flex-col gap-3 shadow-sm hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">${meta.flag}</span>
+            <div>
+              <p class="font-bold text-sm text-on-surface dark:text-white">${code}</p>
+              <p class="text-xs text-on-surface-variant dark:text-outline-variant">${meta.name}</p>
+            </div>
+          </div>
+          <span class="text-xl font-bold ${meta.color}">${meta.symbol}${fmt(total)}</span>
+        </div>
+        <div class="space-y-1 pt-2 border-t border-outline-variant/20 dark:border-outline/10">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-on-surface-variant dark:text-outline-variant flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Available</span>
+            <span class="font-bold text-on-surface dark:text-white">${meta.symbol}${fmt(bal.available)}</span>
+          </div>
+          ${hasLock ? `<div class="flex justify-between items-center text-xs">
+            <span class="text-on-surface-variant dark:text-outline-variant flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-500 inline-block"></span> Locked</span>
+            <span class="font-semibold text-amber-600 dark:text-amber-400">${meta.symbol}${fmt(bal.locked)}</span>
+          </div>` : ''}
+          ${hasPend ? `<div class="flex justify-between items-center text-xs">
+            <span class="text-on-surface-variant dark:text-outline-variant flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400 animate-pulse inline-block"></span> Pending</span>
+            <span class="font-semibold text-blue-500 dark:text-blue-400">${meta.symbol}${fmt(bal.pending)}</span>
+          </div>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+
+  // Refresh from API if user is logged in
+  if (token && !_walletBalanceFetched) {
+    _walletBalanceFetched = true;
+    fetch('http://localhost:5000/api/wallet/summary', {
+      headers: { Authorization: `Bearer ${token}` }
+    }).then(r => r.ok ? r.json() : null).then(data => {
+      if (!data) return;
+      state.currencies = {
+        USD:     { available: data.usd?.available ?? 0,     locked: data.usd?.locked ?? 0,     pending: data.usd?.pending ?? 0 },
+        KRW:     { available: data.krw?.available ?? 0,     locked: data.krw?.locked ?? 0,     pending: data.krw?.pending ?? 0 },
+        NGN:     { available: data.ngn?.available ?? 0,     locked: data.ngn?.locked ?? 0,     pending: data.ngn?.pending ?? 0 },
+        MockKRW: { available: data.mockkrw?.available ?? 0, locked: data.mockkrw?.locked ?? 0, pending: data.mockkrw?.pending ?? 0 },
+      };
+      renderWalletBalances();
+    }).catch(() => {});
+  }
+}
+let _walletBalanceFetched = false;
 
 function updatePortfolioUI() {
   const BTC_PRICE = 64281.40;

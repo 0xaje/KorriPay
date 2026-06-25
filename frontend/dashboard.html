@@ -273,6 +273,23 @@
             </div>
           </section>
 
+          <!-- Multi-Currency Wallet Balances -->
+          <section class="space-y-sm">
+            <div class="flex items-center justify-between px-1">
+              <h2 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span>
+                My Wallets
+              </h2>
+              <span class="text-xs text-outline dark:text-outline-variant flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Live Balances
+              </span>
+            </div>
+            <div id="wallet-multicurrency-grid" class="grid grid-cols-2 gap-sm">
+              <!-- Dynamically populated by renderWalletBalances() in app.js -->
+              <div class="col-span-2 p-6 text-center text-outline animate-pulse text-sm">Loading wallet balances...</div>
+            </div>
+          </section>
+
           <!-- Recent Transactions -->
           <section class="space-y-sm">
             <div class="flex justify-between items-center">

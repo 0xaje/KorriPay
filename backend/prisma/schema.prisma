@@ -16,7 +16,7 @@ model User {
   email            String?          @unique
   walletAddress    String?          @unique
   createdAt        DateTime         @default(now())
-  wallets          Wallet[]
+  wallet           Wallet?
   kycs             Kyc[]
   transactions     Transaction[]
   contacts         Contact[]
@@ -26,17 +26,68 @@ model User {
 }
 
 model Wallet {
-  id             String   @id @default(uuid())
-  userId         String
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  balance        Float    @default(1250.00)
-  savings        Float    @default(45.00)
-  btcBalance     Float    @default(14.82)
-  ethBalance     Float    @default(2.45)
-  usdcBalance    Float    @default(2450.00)
-  mockkrwBalance Float    @default(500000.00)
+  id       String @id @default(uuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // ── USD balances ──────────────────────────────────────────────────
+  usdAvailable  Float @default(1250.00)
+  usdLocked     Float @default(0.00)
+  usdPending    Float @default(0.00)
+
+  // ── KRW balances ──────────────────────────────────────────────────
+  krwAvailable  Float @default(0.00)
+  krwLocked     Float @default(0.00)
+  krwPending    Float @default(0.00)
+
+  // ── NGN balances ──────────────────────────────────────────────────
+  ngnAvailable  Float @default(0.00)
+  ngnLocked     Float @default(0.00)
+  ngnPending    Float @default(0.00)
+
+  // ── MockKRW (on-chain stablecoin) balances ─────────────────────────
+  mockkrwAvailable  Float @default(500000.00)
+  mockkrwLocked     Float @default(0.00)
+  mockkrwPending    Float @default(0.00)
+
+  // ── Legacy crypto balances (on-chain, read from blockchain) ────────
+  btcBalance    Float @default(14.82)
+  ethBalance    Float @default(2.45)
+  usdcBalance   Float @default(2450.00)
+
+  // ── Meta ───────────────────────────────────────────────────────────
+  savings       Float    @default(45.00)
+  updatedAt     DateTime @default(now()) @updatedAt
+
+  ledgerEntries WalletLedger[]
 
   @@map("wallets")
+}
+
+// ── Wallet Ledger: immutable double-entry style audit trail ────────────────
+model WalletLedger {
+  id          String   @id @default(uuid())
+  walletId    String
+  wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  // Which currency and balance slot changed
+  currency    String   // USD | KRW | NGN | MockKRW | BTC | ETH | USDC
+  balanceType String   // available | locked | pending
+
+  // Double-entry: debit is negative, credit is positive
+  amount      Float
+  runningBalance Float  // snapshot of available balance after this entry
+
+  // Context
+  entryType   String   // credit | debit | lock | unlock | settle | refund | fee
+  description String
+  txHash      String?
+  referenceId String?  // settlement ID, fx conversion ID, etc.
+  createdAt   DateTime @default(now())
+
+  @@index([walletId, currency])
+  @@index([createdAt])
+  @@map("wallet_ledger")
 }
 
 model Transaction {

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
 import { ethers } from 'ethers';
 import fxRouter from './fxController.js';
+import walletRouter from './walletController.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.fileURLToPath ? path.fileURLToPath(import.meta.url) : import.meta.url.replace("file://", "");
@@ -104,13 +105,13 @@ async function initDatabase() {
     if (!defaultWallet) {
       defaultWallet = await prisma.wallet.create({
         data: {
-          userId: defaultUser.id,
-          balance: 1250.00,
-          savings: 45.00,
-          btcBalance: 14.82,
-          ethBalance: 2.45,
-          usdcBalance: 2450.00,
-          mockkrwBalance: 500000.00
+          userId:           defaultUser.id,
+          usdAvailable:     1250.00,
+          mockkrwAvailable: 500000.00,
+          savings:          45.00,
+          btcBalance:       14.82,
+          ethBalance:       2.45,
+          usdcBalance:      2450.00,
         }
       });
       console.log("[Server DB] Default wallet created");
@@ -259,6 +260,9 @@ function getFormattedDate() {
 // ==================== AUTHENTICATION ENDPOINTS ====================
 // (FX Engine routes already mounted above at /api/fx)
 
+// ── Multi-Currency Wallet Router ──────────────────────────────────────────
+app.use('/api/wallet', requireAuth, walletRouter);
+
 app.get('/api/auth/nonce', (req, res) => {
   const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   const tempId = "temp-" + Date.now() + "-" + Math.random().toString(36).substring(2, 8);
@@ -307,13 +311,13 @@ app.post('/api/auth/verify', async (req, res) => {
       // Create wallet with default balances for this user
       await prisma.wallet.create({
         data: {
-          userId: user.id,
-          balance: 1250.00,
-          savings: 45.00,
-          btcBalance: 14.82,
-          ethBalance: 2.45,
-          usdcBalance: 2450.00,
-          mockkrwBalance: 500000.00
+          userId:           user.id,
+          usdAvailable:     1250.00,
+          mockkrwAvailable: 500000.00,
+          savings:          45.00,
+          btcBalance:       14.82,
+          ethBalance:       2.45,
+          usdcBalance:      2450.00,
         }
       });
     }
@@ -355,13 +359,13 @@ app.post('/api/auth/demo', async (req, res) => {
 
       await prisma.wallet.create({
         data: {
-          userId: user.id,
-          balance: 1250.00,
-          savings: 45.00,
-          btcBalance: 14.82,
-          ethBalance: 2.45,
-          usdcBalance: 2450.00,
-          mockkrwBalance: 500000.00
+          userId:           user.id,
+          usdAvailable:     1250.00,
+          mockkrwAvailable: 500000.00,
+          savings:          45.00,
+          btcBalance:       14.82,
+          ethBalance:       2.45,
+          usdcBalance:      2450.00,
         }
       });
     }
@@ -384,7 +388,7 @@ app.post('/api/auth/demo', async (req, res) => {
 
 app.get('/api/dashboard', requireAuth, async (req, res) => {
   try {
-    const wallet = await prisma.wallet.findFirst({ where: { userId: req.user.id } });
+    const wallet = await prisma.wallet.findUnique({ where: { userId: req.user.id } });
     const transactions = await prisma.transaction.findMany({
       where: { userId: req.user.id },
       orderBy: { timestamp: 'desc' },
@@ -393,12 +397,20 @@ app.get('/api/dashboard', requireAuth, async (req, res) => {
     const kyc = await prisma.kyc.findFirst({ where: { userId: req.user.id } });
 
     res.json({
-      balance: wallet ? wallet.balance : 1250.00,
-      savings: wallet ? wallet.savings : 45.00,
-      btcBalance: wallet ? wallet.btcBalance : 14.82,
-      ethBalance: wallet ? wallet.ethBalance : 2.45,
-      usdcBalance: wallet ? wallet.usdcBalance : 2450.00,
-      mockkrwBalance: wallet ? wallet.mockkrwBalance : 500000.00,
+      // Legacy USD "balance" field maps to usdAvailable
+      balance:       wallet ? wallet.usdAvailable     : 1250.00,
+      savings:       wallet ? wallet.savings           : 45.00,
+      btcBalance:    wallet ? wallet.btcBalance        : 14.82,
+      ethBalance:    wallet ? wallet.ethBalance        : 2.45,
+      usdcBalance:   wallet ? wallet.usdcBalance       : 2450.00,
+      mockkrwBalance: wallet ? wallet.mockkrwAvailable : 500000.00,
+      // Multi-currency full breakdown
+      currencies: {
+        USD:     { available: wallet?.usdAvailable ?? 1250, locked: wallet?.usdLocked ?? 0, pending: wallet?.usdPending ?? 0 },
+        KRW:     { available: wallet?.krwAvailable ?? 0,    locked: wallet?.krwLocked ?? 0, pending: wallet?.krwPending ?? 0 },
+        NGN:     { available: wallet?.ngnAvailable ?? 0,    locked: wallet?.ngnLocked ?? 0, pending: wallet?.ngnPending ?? 0 },
+        MockKRW: { available: wallet?.mockkrwAvailable ?? 500000, locked: wallet?.mockkrwLocked ?? 0, pending: wallet?.mockkrwPending ?? 0 },
+      },
       transactions: transactions || [],
       kycStatus: kyc ? kyc.status : "NotStarted"
     });
