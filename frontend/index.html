@@ -469,6 +469,17 @@
     document.getElementById("wallet-close-btn").addEventListener("click", closeWalletModal);
     overlay.addEventListener("click", closeWalletModal);
 
+    // Intercept dashboard links if not logged in
+    document.querySelectorAll('a[href^="dashboard.html"]').forEach(link => {
+      link.addEventListener('click', (e) => {
+        const token = localStorage.getItem("korripay_session_token");
+        if (!token) {
+          e.preventDefault();
+          openWalletModal();
+        }
+      });
+    });
+
     // Email login handler for demo mode
     const btnDemoLogin = document.getElementById("btn-demo-login");
     if (btnDemoLogin) {
