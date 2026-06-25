@@ -228,9 +228,14 @@ function bindConnectButtons() {
         if (connectingPanel) connectingPanel.classList.add("hidden");
         if (statusText)      statusText.textContent = "Connecting...";
 
-        const message = err.message?.includes("User rejected")
-          ? "Signature request cancelled by user."
-          : err.message ?? "Authentication failed.";
+        let message = "Authentication failed.";
+        if (err.message?.includes("User rejected")) {
+          message = "Signature request cancelled by user.";
+        } else if (err.name === "ProviderNotFoundError" || err.message?.includes("Provider not found") || err.message?.includes("Connector not found")) {
+          message = `${name} extension was not found in your browser. Please install the ${name} extension, or select "WalletConnect" to scan with a mobile wallet.`;
+        } else {
+          message = err.message ?? "Authentication failed.";
+        }
 
         alert(message);
       }

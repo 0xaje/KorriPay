@@ -103,6 +103,7 @@ async function init() {
     connectors: [
       injected({ target: "metaMask" }),
       injected({ target: "coinbaseWallet" }),
+      injected(),
       walletConnect({
         projectId: projectId,
         metadata: {
@@ -196,17 +197,16 @@ function resolveConnector(type) {
 
   const connectors = _config.connectors;
 
-  if (type === "metamask" || type === "injected") {
-    return connectors.find((c) => c.id === "metaMask" || c.type === "injected") ?? connectors[0];
+  if (type === "metamask") {
+    return connectors.find((c) => c.id === "metaMask") ?? connectors.find((c) => c.id === "injected") ?? connectors[0];
   }
   if (type === "coinbase") {
-    return connectors.find((c) => c.id === "coinbaseWallet") ?? connectors[0];
+    return connectors.find((c) => c.id === "coinbaseWallet") ?? connectors.find((c) => c.id === "injected") ?? connectors[0];
   }
   if (type === "walletconnect" || type === "wc") {
     return connectors.find((c) => c.id === "walletConnect") ?? connectors[connectors.length - 1];
   }
-  // Default: first available (usually MetaMask if installed)
-  return connectors[0];
+  return connectors.find((c) => c.id === "injected") ?? connectors[0];
 }
 
 // ── Public API ───────────────────────────────────────────────────────
