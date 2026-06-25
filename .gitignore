@@ -79,3 +79,9 @@ frontend/swap-mockup.html
 frontend/swap-success-mockup.html
 frontend/institutional-swap-mockup.html
 frontend/kyc-failed.html
+
+# ========================
+# Hardhat
+# ========================
+artifacts/
+cache/

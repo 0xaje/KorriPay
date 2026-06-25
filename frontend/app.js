@@ -1,6 +1,25 @@
 // KorriPay Frontend Logic
 
 const API_BASE = "http://localhost:5000/api";
+
+async function authFetch(url, options = {}) {
+  const token = localStorage.getItem("korripay_session_token");
+  const headers = {
+    ...options.headers
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  const res = await fetch(url, {
+    ...options,
+    headers
+  });
+  if (res.status === 401) {
+    localStorage.removeItem("korripay_session_token");
+    window.location.href = "index.html";
+  }
+  return res;
+}
 let isBackendConnected = false;
 
 // Mock Fallback Data (if backend is unreachable)
@@ -10,6 +29,7 @@ let localState = {
   btcBalance: 14.82,
   ethBalance: 2.45,
   usdcBalance: 2450.00,
+  mockkrwBalance: 500000.00, // default ₩500,000 mock
   transactions: [
     {
       id: "tx-1",
@@ -48,6 +68,7 @@ let state = {
   btcBalance: 0,
   ethBalance: 0,
   usdcBalance: 0,
+  mockkrwBalance: 0,
   transactions: []
 };
 
@@ -63,6 +84,9 @@ document.addEventListener("DOMContentLoaded", () => {
   setupKycVerification();
   setupPortfolio();
   setupSwap();
+  setupExplorerListeners();
+  setupMerchant();
+  setupAnalytics();
   
   // Dev Reset
   const devResetBtn = document.getElementById("btn-dev-reset");
@@ -74,40 +98,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Copy Wallet Address
-  const copyWalletBtn = document.getElementById("btn-copy-wallet");
-  if (copyWalletBtn) {
-    copyWalletBtn.addEventListener("click", () => {
-      const fullAddress = "0x71C8b44473E4F49A2d2f7823f990a424237149A2";
-      navigator.clipboard.writeText(fullAddress).then(() => {
-        showToast("Wallet address copied to clipboard!");
-        
-        // Show temporary checkmark feedback
-        const originalHtml = copyWalletBtn.innerHTML;
-        copyWalletBtn.innerHTML = '<span class="material-symbols-outlined text-sm text-secondary">check</span>';
-        setTimeout(() => {
-          copyWalletBtn.innerHTML = originalHtml;
-        }, 2000);
-      }).catch(() => {
-        showToast("Failed to copy address", "error");
-      });
+  // Copy and Disconnect Wallet are now handled natively by WalletHooks.js
+  
+  // Require wallet connection for dashboard access
+  if (window.WalletHooks) {
+    window.WalletHooks.requireWallet();
+
+    // Listen to wallet state changes (network switch, account switch, connection status)
+    window.WalletHooks.onStateChange(async () => {
+      console.log("[Wallet Hooks] State change detected. Re-fetching blockchain balances...");
+      await updateBlockchainBalances();
+      renderUI();
+    });
+
+    window.WalletHooks.onConnect(async () => {
+      console.log("[Wallet Hooks] Wallet connected. Fetching blockchain balances...");
+      await updateBlockchainBalances();
+      renderUI();
+    });
+
+    window.WalletHooks.onDisconnect(() => {
+      console.log("[Wallet Hooks] Wallet disconnected. Resetting to mock/fallback balances...");
+      // Revert state balances to mock defaults
+      state.usdcBalance = localState.usdcBalance;
+      state.mockkrwBalance = localState.mockkrwBalance;
+      state.ethBalance = localState.ethBalance;
+      renderUI();
     });
   }
-
-  // Disconnect Wallet
-  const disconnectWalletBtn = document.getElementById("btn-disconnect-wallet");
-  const sideBtnDisconnect = document.getElementById("side-btn-disconnect");
-  const handleDisconnect = () => {
-    if (confirm("Are you sure you want to disconnect your wallet?")) {
-      showToast("Wallet disconnected successfully.");
-      // Simulate disconnect by resetting dashboard state after 1 second
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    }
-  };
-  if (disconnectWalletBtn) disconnectWalletBtn.addEventListener("click", handleDisconnect);
-  if (sideBtnDisconnect) sideBtnDisconnect.addEventListener("click", handleDisconnect);
 
   // Initial Load
   loadData();
@@ -115,6 +133,9 @@ document.addEventListener("DOMContentLoaded", () => {
   // Hash Routing check
   checkHashRoute();
   window.addEventListener("hashchange", checkHashRoute);
+
+  // Setup Demo Mode
+  setupDemoMode();
 });
 
 // Dark Mode Support
@@ -209,6 +230,21 @@ function checkHashRoute() {
     startSuccessConfetti();
   } else if (hash === "#profile") {
     switchTab("tab-profile");
+  } else if (hash === "#explorer") {
+    switchTab("tab-explorer");
+    if (typeof loadExplorerData === "function") {
+      loadExplorerData();
+    }
+  } else if (hash === "#merchant") {
+    switchTab("tab-merchant");
+    if (typeof loadMerchantData === "function") {
+      loadMerchantData();
+    }
+  } else if (hash === "#analytics") {
+    switchTab("tab-analytics");
+    if (typeof loadAnalyticsData === "function") {
+      loadAnalyticsData();
+    }
   } else {
     switchTab("tab-home");
   }
@@ -270,6 +306,9 @@ function switchTab(tabId) {
     else if (tabId === "tab-portfolio") desktopTitle.textContent = "Portfolio";
     else if (tabId === "tab-swap") desktopTitle.textContent = "Swap Assets";
     else if (tabId === "tab-swap-success") desktopTitle.textContent = "Swap Success";
+    else if (tabId === "tab-explorer") desktopTitle.textContent = "Explorer";
+    else if (tabId === "tab-merchant") desktopTitle.textContent = "Merchant Pay";
+    else if (tabId === "tab-analytics") desktopTitle.textContent = "Analytics Dashboard";
     else if (tabId === "tab-profile") desktopTitle.textContent = "My Profile";
   }
 
@@ -283,7 +322,10 @@ function setupModals() {
   const modals = [
     { btn: "btn-quick-send", modal: "modal-send" },
     { btn: "btn-quick-add", modal: "modal-add" },
-    { btn: "btn-quick-pay", modal: "modal-pay" }
+    { btn: "btn-quick-pay", modal: "modal-pay" },
+    { btn: "btn-add-contact", modal: "modal-contact" },
+    { btn: "btn-manage-contacts", modal: "modal-manage-contacts" },
+    { btn: "btn-view-all-contacts", modal: "modal-manage-contacts" }
   ];
 
   modals.forEach(({ btn, modal }) => {
@@ -369,6 +411,51 @@ function saveLocalState() {
   localStorage.setItem("korripay_state", JSON.stringify(localState));
 }
 
+// Fetch token and native balances directly from the connected wallet
+async function updateBlockchainBalances() {
+  if (!window.WalletService || !window.TokenService) {
+    console.warn("[Blockchain Balances] WalletService or TokenService not found on window.");
+    return;
+  }
+
+  const account = window.WalletService.getAccount();
+  if (account && account.isConnected && account.address) {
+    const address = account.address;
+    const chainId = account.chainId;
+    console.info(`[Blockchain Balances] Connected address: ${address} on chain: ${chainId}. Fetching balances...`);
+
+    try {
+      // 1. Fetch ERC20 USDC balance
+      const usdcBal = await window.TokenService.fetchTokenBalance("USDC", address, chainId);
+      state.usdcBalance = parseFloat(usdcBal) || 0;
+
+      // 2. Fetch ERC20 MockKRW balance
+      const mockkrwBal = await window.TokenService.fetchTokenBalance("MockKRW", address, chainId);
+      state.mockkrwBalance = parseFloat(mockkrwBal) || 0;
+
+      // 3. Fetch Native Token (ETH) balance
+      const nativeBal = await window.WalletService.getBalance();
+      if (nativeBal && nativeBal.formatted) {
+        state.ethBalance = parseFloat(nativeBal.formatted) || 0;
+      }
+
+      console.info("[Blockchain Balances] Successfully updated balances:", {
+        USDC: state.usdcBalance,
+        MockKRW: state.mockkrwBalance,
+        ETH: state.ethBalance
+      });
+    } catch (err) {
+      console.error("[Blockchain Balances] Failed to fetch balances from blockchain:", err);
+    }
+  } else {
+    // Reset to fallback/mock balances when disconnected
+    state.usdcBalance = localState.usdcBalance;
+    state.mockkrwBalance = localState.mockkrwBalance;
+    state.ethBalance = localState.ethBalance;
+    console.info("[Blockchain Balances] Wallet disconnected, reverted to fallback mock balances.");
+  }
+}
+
 // API Communication
 async function loadData() {
   const statusIndicator = document.getElementById("conn-status");
@@ -388,7 +475,7 @@ async function loadData() {
   };
 
   try {
-    const res = await fetch(`${API_BASE}/dashboard`);
+    const res = await authFetch(`${API_BASE}/dashboard`);
     if (!res.ok) throw new Error("Server response error");
     const data = await res.json();
     
@@ -409,6 +496,9 @@ async function loadData() {
     isBackendConnected = false;
     updateStatus(false);
   }
+  
+  // Override balances with live blockchain balances if connected
+  await updateBlockchainBalances();
   
   renderUI();
 }
@@ -443,6 +533,21 @@ function renderUI() {
   // Render full list in History Tab
   filterAndRenderHistory();
 
+  // Update KYC Badge based on backend status
+  const badge = document.getElementById("profile-kyc-badge");
+  if (badge) {
+    if (state.kycStatus === "Verified") {
+      badge.className = "bg-secondary-container/20 text-on-secondary-container dark:text-secondary-fixed border border-secondary/20 px-3 py-0.5 rounded-full font-label-sm";
+      badge.innerText = "Verified";
+    } else if (state.kycStatus === "Pending") {
+      badge.className = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-3 py-0.5 rounded-full font-label-sm";
+      badge.innerText = "Pending Review";
+    } else {
+      badge.className = "bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 border border-neutral-500/20 px-3 py-0.5 rounded-full font-label-sm";
+      badge.innerText = "Unverified";
+    }
+  }
+
   // Render Portfolio Calculations
   updatePortfolioUI();
 }
@@ -451,12 +556,14 @@ function updatePortfolioUI() {
   const BTC_PRICE = 64281.40;
   const ETH_PRICE = 3450.00;
   const USDC_PRICE = 1.00;
+  const MOCKKRW_PRICE = 1 / 1400; // ₩1400 = $1
 
   const fiat = state.balance;
   const btcVal = state.btcBalance * BTC_PRICE;
   const ethVal = state.ethBalance * ETH_PRICE;
   const usdcVal = state.usdcBalance * USDC_PRICE;
-  const total = fiat + btcVal + ethVal + usdcVal;
+  const mockkrwVal = state.mockkrwBalance * MOCKKRW_PRICE;
+  const total = fiat + btcVal + ethVal + usdcVal + mockkrwVal;
 
   // 1. Total Portfolio Value Hero
   const portfolioTotalValEl = document.getElementById("portfolio-total-value");
@@ -504,11 +611,22 @@ function updatePortfolioUI() {
     portfolioUsdcQtyEl.textContent = `${state.usdcBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`;
   }
 
+  // MockKRW Asset Row
+  const portfolioMockkrwFiatEl = document.getElementById("portfolio-asset-mockkrw-fiat");
+  if (portfolioMockkrwFiatEl) {
+    portfolioMockkrwFiatEl.textContent = `₩${state.mockkrwBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  const portfolioMockkrwQtyEl = document.getElementById("portfolio-asset-mockkrw-qty");
+  if (portfolioMockkrwQtyEl) {
+    portfolioMockkrwQtyEl.textContent = `${state.mockkrwBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MockKRW`;
+  }
+
   // 3. Percentages
   const fiatPct = total > 0 ? (fiat / total) * 100 : 0;
   const btcPct = total > 0 ? (btcVal / total) * 100 : 0;
   const ethPct = total > 0 ? (ethVal / total) * 100 : 0;
   const usdcPct = total > 0 ? (usdcVal / total) * 100 : 0;
+  const mockkrwPct = total > 0 ? (mockkrwVal / total) * 100 : 0;
 
   // 4. Update legend labels
   const fiatPctEl = document.getElementById("allocation-fiat-pct");
@@ -519,11 +637,13 @@ function updatePortfolioUI() {
   if (ethPctEl) ethPctEl.textContent = `ETH (${Math.round(ethPct)}%)`;
   const usdcPctEl = document.getElementById("allocation-usdc-pct");
   if (usdcPctEl) usdcPctEl.textContent = `USDC (${Math.round(usdcPct)}%)`;
+  const mockkrwPctEl = document.getElementById("allocation-mockkrw-pct");
+  if (mockkrwPctEl) mockkrwPctEl.textContent = `MockKRW (${Math.round(mockkrwPct)}%)`;
 
   // 5. Update Center digital assets percentage
   const digitalPctEl = document.getElementById("allocation-digital-center");
   if (digitalPctEl) {
-    const digitalPct = btcPct + ethPct + usdcPct;
+    const digitalPct = btcPct + ethPct + usdcPct + mockkrwPct;
     digitalPctEl.textContent = `${Math.round(digitalPct)}%`;
   }
 
@@ -554,6 +674,13 @@ function updatePortfolioUI() {
   if (sliceUsdc) {
     sliceUsdc.setAttribute("stroke-dasharray", `${usdcPct.toFixed(3)} ${(100 - usdcPct).toFixed(3)}`);
     sliceUsdc.setAttribute("stroke-dashoffset", `-${(fiatPct + btcPct + ethPct).toFixed(3)}`);
+  }
+
+  // Slice 5: MockKRW
+  const sliceMockkrw = document.getElementById("donut-slice-mockkrw");
+  if (sliceMockkrw) {
+    sliceMockkrw.setAttribute("stroke-dasharray", `${mockkrwPct.toFixed(3)} ${(100 - mockkrwPct).toFixed(3)}`);
+    sliceMockkrw.setAttribute("stroke-dashoffset", `-${(fiatPct + btcPct + ethPct + usdcPct).toFixed(3)}`);
   }
 
   // 7. Update Swap Balance
@@ -680,6 +807,7 @@ function setupSwap() {
     BTC: 64281.40,
     ETH: 3450.00,
     USDC: 1.00025,
+    MockKRW: 1 / 1400,
     USD: 1.00
   };
 
@@ -688,6 +816,7 @@ function setupSwap() {
     BTC: 0,
     ETH: 0,
     USDC: 0,
+    MockKRW: 0,
     USD: 0
   };
 
@@ -695,6 +824,7 @@ function setupSwap() {
     BTC: { name: "Bitcoin", icon: "currency_bitcoin", colorClass: "bg-[#F7931A]/10 text-[#F7931A]" },
     ETH: { name: "Ethereum", icon: "diamond", colorClass: "bg-[#627EEA]/10 text-[#627EEA]" },
     USDC: { name: "USD Coin", icon: "monetization_on", colorClass: "bg-[#2775CA]/10 text-[#2775CA]" },
+    MockKRW: { name: "Mock KRW", icon: "payments", colorClass: "bg-[#5cfd80]/10 text-[#006e2a]" },
     USD: { name: "US Dollar", icon: "attach_money", colorClass: "bg-surface-container dark:bg-on-background/25 text-primary dark:text-primary-fixed" }
   };
 
@@ -706,6 +836,7 @@ function setupSwap() {
     if (symbol === "BTC") return state.btcBalance;
     if (symbol === "ETH") return state.ethBalance;
     if (symbol === "USDC") return state.usdcBalance;
+    if (symbol === "MockKRW") return state.mockkrwBalance;
     return state.balance; // USD
   };
 
@@ -905,6 +1036,11 @@ function setupSwap() {
     if (selectUsdcBal) selectUsdcBal.textContent = `${state.usdcBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDC`;
     if (selectUsdcVal) selectUsdcVal.textContent = `$${state.usdcBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+    const selectMockkrwBal = document.getElementById("asset-select-balance-mockkrw");
+    const selectMockkrwVal = document.getElementById("asset-select-value-mockkrw");
+    if (selectMockkrwBal) selectMockkrwBal.textContent = `${state.mockkrwBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MockKRW`;
+    if (selectMockkrwVal) selectMockkrwVal.textContent = `$${(state.mockkrwBalance * prices.MockKRW).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
     const selectUsdBal = document.getElementById("asset-select-balance-usd");
     const selectUsdVal = document.getElementById("asset-select-value-usd");
     if (selectUsdBal) selectUsdBal.textContent = `$${state.balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
@@ -1010,7 +1146,7 @@ function setupSwap() {
 
       try {
         if (isBackendConnected) {
-          const response = await fetch(`${API_BASE}/transactions/swap`, {
+          const response = await authFetch(`${API_BASE}/transactions/swap`, {
             method: "POST",
             headers: {
               "Content-Type": "application/json"
@@ -1030,7 +1166,7 @@ function setupSwap() {
           }
 
           // Reload from backend dashboard payload
-          const resDash = await fetch(`${API_BASE}/dashboard`);
+          const resDash = await authFetch(`${API_BASE}/dashboard`);
           if (resDash.ok) {
             state = await resDash.json();
           }
@@ -1039,11 +1175,13 @@ function setupSwap() {
           if (fromAsset === "BTC") state.btcBalance -= totalCost;
           else if (fromAsset === "ETH") state.ethBalance -= totalCost;
           else if (fromAsset === "USDC") state.usdcBalance -= totalCost;
+          else if (fromAsset === "MockKRW") state.mockkrwBalance -= totalCost;
           else state.balance -= totalCost;
 
           if (toAsset === "BTC") state.btcBalance += outputVal;
           else if (toAsset === "ETH") state.ethBalance += outputVal;
           else if (toAsset === "USDC") state.usdcBalance += outputVal;
+          else if (toAsset === "MockKRW") state.mockkrwBalance += outputVal;
           else state.balance += outputVal;
 
           const newTx = {
@@ -1082,7 +1220,7 @@ function setupSwap() {
         if (successApproxFrom) successApproxFrom.textContent = `≈ $${(val * priceFrom).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
         if (successValTo) successValTo.textContent = `${outputVal.toLocaleString('en-US', { maximumFractionDigits: 6 })} ${toAsset}`;
         if (successNetworkTo) {
-          successNetworkTo.textContent = toAsset === "USD" ? "Standard Settlement" : (toAsset === "BTC" ? "Bitcoin Network" : "Polygon Network");
+          successNetworkTo.textContent = toAsset === "USD" ? "Standard Settlement" : (toAsset === "BTC" ? "Bitcoin Network" : (toAsset === "MockKRW" ? "Sepolia Network" : "Polygon Network"));
         }
         
         if (successIconFrom) {
@@ -1157,7 +1295,7 @@ function setupSwap() {
   const btnExplorer = document.getElementById("btn-swap-success-explorer");
   if (btnExplorer) {
     btnExplorer.onclick = () => {
-      showToast("Opening block explorer...");
+      window.location.hash = "explorer";
     };
   }
 
@@ -1290,12 +1428,13 @@ function setupFormHandlers() {
 }
 
 // Core transaction posting logic
+// Core transaction posting logic
 async function processTransaction(type, payload) {
   closeAllModals();
   
   if (isBackendConnected) {
     try {
-      const response = await fetch(`${API_BASE}/transactions/${type}`, {
+      const response = await authFetch(`${API_BASE}/transactions/${type}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
@@ -1306,8 +1445,10 @@ async function processTransaction(type, payload) {
       
       showToast(resData.message || "Transaction processed successfully!");
       await loadData();
+      return resData;
     } catch (err) {
       showToast(err.message, "error");
+      throw err;
     }
   } else {
     // Offline simulation mode
@@ -1315,15 +1456,21 @@ async function processTransaction(type, payload) {
     
     if (isNaN(numAmount) || numAmount <= 0) {
       showToast("Invalid amount", "error");
-      return;
+      throw new Error("Invalid amount");
     }
 
+    const txStatus = payload.status || "Success";
+
     if (type === "send" || type === "pay") {
-      if (numAmount > state.balance) {
-        showToast("Insufficient balance", "error");
-        return;
+      if (txStatus !== "Failed") {
+        if (numAmount > state.balance) {
+          showToast("Insufficient balance", "error");
+          throw new Error("Insufficient balance");
+        }
+        if (!payload.txHash || txStatus === "Success") {
+          state.balance -= numAmount;
+        }
       }
-      state.balance -= numAmount;
     } else if (type === "add") {
       state.balance += numAmount;
     }
@@ -1331,7 +1478,13 @@ async function processTransaction(type, payload) {
     let title = "";
     let category = "";
     if (type === "send") {
-      title = `Sent to ${payload.recipient}`;
+      if (txStatus === "Pending") {
+        title = `Sending to ${payload.recipient}`;
+      } else if (txStatus === "Failed") {
+        title = `Failed to ${payload.recipient}`;
+      } else {
+        title = payload.txHash ? `Settled to ${payload.recipient}` : `Sent to ${payload.recipient}`;
+      }
       category = "Transfer";
     } else if (type === "add") {
       title = `Received from ${payload.source}`;
@@ -1353,14 +1506,75 @@ async function processTransaction(type, payload) {
       amount: numAmount,
       date: `Today • ${timeStr}`,
       timestamp: Date.now(),
-      category
+      category,
+      txHash: payload.txHash || null,
+      status: txStatus
     };
 
     state.transactions.unshift(localTx);
+    
+    if (payload.txHash && txStatus === "Success") {
+      await updateBlockchainBalances();
+    }
+    
     // save to state sync
     localState = { ...state };
+    saveLocalState();
     
     showToast(`Success: ${title} processed!`);
+    renderUI();
+    return { transaction: localTx };
+  }
+}
+
+async function updateTransactionStatus(id, txHash, status) {
+  if (isBackendConnected) {
+    try {
+      const response = await authFetch(`${API_BASE}/transactions/update`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, txHash, status })
+      });
+      const resData = await response.json();
+      if (!response.ok) throw new Error(resData.error || "Failed to update transaction status");
+      
+      // Update local state copy to match
+      const localTx = state.transactions.find(t => t.id === id || (txHash && t.txHash === txHash));
+      if (localTx) {
+        const oldStatus = localTx.status;
+        localTx.status = status;
+        if (status === "Success") {
+          localTx.title = localTx.title.replace("Sending to", "Sent to");
+        } else if (status === "Failed") {
+          localTx.title = localTx.title.replace("Sending to", "Failed to");
+        }
+      }
+      state.balance = resData.balance;
+      showToast(`Transaction ${status.toLowerCase()}!`);
+      await loadData();
+    } catch (err) {
+      console.error("[Update Status] Failed to update transaction on backend:", err);
+    }
+  } else {
+    // Offline simulation mode
+    const localTx = state.transactions.find(t => t.id === id || (txHash && t.txHash === txHash));
+    if (localTx) {
+      const oldStatus = localTx.status;
+      localTx.status = status;
+      if (status === "Success") {
+        localTx.title = localTx.title.replace("Sending to", "Sent to");
+        if (oldStatus === "Pending" && localTx.txHash) {
+          state.balance -= localTx.amount;
+        }
+      } else if (status === "Failed") {
+        localTx.title = localTx.title.replace("Sending to", "Failed to");
+        if (oldStatus === "Pending" && !localTx.txHash) {
+          state.balance += localTx.amount;
+        }
+      }
+    }
+    localState = { ...state };
+    saveLocalState();
     renderUI();
   }
 }
@@ -1769,31 +1983,378 @@ function setupMultiStepSend() {
   // Register selection function globally for Quick Contacts to hook into
   window.selectKorriPayRecipient = selectRecipient;
 
-  // Click listeners for cards & items
-  const recipientCards = document.querySelectorAll(".send-recipient-card");
-  recipientCards.forEach(card => {
-    card.addEventListener("click", () => {
-      const name = card.getAttribute("data-name");
-      const address = card.getAttribute("data-address");
-      const initials = card.getAttribute("data-initials");
-      const img = card.querySelector("img");
-      const avatar = img ? img.src : null;
-      
-      selectRecipient(name, address, initials, avatar);
-      showToast(`Selected: ${name}`);
-    });
-  });
+  // ── DYNAMIC CONTACTS MANAGEMENT SYSTEM ──
+  let cachedContacts = [];
 
-  const recentItems = document.querySelectorAll(".send-recent-item");
-  recentItems.forEach(item => {
-    item.addEventListener("click", () => {
-      const name = item.getAttribute("data-name");
-      const address = item.getAttribute("data-address");
-      const initials = item.getAttribute("data-initials");
-      selectRecipient(name, address, initials, null);
-      showToast(`Selected: ${name}`);
+  // Function to load and render contacts
+  window.loadContactsAndRender = async function() {
+    if (!isBackendConnected) {
+      cachedContacts = [
+        { id: "1", walletAddress: "0x4a2ae92f883920108e7ef9e8b625cf016dfec1562", name: "Elena Gilbert", nickname: "Elena", isFavorite: true },
+        { id: "2", walletAddress: "0x12b5a0bc7ef9e8b625cf016dfec1562b77aa99fe", name: "Marcus Vane", nickname: "Marcus", isFavorite: true },
+        { id: "3", walletAddress: "0xf92c33d1b625cf016dfec1562b77aa99feb88aa2e", name: "Saira Khan", nickname: "Saira", isFavorite: true },
+        { id: "4", walletAddress: "0xbb8a11227c625cf016dfec1562b77aa99feb8813a", name: "Jordan Lee", nickname: "Jordan", isFavorite: true },
+        { id: "5", walletAddress: "0x712388219feb8813a0108e7ef9e8b625cf016dfe", name: "John Doe", nickname: "John", isFavorite: false }
+      ];
+      renderContactsLists();
+      return;
+    }
+
+    try {
+      const response = await authFetch(`${API_BASE}/contacts`, { method: "GET" });
+      if (response.ok) {
+        cachedContacts = await response.json();
+      } else {
+        console.warn("Failed to fetch contacts from API, falling back to simulated");
+      }
+    } catch (err) {
+      console.error("Error loading contacts:", err);
+    }
+    renderContactsLists();
+  };
+
+  // Helper to draw the list UI
+  function renderContactsLists() {
+    const favoritesList = document.getElementById("send-favorites-list");
+    const recentsList = document.getElementById("send-recent-transfers-list");
+
+    // 1. Render Favorites
+    if (favoritesList) {
+      const favorites = cachedContacts.filter(c => c.isFavorite);
+      if (favorites.length === 0) {
+        favoritesList.innerHTML = `
+          <div class="col-span-4 p-8 text-center text-outline dark:text-outline-variant">
+            <p class="text-sm">No favorite recipients saved yet.</p>
+          </div>
+        `;
+      } else {
+        favoritesList.innerHTML = favorites.map(c => {
+          const displayName = c.nickname || c.name;
+          const initials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+          const shortAddress = c.walletAddress.substring(0, 6) + "..." + c.walletAddress.substring(c.walletAddress.length - 4);
+          
+          return `
+            <div class="send-recipient-card cursor-pointer group bg-white dark:bg-inverse-surface border border-outline-variant dark:border-outline/10 p-md rounded-xl flex flex-col items-center text-center hover:border-secondary dark:hover:border-secondary-fixed-dim hover:shadow-md transition-all" 
+                 data-name="${displayName}" data-address="${c.walletAddress}" data-initials="${initials}">
+              <div class="relative w-16 h-16 rounded-full bg-secondary-container dark:bg-on-secondary-fixed-variant flex items-center justify-center font-bold text-lg text-primary mb-3">
+                ${initials}
+                <span class="material-symbols-outlined absolute -bottom-1 -right-1 text-amber-500 bg-white dark:bg-inverse-surface rounded-full p-0.5 text-xs border border-outline-variant/30" style="font-variation-settings: 'FILL' 1;">star</span>
+              </div>
+              <p class="font-bold text-on-surface dark:text-white truncate w-full" title="${c.name}">${displayName}</p>
+              <p class="text-xs text-on-surface-variant dark:text-outline-variant font-mono">${shortAddress}</p>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    // 2. Render Recents (contacts with lastTransactedAt != null, sorted by lastTransactedAt desc, or just remaining contacts if empty)
+    if (recentsList) {
+      let recents = cachedContacts
+        .filter(c => c.lastTransactedAt)
+        .sort((a, b) => new Date(b.lastTransactedAt) - new Date(a.lastTransactedAt));
+
+      if (recents.length === 0) {
+        // Fallback to top 4 contacts
+        recents = cachedContacts.slice(0, 4);
+      }
+
+      if (recents.length === 0) {
+        recentsList.innerHTML = `
+          <div class="p-8 text-center text-outline dark:text-outline-variant">
+            <p class="text-sm">No recent transfers.</p>
+          </div>
+        `;
+      } else {
+        recentsList.innerHTML = recents.map(c => {
+          const displayName = c.nickname || c.name;
+          const initials = displayName.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+          const shortAddress = c.walletAddress.substring(0, 6) + "..." + c.walletAddress.substring(c.walletAddress.length - 4);
+          
+          return `
+            <div class="send-recent-item flex items-center justify-between p-4 hover:bg-surface-container-low dark:hover:bg-on-background/10 transition-colors cursor-pointer group" 
+                 data-name="${displayName}" data-address="${c.walletAddress}" data-initials="${initials}">
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 rounded-lg bg-surface-container-high dark:bg-on-background/25 flex items-center justify-center font-bold text-primary dark:text-primary-fixed">${initials}</div>
+                <div>
+                  <p class="font-bold text-on-surface dark:text-white">${displayName}</p>
+                  <p class="text-sm text-on-surface-variant dark:text-outline-variant">${c.name} • ${shortAddress}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-4">
+                <span class="text-sm text-on-surface-variant dark:text-outline-variant hidden md:block font-mono">${shortAddress}</span>
+                <button type="button" class="p-2 text-primary dark:text-primary-fixed">
+                  <span class="material-symbols-outlined">chevron_right</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    // 3. Re-bind event listeners to the new dynamic items
+    bindContactClickListeners();
+  }
+
+  function bindContactClickListeners() {
+    document.querySelectorAll(".send-recipient-card").forEach(card => {
+      card.onclick = () => {
+        const name = card.getAttribute("data-name");
+        const address = card.getAttribute("data-address");
+        const initials = card.getAttribute("data-initials");
+        selectRecipient(name, address, initials, null);
+        showToast(`Selected: ${name}`);
+      };
     });
-  });
+
+    document.querySelectorAll(".send-recent-item").forEach(item => {
+      item.onclick = () => {
+        const name = item.getAttribute("data-name");
+        const address = item.getAttribute("data-address");
+        const initials = item.getAttribute("data-initials");
+        selectRecipient(name, address, initials, null);
+        showToast(`Selected: ${name}`);
+      };
+    });
+  }
+
+  // Directory UI Rendering
+  window.renderDirectory = function(query = "") {
+    const dirList = document.getElementById("directory-contacts-list");
+    if (!dirList) return;
+
+    const filtered = cachedContacts.filter(c => {
+      const q = query.toLowerCase().trim();
+      return c.name.toLowerCase().includes(q) || 
+             (c.nickname && c.nickname.toLowerCase().includes(q)) || 
+             c.walletAddress.toLowerCase().includes(q);
+    });
+
+    if (filtered.length === 0) {
+      dirList.innerHTML = `
+        <div class="py-8 text-center text-outline dark:text-outline-variant">
+          <p class="text-sm">No matching contacts found.</p>
+        </div>
+      `;
+      return;
+    }
+
+    dirList.innerHTML = filtered.map(c => {
+      const initials = c.name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+      const isFav = c.isFavorite;
+      const starIcon = isFav ? "star" : "star_rate";
+      const starStyle = isFav ? "font-variation-settings: 'FILL' 1;" : "";
+      const starColor = isFav ? "text-amber-500" : "text-outline hover:text-amber-500";
+      const nicknameDisplay = c.nickname ? `<span class="text-xs px-2 py-0.5 bg-secondary-container text-primary rounded-full">${c.nickname}</span>` : "";
+
+      return `
+        <div class="flex items-center justify-between py-3 border-b border-outline-variant/10 dark:border-outline/5 last:border-0">
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-full bg-surface-container-high dark:bg-on-background/20 flex items-center justify-center font-bold text-sm text-primary dark:text-primary-fixed">
+              ${initials}
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="font-bold text-sm text-on-surface dark:text-white truncate">${c.name}</p>
+                ${nicknameDisplay}
+              </div>
+              <p class="text-xs text-on-surface-variant dark:text-outline-variant font-mono truncate">${c.walletAddress}</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1">
+            <!-- Favorite button -->
+            <button type="button" class="p-2 rounded-full hover:bg-surface-container dark:hover:bg-on-background/10 transition-colors ${starColor}" onclick="toggleFavoriteContact('${c.id}', ${!isFav})">
+              <span class="material-symbols-outlined text-lg" style="${starStyle}">${starIcon}</span>
+            </button>
+            <!-- Edit Nickname button -->
+            <button type="button" class="p-2 rounded-full hover:bg-surface-container dark:hover:bg-on-background/10 text-outline hover:text-primary transition-colors" onclick="editContactNickname('${c.id}', '${c.nickname || ''}')">
+              <span class="material-symbols-outlined text-lg">edit</span>
+            </button>
+            <!-- Delete button -->
+            <button type="button" class="p-2 rounded-full hover:bg-surface-container dark:hover:bg-on-background/10 text-outline hover:text-error transition-colors" onclick="deleteContact('${c.id}')">
+              <span class="material-symbols-outlined text-lg">delete</span>
+            </button>
+            <!-- Select button -->
+            <button type="button" class="ml-2 px-3 py-1 bg-primary text-white text-xs font-bold rounded-lg hover:bg-opacity-95 transition-all" onclick="selectContactFromDirectory('${c.nickname || c.name}', '${c.walletAddress}', '${initials}')">
+              Select
+            </button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  };
+
+  // Bind Actions on Directory Buttons
+  window.toggleFavoriteContact = async function(id, newFavStatus) {
+    if (!isBackendConnected) {
+      const idx = cachedContacts.findIndex(c => c.id === id);
+      if (idx !== -1) cachedContacts[idx].isFavorite = newFavStatus;
+      renderContactsLists();
+      renderDirectory(document.getElementById("directory-search-input").value);
+      showToast("Favorite status updated (simulated)");
+      return;
+    }
+
+    try {
+      const res = await authFetch(`${API_BASE}/contacts/favorite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isFavorite: newFavStatus })
+      });
+      if (res.ok) {
+        showToast("Favorite status updated!");
+        await window.loadContactsAndRender();
+        renderDirectory(document.getElementById("directory-search-input").value);
+      }
+    } catch (err) {
+      showToast("Error updating favorite", "error");
+    }
+  };
+
+  window.editContactNickname = async function(id, currentNickname) {
+    const newNickname = prompt("Enter a nickname for this contact:", currentNickname);
+    if (newNickname === null) return;
+
+    const contact = cachedContacts.find(c => c.id === id);
+    if (!contact) return;
+
+    if (!isBackendConnected) {
+      contact.nickname = newNickname.trim() || null;
+      renderContactsLists();
+      renderDirectory(document.getElementById("directory-search-input").value);
+      showToast("Nickname updated (simulated)");
+      return;
+    }
+
+    try {
+      const res = await authFetch(`${API_BASE}/contacts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: contact.walletAddress,
+          name: contact.name,
+          nickname: newNickname.trim() || null,
+          isFavorite: contact.isFavorite
+        })
+      });
+      if (res.ok) {
+        showToast("Nickname updated!");
+        await window.loadContactsAndRender();
+        renderDirectory(document.getElementById("directory-search-input").value);
+      }
+    } catch (err) {
+      showToast("Error updating nickname", "error");
+    }
+  };
+
+  window.deleteContact = async function(id) {
+    if (!confirm("Are you sure you want to delete this contact?")) return;
+
+    if (!isBackendConnected) {
+      cachedContacts = cachedContacts.filter(c => c.id !== id);
+      renderContactsLists();
+      renderDirectory(document.getElementById("directory-search-input").value);
+      showToast("Contact deleted (simulated)");
+      return;
+    }
+
+    try {
+      const res = await authFetch(`${API_BASE}/contacts/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        showToast("Contact deleted!");
+        await window.loadContactsAndRender();
+        renderDirectory(document.getElementById("directory-search-input").value);
+      }
+    } catch (err) {
+      showToast("Error deleting contact", "error");
+    }
+  };
+
+  window.selectContactFromDirectory = function(name, address, initials) {
+    selectRecipient(name, address, initials, null);
+    closeAllModals();
+    showToast(`Selected: ${name}`);
+  };
+
+  // Wire search input in directory
+  const dirSearch = document.getElementById("directory-search-input");
+  if (dirSearch) {
+    dirSearch.oninput = (e) => {
+      renderDirectory(e.target.value);
+    };
+  }
+
+  // Wire contact form submit
+  const formContact = document.getElementById("form-contact");
+  if (formContact) {
+    formContact.onsubmit = async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("contact-name").value.trim();
+      const nickname = document.getElementById("contact-nickname").value.trim();
+      const walletAddress = document.getElementById("contact-address").value.trim();
+      const isFavorite = document.getElementById("contact-favorite").checked;
+
+      if (!name || !walletAddress) {
+        showToast("Please enter name and wallet address", "error");
+        return;
+      }
+
+      if (!isBackendConnected) {
+        cachedContacts.push({
+          id: `contact-${Date.now()}`,
+          name,
+          nickname: nickname || null,
+          walletAddress,
+          isFavorite,
+          lastTransactedAt: null
+        });
+        renderContactsLists();
+        closeAllModals();
+        formContact.reset();
+        showToast("Contact saved (simulated)");
+        return;
+      }
+
+      try {
+        const response = await authFetch(`${API_BASE}/contacts`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, nickname: nickname || null, walletAddress, isFavorite })
+        });
+        if (response.ok) {
+          showToast("Contact saved successfully!");
+          await window.loadContactsAndRender();
+          closeAllModals();
+          formContact.reset();
+        } else {
+          const data = await response.json();
+          showToast(data.error || "Failed to save contact", "error");
+        }
+      } catch (err) {
+        showToast("Error saving contact", "error");
+      }
+    };
+  }
+
+  // Hook directory rendering when directory button is clicked
+  const btnManage = document.getElementById("btn-manage-contacts");
+  if (btnManage) {
+    btnManage.addEventListener("click", () => {
+      renderDirectory("");
+    });
+  }
+  const btnViewAll = document.getElementById("btn-view-all-contacts");
+  if (btnViewAll) {
+    btnViewAll.addEventListener("click", () => {
+      renderDirectory("");
+    });
+  }
+
+  // Trigger initial fetch & render
+  window.loadContactsAndRender();
 
   // Deselect click listener
   const deselectBtn = document.getElementById("btn-send-deselect-recipient");
@@ -1851,19 +2412,110 @@ function setupMultiStepSend() {
       stepRecipient.classList.add("hidden");
       step2.classList.remove("hidden");
 
-      // Calculate fee in currency (equivalent of $0.42 USD network fee)
-      const feeInCurrency = 0.42 * exchangeRates[selectedCurrency];
-      const receiveVal = Math.max(0, amountVal - feeInCurrency);
+      // Initialize Settlement Optimizer calculation
+      const networkLoadSelect = document.getElementById("optimizer-network-load");
+      const gasPriceInput = document.getElementById("optimizer-gas-price");
+      const gasPriceVal = document.getElementById("optimizer-gas-price-val");
+      const optRoute = document.getElementById("optimizer-route");
+      const optFee = document.getElementById("optimizer-fee");
+      const optTime = document.getElementById("optimizer-time");
+
+      function calculateOptimization() {
+        const loadSelect = document.getElementById("optimizer-network-load");
+        const gasInput = document.getElementById("optimizer-gas-price");
+        if (!loadSelect || !gasInput) return;
+
+        const load = loadSelect.value;
+        const gasPrice = parseInt(gasInput.value);
+        if (gasPriceVal) gasPriceVal.innerText = `${gasPrice} Gwei`;
+
+        // Determine recommended route
+        let route = "Direct Bridge";
+        let estTime = "< 2 minutes";
+        let baseGasLimit = 65000;
+
+        if (load === "low") {
+          if (gasPrice < 35) {
+            route = "Delayed Gas-Saver";
+            estTime = "15 - 30 minutes";
+            baseGasLimit = 35000;
+          } else if (gasPrice < 75) {
+            route = "L2 Batch Settlement";
+            estTime = "2 - 5 minutes";
+            baseGasLimit = 45000;
+          } else {
+            route = "Direct Bridge";
+            estTime = "30 - 60 seconds";
+            baseGasLimit = 65000;
+          }
+        } else if (load === "medium") {
+          if (gasPrice < 55) {
+            route = "L2 Batch Settlement";
+            estTime = "5 - 10 minutes";
+            baseGasLimit = 45000;
+          } else {
+            route = "Direct Bridge";
+            estTime = "1 - 3 minutes";
+            baseGasLimit = 65000;
+          }
+        } else { // high load
+          if (gasPrice < 90) {
+            route = "Gas-Saver Queue";
+            estTime = "1 - 2 hours";
+            baseGasLimit = 35000;
+          } else {
+            route = "Direct Bridge";
+            estTime = "3 - 8 minutes";
+            baseGasLimit = 65000;
+          }
+        }
+
+        // Calculate fee in USD
+        let feeUsd = baseGasLimit * gasPrice * 1e-9 * 3500;
+        
+        // Apply load multiplier
+        if (load === "low") feeUsd *= 0.8;
+        else if (load === "high") feeUsd *= 1.8;
+
+        const feeInCurrency = feeUsd * exchangeRates[selectedCurrency];
+        const receiveVal = Math.max(0, amountVal - feeInCurrency);
+        const symbol = exchangeSymbols[selectedCurrency] || "$";
+
+        if (optRoute) optRoute.innerText = route;
+        if (optFee) optFee.innerText = `${symbol}${feeInCurrency.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        if (optTime) optTime.innerText = estTime;
+
+        // Sync with review screen's network fee
+        const reviewNetworkFee = document.getElementById("review-network-fee");
+        if (reviewNetworkFee) {
+          reviewNetworkFee.innerText = `${symbol}${feeInCurrency.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        // Also sync the recipient receives amount
+        const reviewReceiveAmount = document.getElementById("review-receive-amount");
+        if (reviewReceiveAmount) {
+          reviewReceiveAmount.innerText = receiveVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+      }
+
+      if (networkLoadSelect) {
+        const newSelect = networkLoadSelect.cloneNode(true);
+        networkLoadSelect.parentNode.replaceChild(newSelect, networkLoadSelect);
+        newSelect.addEventListener("change", calculateOptimization);
+      }
+      if (gasPriceInput) {
+        const newInput = gasPriceInput.cloneNode(true);
+        gasPriceInput.parentNode.replaceChild(newInput, gasPriceInput);
+        newInput.addEventListener("input", calculateOptimization);
+      }
 
       // Populate review details
       const reviewRecipientName = document.getElementById("review-recipient-name");
       const reviewRecipientAddress = document.getElementById("review-recipient-address");
       const reviewDisplayAmount = document.getElementById("review-display-amount");
       const reviewCurrencyCode = document.getElementById("review-currency-code");
-      const reviewReceiveAmount = document.getElementById("review-receive-amount");
       const reviewReceiveCurrency = document.getElementById("review-receive-currency");
       const reviewExchangeRate = document.getElementById("review-exchange-rate");
-      const reviewNetworkFee = document.getElementById("review-network-fee");
       const reviewAvatar = document.getElementById("review-avatar");
       const confirmBtnText = document.getElementById("btn-send-confirm-text");
 
@@ -1872,18 +2524,11 @@ function setupMultiStepSend() {
       
       if (reviewDisplayAmount) reviewDisplayAmount.innerText = amountVal.toLocaleString('en-US', { minimumFractionDigits: 2 });
       if (reviewCurrencyCode) reviewCurrencyCode.innerText = selectedCurrency;
-      
-      if (reviewReceiveAmount) reviewReceiveAmount.innerText = receiveVal.toLocaleString('en-US', { minimumFractionDigits: 2 });
       if (reviewReceiveCurrency) reviewReceiveCurrency.innerText = selectedCurrency;
 
       if (reviewExchangeRate) {
         const rateVal = exchangeRates[selectedCurrency].toLocaleString('en-US', { minimumFractionDigits: 4 });
         reviewExchangeRate.innerText = `1 USDC = ${rateVal} ${selectedCurrency}`;
-      }
-
-      if (reviewNetworkFee) {
-        const symbol = exchangeSymbols[selectedCurrency] || "$";
-        reviewNetworkFee.innerText = `${symbol}${feeInCurrency.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
       }
 
       if (confirmBtnText) {
@@ -1898,6 +2543,15 @@ function setupMultiStepSend() {
           reviewAvatar.src = "https://lh3.googleusercontent.com/aida-public/AB6AXuDezqGvfSpAezrFPU_94REi8MQvhnhtT7LsPho5HNHFVwx7JH042ufT2rp2jW0U6UqVYdhp3PJZ5ojPSKm1ZaujLHtM3xYIR4mACFSP0p1NxdN809cHKwApraHO3iuZdbjIMzJeI7rVS4lpsKzuYLD6DiVCDc150bhtO5kY-avqldEFty0hUYa0MUJFYh5-GPlHG7skL5qnVMyd2sgwJlrdlbx1sXctyOZIdsD5fEupupP4u_Wnhid3tP__TqS2g5ML1oJ0WDy-dyQ";
         }
       }
+
+      // Initial execution
+      setTimeout(() => {
+        const updatedLoadSelect = document.getElementById("optimizer-network-load");
+        const updatedGasInput = document.getElementById("optimizer-gas-price");
+        if (updatedLoadSelect) updatedLoadSelect.value = "medium";
+        if (updatedGasInput) updatedGasInput.value = "45";
+        calculateOptimization();
+      }, 0);
 
       setStepDotsActive(3);
     });
@@ -1942,6 +2596,133 @@ function setupMultiStepSend() {
     });
   }
 
+  function updateStatusScreen(status, txHash, amountVal, selectedCurrency, recipient, walletConnected) {
+    const successDisplayAmount = document.getElementById("success-display-amount");
+    const successRecipientName = document.getElementById("success-recipient-name");
+    const successPaymentMethod = document.getElementById("success-payment-method");
+    const successTxHash = document.getElementById("success-tx-hash");
+    const copyHashBtn = document.getElementById("btn-copy-hash");
+    
+    const statusTitle = document.querySelector("#send-step-3 h3");
+    const statusDesc = document.querySelector("#send-step-3 p.font-body-md");
+    const statusIconContainer = document.querySelector("#send-step-3 .relative.z-10");
+    const statusIconSvg = document.querySelector("#send-step-3 .relative.z-10 svg");
+
+    if (successDisplayAmount) {
+      successDisplayAmount.innerText = `${exchangeSymbols[selectedCurrency] || "$"}${amountVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    }
+    if (successRecipientName) {
+      successRecipientName.innerText = recipient;
+    }
+    if (successPaymentMethod) {
+      successPaymentMethod.innerText = walletConnected ? "Web3 Connected Wallet" : "Visa ending in •••• 8829";
+    }
+
+    const fullHash = txHash || "";
+    if (successTxHash) {
+      if (fullHash) {
+        successTxHash.innerText = fullHash.substring(0, 7) + "..." + fullHash.substring(fullHash.length - 5);
+        successTxHash.parentElement.style.display = "flex";
+      } else {
+        successTxHash.parentElement.style.display = "none";
+      }
+    }
+
+    // Click to copy handler
+    if (copyHashBtn && fullHash) {
+      const newCopyHashBtn = copyHashBtn.cloneNode(true);
+      copyHashBtn.parentNode.replaceChild(newCopyHashBtn, copyHashBtn);
+      newCopyHashBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(fullHash).then(() => {
+          showToast("Transaction hash copied to clipboard!");
+        }).catch(() => {
+          showToast("Failed to copy hash", "error");
+        });
+      });
+    }
+
+    // Share Receipt Handler
+    const shareBtn = document.getElementById("btn-send-share");
+    if (shareBtn) {
+      const newShareBtn = shareBtn.cloneNode(true);
+      shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
+
+      newShareBtn.addEventListener("click", () => {
+        let shareText = `Successfully transferred ${exchangeSymbols[selectedCurrency] || "$"}${amountVal.toLocaleString()} to ${recipient} via KorriPay!`;
+        if (status === "Pending") {
+          shareText = `Transfer of ${exchangeSymbols[selectedCurrency] || "$"}${amountVal.toLocaleString()} to ${recipient} is pending via KorriPay!`;
+        } else if (status === "Failed") {
+          shareText = `Transfer of ${exchangeSymbols[selectedCurrency] || "$"}${amountVal.toLocaleString()} to ${recipient} failed on KorriPay.`;
+        }
+
+        if (navigator.share) {
+          navigator.share({
+            title: 'KorriPay Receipt',
+            text: shareText,
+            url: window.location.href
+          }).then(() => {
+            showToast("Receipt shared!");
+          }).catch(() => {
+            showToast("Receipt sharing canceled");
+          });
+        } else {
+          navigator.clipboard.writeText(shareText).then(() => {
+            showToast("Receipt info copied! Ready to share.");
+          }).catch(() => {
+            showToast("Failed to copy receipt text", "error");
+          });
+        }
+      });
+    }
+
+    if (statusTitle && statusDesc) {
+      if (status === "Pending") {
+        statusTitle.innerText = "Transaction Pending";
+        statusTitle.className = "font-headline-lg-mobile text-headline-lg-mobile text-amber-600 dark:text-amber-400 mb-2 font-bold";
+        statusDesc.innerText = "Your transfer is being processed on the blockchain. We are waiting for confirmation.";
+        if (statusIconContainer) {
+          statusIconContainer.className = "relative z-10 w-24 h-24 bg-amber-100 dark:bg-amber-950/50 rounded-full flex items-center justify-center shadow-lg border border-amber-300/30";
+        }
+        if (statusIconSvg) {
+          statusIconSvg.innerHTML = `
+            <path class="animate-spin" d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke="currentColor" stroke-linecap="round"/>
+          `;
+          statusIconSvg.setAttribute("class", "w-12 h-12 text-amber-600 dark:text-amber-400");
+          statusIconSvg.setAttribute("viewBox", "0 0 24 24");
+        }
+      } else if (status === "Failed") {
+        statusTitle.innerText = "Transaction Failed";
+        statusTitle.className = "font-headline-lg-mobile text-headline-lg-mobile text-error dark:text-red-400 mb-2 font-bold";
+        statusDesc.innerText = "Your transaction failed or was reverted on-chain. Please verify and try again.";
+        if (statusIconContainer) {
+          statusIconContainer.className = "relative z-10 w-24 h-24 bg-error-container rounded-full flex items-center justify-center shadow-lg";
+        }
+        if (statusIconSvg) {
+          statusIconSvg.innerHTML = `
+            <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"></path>
+          `;
+          statusIconSvg.setAttribute("class", "w-12 h-12 text-on-error-container");
+          statusIconSvg.setAttribute("viewBox", "0 0 24 24");
+        }
+      } else {
+        // Success
+        statusTitle.innerText = "Transaction Successful";
+        statusTitle.className = "font-headline-lg-mobile text-headline-lg-mobile text-primary dark:text-primary-fixed mb-2 font-bold";
+        statusDesc.innerText = "Your money has been sent successfully. The recipient will receive it in minutes.";
+        if (statusIconContainer) {
+          statusIconContainer.className = "relative z-10 w-24 h-24 bg-secondary-container rounded-full flex items-center justify-center shadow-lg";
+        }
+        if (statusIconSvg) {
+          statusIconSvg.innerHTML = `
+            <path class="check-anim" d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+          `;
+          statusIconSvg.setAttribute("class", "w-12 h-12 text-on-secondary-container");
+          statusIconSvg.setAttribute("viewBox", "0 0 24 24");
+        }
+      }
+    }
+  }
+
   // Step 3 -> Step 4 (Confirm Payment)
   if (confirmBtn) {
     confirmBtn.addEventListener("click", async () => {
@@ -1965,83 +2746,106 @@ function setupMultiStepSend() {
         </div>
       `;
 
-      try {
-        await processTransaction("send", { recipient, amount: usdAmount });
+      let txHash = "";
+      const walletConnected = window.WalletService && window.WalletService.isConnected();
+
+      if (walletConnected) {
+        let payToken = "USDC";
+        if (selectedCurrency === "KRW") {
+          payToken = "MockKRW";
+        }
         
-        // Populate Success view fields
-        const successDisplayAmount = document.getElementById("success-display-amount");
-        const successRecipientName = document.getElementById("success-recipient-name");
-        const successPaymentMethod = document.getElementById("success-payment-method");
-        const successTxHash = document.getElementById("success-tx-hash");
-        const copyHashBtn = document.getElementById("btn-copy-hash");
-
-        if (successDisplayAmount) {
-          successDisplayAmount.innerText = `${exchangeSymbols[selectedCurrency]}${amountVal.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+        try {
+          // 1. Create blockchain transaction
+          txHash = await window.TokenService.sendSettlement(
+            payToken,
+            amountVal,
+            selectedRecipient.address || "0x0000000000000000000000000000000000000000"
+          );
+        } catch (contractErr) {
+          console.error("Contract call failed:", contractErr);
+          showToast(contractErr.message || "On-chain transaction rejected or failed", "error");
+          
+          // Reset confirm button
+          confirmBtn.disabled = false;
+          confirmBtn.classList.remove('opacity-80', 'pointer-events-none');
+          confirmBtn.innerHTML = `
+            <div class="absolute inset-0 bg-white/10 dark:bg-white/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">lock</span>
+            <span id="btn-send-confirm-text">Confirm &amp; Send</span>
+          `;
+          return;
         }
-        if (successRecipientName) {
-          successRecipientName.innerText = recipient;
+      } else {
+        // Offline / Simulation mode: generate mock hash
+        txHash = "0x" + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join("");
+      }
+
+      // 2. Store txHash & mark as Pending
+      let txId = null;
+      try {
+        const txResult = await processTransaction("send", { 
+          recipient, 
+          amount: usdAmount, 
+          txHash, 
+          status: "Pending",
+          recipientAddress: selectedRecipient ? selectedRecipient.address : null
+        });
+        if (txResult && txResult.transaction) {
+          txId = txResult.transaction.id;
         }
-        if (successPaymentMethod) {
-          successPaymentMethod.innerText = "Visa ending in •••• 8829";
-        }
-
-        // Generate a random transaction hash
-        const fullHash = "0x" + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join("");
-        if (successTxHash) {
-          successTxHash.innerText = fullHash.substring(0, 5) + "..." + fullHash.substring(37);
-        }
-
-        // Click to copy handler
-        if (copyHashBtn) {
-          const newCopyHashBtn = copyHashBtn.cloneNode(true);
-          copyHashBtn.parentNode.replaceChild(newCopyHashBtn, copyHashBtn);
-
-          newCopyHashBtn.addEventListener("click", () => {
-            navigator.clipboard.writeText(fullHash).then(() => {
-              showToast("Transaction hash copied to clipboard!");
-            }).catch(() => {
-              showToast("Failed to copy hash", "error");
-            });
-          });
-        }
-
-        // Share Receipt Handler
-        const shareBtn = document.getElementById("btn-send-share");
-        if (shareBtn) {
-          const newShareBtn = shareBtn.cloneNode(true);
-          shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
-
-          newShareBtn.addEventListener("click", () => {
-            if (navigator.share) {
-              navigator.share({
-                title: 'KorriPay Receipt',
-                text: `Successfully transferred ${exchangeSymbols[selectedCurrency]}${amountVal.toLocaleString()} to ${recipient} via KorriPay!`,
-                url: window.location.href
-              }).then(() => {
-                showToast("Receipt shared!");
-              }).catch(() => {
-                showToast("Receipt sharing canceled");
-              });
-            } else {
-              showToast("Receipt info copied! Ready to share.");
-            }
-          });
-        }
-
-        // Transition to Step 4 (Success status screen)
-        step2.classList.add("hidden");
-        step3.classList.remove("hidden");
-        setStepDotsActive(4); // All dots completed
       } catch (err) {
-        showToast(err.message || "Failed to process transaction", "error");
-      } finally {
-        confirmBtn.disabled = false;
-        confirmBtn.classList.remove('opacity-80', 'pointer-events-none');
-        confirmBtn.innerHTML = `
-          <div class="absolute inset-0 bg-white/10 dark:bg-white/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
-          <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">lock</span>
-          <span id="btn-send-confirm-text">Confirm &amp; Send</span>
-        `;
+        console.error("Failed to store pending transaction:", err);
+      }
+
+      // 3. Update status screen to Pending and transition
+      updateStatusScreen("Pending", txHash, amountVal, selectedCurrency, recipient, walletConnected);
+      step2.classList.add("hidden");
+      step3.classList.remove("hidden");
+      setStepDotsActive(4);
+
+      // Reset confirm button so it is ready for future actions
+      confirmBtn.disabled = false;
+      confirmBtn.classList.remove('opacity-80', 'pointer-events-none');
+      confirmBtn.innerHTML = `
+        <div class="absolute inset-0 bg-white/10 dark:bg-white/5 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">lock</span>
+        <span id="btn-send-confirm-text">Confirm &amp; Send</span>
+      `;
+
+      // 4. Wait for confirmation asynchronously
+      if (walletConnected) {
+        window.TokenService.waitForConfirmation(txHash)
+          .then(async (receipt) => {
+            const status = (receipt.status === "success" || receipt.status === 1) ? "Success" : "Failed";
+            await updateTransactionStatus(txId, txHash, status);
+            updateStatusScreen(status, txHash, amountVal, selectedCurrency, recipient, walletConnected);
+          })
+          .catch(async (confirmErr) => {
+            console.error("Transaction failed during confirmation:", confirmErr);
+            await updateTransactionStatus(txId, txHash, "Failed");
+            updateStatusScreen("Failed", txHash, amountVal, selectedCurrency, recipient, walletConnected);
+          });
+      } else {
+        // Simulation delay
+        setTimeout(async () => {
+          await updateTransactionStatus(txId, txHash, "Success");
+          updateStatusScreen("Success", txHash, amountVal, selectedCurrency, recipient, walletConnected);
+        }, 2000);
+      }
+    });
+  }
+
+  // Save recipient to contacts from success page
+  const saveContactBtn = document.getElementById("btn-send-save-contact");
+  if (saveContactBtn) {
+    saveContactBtn.addEventListener("click", () => {
+      if (selectedRecipient) {
+        document.getElementById("contact-name").value = selectedRecipient.name;
+        document.getElementById("contact-nickname").value = "";
+        document.getElementById("contact-address").value = selectedRecipient.address || "";
+        document.getElementById("contact-favorite").checked = false;
+        openModal("modal-contact");
       }
     });
   }
@@ -2305,6 +3109,12 @@ function setupKycVerification() {
         badge.className = "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-3 py-0.5 rounded-full font-label-sm";
         badge.innerText = "Pending Review";
       }
+      state.kycStatus = "Pending";
+      authFetch(`${API_BASE}/kyc`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Pending" })
+      }).catch(err => console.error("Error updating KYC status:", err));
       showToast("Documents submitted. Verification in progress.");
     });
   }
@@ -2333,6 +3143,12 @@ function setupKycVerification() {
         badge.className = "bg-secondary-container/20 text-on-secondary-container dark:text-secondary-fixed border border-secondary/20 px-3 py-0.5 rounded-full font-label-sm";
         badge.innerText = "Verified";
       }
+      state.kycStatus = "Verified";
+      authFetch(`${API_BASE}/kyc`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "Verified" })
+      }).catch(err => console.error("Error updating KYC status:", err));
       showToast("Identity Verification Successful!");
     });
   }
@@ -2350,3 +3166,868 @@ function setupKycVerification() {
     progressEl.style.width = "0%";
   }
 }
+
+function setupDemoMode() {
+  const btnJudgeDemo = document.getElementById("btn-judge-demo");
+  const modalDemo = document.getElementById("modal-demo");
+  const btnCloseDemo = document.getElementById("btn-close-demo");
+  const btnStartDemo = document.getElementById("btn-start-demo");
+  const scenarioSelect = document.getElementById("demo-scenario-select");
+  const descriptionEl = document.getElementById("demo-scenario-description");
+
+  if (!btnJudgeDemo || !modalDemo) return;
+
+  const demoScenarios = {
+    "1": {
+      description: "Scenario 1: Korean worker sends 100,000 KRW to family. Simulates fiat KYC validation, conversion to MockKRW stablecoin, and initiating a smart contract settlement transaction with active indexer sync.",
+      steps: [
+        { title: "KYC Verification", desc: "Checking sender identity, compliance logs, and liveness capture status" },
+        { title: "Wrapper Deposit", desc: "Depositing ₩100,000 to custodian and wrapping into MockKRW stablecoin" },
+        { title: "Smart Contract Settlement", desc: "Invoking initiateSettlement contract transaction on-chain via wallet keys" },
+        { title: "Indexer Capture", desc: "Indexer polling capturing the TransferCreated event and writing to PostgreSQL" },
+        { title: "Dashboard Reconciled", desc: "Synchronizing dashboard balances and ledger listings instantly" }
+      ],
+      runner: async function(sleep) {
+        setStepActive(1, "Verifying KYC...");
+        await sleep(1500);
+        setStepComplete(1, "Verified");
+
+        setStepActive(2, "Wrapping KRW...");
+        await sleep(1500);
+        const addRes = await authFetch(`${API_BASE}/transactions/add`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source: "Demo Seed (KRW)", amount: 71.43 })
+        });
+        if (!addRes.ok) throw new Error("Failed to add sender balance");
+        await loadData();
+        renderUI();
+        setStepComplete(2, "₩100,000 Wrapped");
+
+        setStepActive(3, "Settling...");
+        await sleep(1500);
+        let txHash = "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join("");
+        const sendRes = await authFetch(`${API_BASE}/transactions/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipient: "Family (Bank Payout)",
+            amount: 71.43,
+            txHash,
+            status: "Pending"
+          })
+        });
+        if (!sendRes.ok) throw new Error("Failed to register settlement transaction");
+        await loadData();
+        renderUI();
+        setStepComplete(3, "Settled");
+
+        setStepActive(4, "Indexing Event...");
+        await sleep(1500);
+        const updateRes = await authFetch(`${API_BASE}/transactions/update`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ txHash, status: "Success" })
+        });
+        if (!updateRes.ok) throw new Error("Failed to index transaction");
+        await loadData();
+        renderUI();
+        setStepComplete(4, "Event Indexed");
+
+        setStepActive(5, "Syncing UI...");
+        await sleep(1000);
+        setStepComplete(5, "Completed");
+      }
+    },
+    "2": {
+      description: "Scenario 2: Freelancer receives consulting payment. Demonstrates SIWE session authentication, invoicing, checkout verification, and immediate wallet balance crediting.",
+      steps: [
+        { title: "SIWE Authentication", desc: "Verifying secure session token creation via Web3 wallet signatures" },
+        { title: "Invoice Generation", desc: "Creating a unique invoice checkout link with specific payment amount" },
+        { title: "USDC Checkout Payout", desc: "Customer scanning link and executing on-chain USDC contract transfer" },
+        { title: "Prisma Ledger Log", desc: "Database capturing the payment and writing settlement log records" },
+        { title: "Balance Updates", desc: "Updating general ledger history and refreshing current portfolio" }
+      ],
+      runner: async function(sleep) {
+        setStepActive(1, "Signing SIWE...");
+        await sleep(1500);
+        setStepComplete(1, "Session Active");
+
+        setStepActive(2, "Invoicing...");
+        await sleep(1500);
+        const invoiceRes = await authFetch(`${API_BASE}/merchant/request`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: 150.00,
+            currency: "USDC",
+            description: "Consulting Services Payout"
+          })
+        });
+        if (!invoiceRes.ok) throw new Error("Failed to generate payment request");
+        const invoice = await invoiceRes.json();
+        setStepComplete(2, "Invoice Created");
+
+        setStepActive(3, "USDC Payout...");
+        await sleep(2000);
+        const payRes = await authFetch(`${API_BASE}/merchant/pay`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            requestId: invoice.id,
+            payerWallet: "0x1234567890123456789012345678901234567890"
+          })
+        });
+        if (!payRes.ok) throw new Error("Payment checkout failed");
+        setStepComplete(3, "USDC Settled");
+
+        setStepActive(4, "Indexing Ledger...");
+        await sleep(1500);
+        let txHash = "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join("");
+        const logRes = await authFetch(`${API_BASE}/transactions/send`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipient: "Freelancer Wallet",
+            amount: 150.00,
+            txHash,
+            status: "Success"
+          })
+        });
+        if (!logRes.ok) throw new Error("Failed to sync general ledger");
+        await loadData();
+        renderUI();
+        setStepComplete(4, "Ledger Synced");
+
+        setStepActive(5, "Refreshing...");
+        await sleep(1000);
+        setStepComplete(5, "Completed");
+      }
+    },
+    "3": {
+      description: "Scenario 3: Instore merchant accepts instant point-of-sale checkout. Generates payment QR code, simulates customer wallet checkout, and updates Merchant Terminal & Analytics dashboard.",
+      steps: [
+        { title: "Terminal Configuration", desc: "Setting checkout billing details, description, and currency" },
+        { title: "QR Code Rendering", desc: "Constructing link and drawing high-density QRIOUS QR canvas code" },
+        { title: "Storefront Checkout", desc: "Customer checking out locally using on-chain stablecoin contract" },
+        { title: "Merchant Ledger Payout", desc: "Registering settlement and saving record inside PostgreSQL via Prisma" },
+        { title: "Global Analytics Sync", desc: "Refreshing overall volume chart datasets and confirmation speed metrics" }
+      ],
+      runner: async function(sleep) {
+        setStepActive(1, "Configuring...");
+        await sleep(1500);
+        setStepComplete(1, "Configured");
+
+        setStepActive(2, "Drawing QR...");
+        await sleep(1500);
+        const invoiceRes = await authFetch(`${API_BASE}/merchant/request`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: 45.00,
+            currency: "MockKRW",
+            description: "Table 4 Instore Checkout"
+          })
+        });
+        if (!invoiceRes.ok) throw new Error("Failed to generate QR payment link");
+        const invoice = await invoiceRes.json();
+        setStepComplete(2, "QR Code Displayed");
+
+        setStepActive(3, "Processing Payout...");
+        await sleep(2000);
+        const payRes = await authFetch(`${API_BASE}/merchant/pay`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            requestId: invoice.id,
+            payerWallet: "0x7890123456789012345678901234567890123456"
+          })
+        });
+        if (!payRes.ok) throw new Error("QR Payment failed");
+        setStepComplete(3, "Paid via Wallet");
+
+        setStepActive(4, "Saving Settlement...",);
+        await sleep(1500);
+        await loadMerchantData();
+        setStepComplete(4, "Settlement Logged");
+
+        setStepActive(5, "Syncing Analytics...");
+        await sleep(1000);
+        if (typeof loadAnalyticsData === "function") {
+          await loadAnalyticsData();
+        }
+        setStepComplete(5, "Completed");
+      }
+    }
+  };
+
+  btnJudgeDemo.addEventListener("click", () => {
+    modalDemo.classList.remove("hidden");
+    updateScenarioUI();
+    resetDemoSteps();
+  });
+
+  btnCloseDemo.addEventListener("click", () => {
+    modalDemo.classList.add("hidden");
+  });
+
+  scenarioSelect.addEventListener("change", () => {
+    updateScenarioUI();
+    resetDemoSteps();
+  });
+
+  function updateScenarioUI() {
+    const val = scenarioSelect.value;
+    const scenario = demoScenarios[val];
+    if (!scenario) return;
+
+    if (descriptionEl) descriptionEl.textContent = scenario.description;
+
+    scenario.steps.forEach((step, index) => {
+      const stepNum = index + 1;
+      const stepEl = document.getElementById(`demo-step-${stepNum}`);
+      if (stepEl) {
+        const titleEl = stepEl.querySelector(".demo-step-title");
+        const descEl = stepEl.querySelector(".demo-step-desc");
+        if (titleEl) titleEl.textContent = step.title;
+        if (descEl) descEl.textContent = step.desc;
+      }
+    });
+  }
+
+  btnStartDemo.addEventListener("click", async () => {
+    btnStartDemo.disabled = true;
+    btnStartDemo.innerText = "Running Scenario...";
+    btnCloseDemo.style.pointerEvents = "none";
+    scenarioSelect.disabled = true;
+
+    try {
+      const val = scenarioSelect.value;
+      const scenario = demoScenarios[val];
+      if (scenario) {
+        const sleep = ms => new Promise(r => setTimeout(r, ms));
+        await scenario.runner(sleep);
+      }
+    } catch (error) {
+      console.error("Demo failed:", error);
+      showToast("Demo flow failed. Check console for details.");
+    } finally {
+      btnStartDemo.disabled = false;
+      btnStartDemo.innerText = "Run Scenario";
+      btnCloseDemo.style.pointerEvents = "auto";
+      scenarioSelect.disabled = false;
+    }
+  });
+
+  function resetDemoSteps() {
+    for (let i = 1; i <= 5; i++) {
+      const stepEl = document.getElementById(`demo-step-${i}`);
+      if (stepEl) {
+        stepEl.style.opacity = "0.4";
+        const iconEl = stepEl.querySelector(".demo-step-icon");
+        const statusEl = stepEl.querySelector(".demo-step-status");
+        if (iconEl) {
+          iconEl.className = "demo-step-icon w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold";
+          iconEl.innerHTML = i;
+        }
+        if (statusEl) {
+          statusEl.innerText = "Pending";
+          statusEl.className = "demo-step-status text-body-sm font-bold text-primary";
+        }
+      }
+    }
+  }
+
+  function setStepActive(stepNum, statusText = "Active") {
+    const stepEl = document.getElementById(`demo-step-${stepNum}`);
+    if (stepEl) {
+      stepEl.style.opacity = "1.0";
+      const iconEl = stepEl.querySelector(".demo-step-icon");
+      const statusEl = stepEl.querySelector(".demo-step-status");
+      if (iconEl) {
+        iconEl.className = "demo-step-icon w-8 h-8 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold animate-pulse";
+        iconEl.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">sync</span>`;
+      }
+      if (statusEl) {
+        statusEl.innerText = statusText;
+        statusEl.className = "demo-step-status text-body-sm font-bold text-amber-500";
+      }
+    }
+  }
+
+  function setStepComplete(stepNum, statusText = "Success") {
+    const stepEl = document.getElementById(`demo-step-${stepNum}`);
+    if (stepEl) {
+      stepEl.style.opacity = "1.0";
+      const iconEl = stepEl.querySelector(".demo-step-icon");
+      const statusEl = stepEl.querySelector(".demo-step-status");
+      if (iconEl) {
+        iconEl.className = "demo-step-icon w-8 h-8 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center font-bold";
+        iconEl.innerHTML = `<span class="material-symbols-outlined text-[16px]">check</span>`;
+      }
+      if (statusEl) {
+        statusEl.innerText = statusText;
+        statusEl.className = "demo-step-status text-body-sm font-bold text-green-500";
+      }
+    }
+  }
+}
+
+// ── Explorer Logic ──────────────────────────────────────────────────
+let explorerSettlements = [];
+
+async function loadExplorerData() {
+  const tableBody = document.getElementById("explorer-table-body");
+  if (!tableBody) return;
+
+  // Show loading spinner
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="8" class="p-12 text-center text-outline dark:text-outline-variant">
+        <div class="flex flex-col items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-4xl animate-spin text-primary">autorenew</span>
+          <p class="font-semibold text-sm">Loading indexed records...</p>
+        </div>
+      </td>
+    </tr>
+  `;
+
+  try {
+    const res = await authFetch(`${API_BASE}/explorer`);
+    if (!res.ok) throw new Error("Failed to fetch explorer data");
+    explorerSettlements = await res.json();
+    renderExplorer();
+  } catch (err) {
+    console.error("[Explorer] Error loading settlements:", err);
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="8" class="p-12 text-center text-error font-semibold">
+          <span class="material-symbols-outlined text-4xl">error</span>
+          <p class="mt-2">Failed to load settlements from indexer database.</p>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function renderExplorer() {
+  const tableBody = document.getElementById("explorer-table-body");
+  if (!tableBody) return;
+
+  const searchQuery = (document.getElementById("explorer-search-input")?.value || "").toLowerCase().trim();
+  const filterStatus = document.getElementById("explorer-filter-status")?.value || "all";
+
+  // Filter
+  const filtered = explorerSettlements.filter(tx => {
+    // Status filter
+    if (filterStatus !== "all" && tx.status !== filterStatus) {
+      return false;
+    }
+
+    // Search query filter: txHash, wallet (initiator), settlement id
+    if (searchQuery) {
+      const idMatch = tx.id.toString().toLowerCase().includes(searchQuery);
+      const initiatorMatch = tx.initiator.toLowerCase().includes(searchQuery);
+      const txHashMatch = tx.txHash && tx.txHash.toLowerCase().includes(searchQuery);
+      const confirmedTxHashMatch = tx.confirmedTxHash && tx.confirmedTxHash.toLowerCase().includes(searchQuery);
+      return idMatch || initiatorMatch || txHashMatch || confirmedTxHashMatch;
+    }
+
+    return true;
+  });
+
+  // Update Stats Cards
+  const totalEl = document.getElementById("explorer-stat-total");
+  const pendingEl = document.getElementById("explorer-stat-pending");
+  const completedEl = document.getElementById("explorer-stat-completed");
+
+  if (totalEl) totalEl.innerText = filtered.length;
+  if (pendingEl) pendingEl.innerText = filtered.filter(tx => tx.status === "Pending").length;
+  if (completedEl) completedEl.innerText = filtered.filter(tx => tx.status === "Completed").length;
+
+  if (filtered.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="8" class="p-12 text-center text-outline dark:text-outline-variant">
+          <span class="material-symbols-outlined text-4xl">search_off</span>
+          <p class="mt-2">No matching settlement transactions found.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tableBody.innerHTML = filtered.map(tx => {
+    const shortInitiator = tx.initiator ? `${tx.initiator.substring(0, 6)}...${tx.initiator.substring(tx.initiator.length - 4)}` : "Unknown";
+    
+    // Parse recipient details if possible
+    let recipientDisplay = tx.recipientDetails || "Unknown";
+    if (recipientDisplay.startsWith("Recipient Bank: ")) {
+      recipientDisplay = recipientDisplay.replace("Recipient Bank: ", "");
+    }
+
+    const txHashToUse = tx.confirmedTxHash || tx.txHash || "";
+    const shortTxHash = txHashToUse ? `${txHashToUse.substring(0, 6)}...${txHashToUse.substring(txHashToUse.length - 4)}` : "N/A";
+    
+    const formattedDate = new Date(tx.createdAt).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+
+    const statusBadge = tx.status === "Completed" || tx.status === "Success"
+      ? `<span class="px-3 py-1 bg-green-500/10 text-green-500 dark:text-green-400 border border-green-500/20 rounded-full text-xs font-bold flex items-center gap-1 w-max"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Completed</span>`
+      : `<span class="px-3 py-1 bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/20 rounded-full text-xs font-bold flex items-center gap-1 w-max"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>Pending</span>`;
+
+    // Convert amount from wei or base format
+    let amountDisplay = tx.amount;
+    try {
+      if (tx.amount.length > 10) {
+        amountDisplay = (parseFloat(tx.amount) / 1e18).toLocaleString(undefined, { maximumFractionDigits: 4 });
+      } else {
+        amountDisplay = parseFloat(tx.amount).toLocaleString(undefined, { maximumFractionDigits: 2 });
+      }
+    } catch (e) {}
+
+    // Extract symbol
+    const toTokenDisplay = tx.toToken === "0x0000000000000000000000000000000000000000" ? "ETH" : "MockKRW";
+
+    return `
+      <tr class="hover:bg-surface-container dark:hover:bg-inverse-surface/30 transition-colors">
+        <td class="p-4 font-bold text-primary dark:text-primary-fixed">#${tx.id}</td>
+        <td class="p-4 font-mono text-xs cursor-pointer text-on-surface-variant hover:text-primary" title="${tx.initiator}" onclick="copyTextToClipboard('${tx.initiator}')">${shortInitiator}</td>
+        <td class="p-4 text-xs font-semibold">${recipientDisplay}</td>
+        <td class="p-4 font-bold">${amountDisplay} ${toTokenDisplay}</td>
+        <td class="p-4 text-xs font-medium text-outline">Hardhat Local</td>
+        <td class="p-4">${statusBadge}</td>
+        <td class="p-4 text-xs text-on-surface-variant dark:text-outline-variant">${formattedDate}</td>
+        <td class="p-4 font-mono text-xs text-primary hover:underline cursor-pointer" onclick="copyTextToClipboard('${txHashToUse}')" title="Click to copy transaction hash">${shortTxHash}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+// Utility function to copy to clipboard
+function copyTextToClipboard(text) {
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    showToast("Copied to clipboard!");
+  }).catch(err => {
+    console.error("Could not copy text: ", err);
+  });
+}
+
+// Set up event listeners for filters
+function setupExplorerListeners() {
+  const searchInput = document.getElementById("explorer-search-input");
+  const statusFilter = document.getElementById("explorer-filter-status");
+  const refreshBtn = document.getElementById("btn-refresh-explorer");
+
+  if (searchInput) {
+    searchInput.addEventListener("input", renderExplorer);
+  }
+  if (statusFilter) {
+    statusFilter.addEventListener("change", renderExplorer);
+  }
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", loadExplorerData);
+  }
+}
+
+// ── Merchant Pay Logic ────────────────────────────────────────────────
+let merchantSettlements = [];
+
+async function loadMerchantData() {
+  const tableBody = document.getElementById("merchant-settlements-body");
+  if (!tableBody) return;
+
+  try {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="p-8 text-center text-outline dark:text-outline-variant">
+          <span class="material-symbols-outlined text-3xl animate-spin">autorenew</span>
+          <p class="mt-2 text-xs">Loading settlement records...</p>
+        </td>
+      </tr>
+    `;
+
+    const res = await authFetch(`${API_BASE}/merchant/settlements`);
+    if (!res.ok) throw new Error("Failed to fetch merchant settlements");
+    merchantSettlements = await res.json();
+    renderMerchantSettlements();
+  } catch (err) {
+    console.error("[Merchant] Error loading settlements:", err);
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="p-8 text-center text-error font-medium">
+          <span class="material-symbols-outlined text-3xl">error</span>
+          <p class="mt-2 text-xs">Failed to load settlements. Please log in or try again.</p>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function renderMerchantSettlements() {
+  const tableBody = document.getElementById("merchant-settlements-body");
+  if (!tableBody) return;
+
+  if (merchantSettlements.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="5" class="p-8 text-center text-outline dark:text-outline-variant">
+          <p class="text-sm">No settlement history yet.</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tableBody.innerHTML = merchantSettlements.map(settlement => {
+    const memo = settlement.paymentRequest ? settlement.paymentRequest.description : "Payment Request";
+    const amountVal = settlement.amount;
+    const currency = settlement.currency;
+    const status = settlement.status;
+    const dateFormatted = new Date(settlement.createdAt).toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+    
+    const txHash = settlement.txHash || "";
+    const shortTxHash = txHash ? `${txHash.substring(0, 6)}...${txHash.substring(txHash.length - 4)}` : "N/A";
+
+    const statusBadge = status === "Settled"
+      ? `<span class="px-3 py-1 bg-green-500/10 text-green-500 dark:text-green-400 border border-green-500/20 rounded-full text-xs font-bold flex items-center gap-1 w-max"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Settled</span>`
+      : `<span class="px-3 py-1 bg-amber-500/10 text-amber-500 dark:text-amber-400 border border-amber-500/20 rounded-full text-xs font-bold flex items-center gap-1 w-max"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>Processing</span>`;
+
+    return `
+      <tr class="hover:bg-surface-container dark:hover:bg-inverse-surface/30 transition-colors">
+        <td class="p-3 font-semibold">${memo}</td>
+        <td class="p-3 font-extrabold text-emerald-500">${amountVal.toLocaleString(undefined, { minimumFractionDigits: 2 })} ${currency}</td>
+        <td class="p-3">${statusBadge}</td>
+        <td class="p-3 text-xs text-on-surface-variant dark:text-outline-variant">${dateFormatted}</td>
+        <td class="p-3 font-mono text-xs text-primary hover:underline cursor-pointer" onclick="copyTextToClipboard('${txHash}')" title="Click to copy hash">${shortTxHash}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function setupMerchant() {
+  const form = document.getElementById("form-merchant-request");
+  if (!form) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const amountInput = document.getElementById("merchant-amount");
+    const currencySelect = document.getElementById("merchant-currency");
+    const descInput = document.getElementById("merchant-description");
+
+    const amount = parseFloat(amountInput.value);
+    const currency = currencySelect.value;
+    const description = descInput.value;
+
+    const submitBtn = form.querySelector("button[type='submit']");
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Generating Request...";
+
+    try {
+      const res = await authFetch(`${API_BASE}/merchant/request`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount, currency, description })
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to generate request");
+      }
+
+      const request = await res.json();
+      
+      // Generate payment checkout URL
+      const paymentLink = `${window.location.origin}/pay.html?id=${request.id}`;
+
+      // Show result box
+      const resultBox = document.getElementById("merchant-request-result");
+      if (resultBox) {
+        resultBox.classList.remove("hidden");
+      }
+
+      // Set link value
+      const linkInput = document.getElementById("merchant-link-input");
+      if (linkInput) {
+        linkInput.value = paymentLink;
+      }
+
+      // Render QR Code using QRIOUS
+      const qrCanvas = document.getElementById("merchant-qr-canvas");
+      if (qrCanvas && window.QRious) {
+        new window.QRious({
+          element: qrCanvas,
+          value: paymentLink,
+          size: 160,
+          background: '#ffffff',
+          foreground: '#000000',
+          level: 'H'
+        });
+      }
+
+      // Reset form fields
+      amountInput.value = "";
+      descInput.value = "";
+      showToast("Payment request generated!");
+      
+      // Reload history immediately to show the new (pending) checkout if wanted
+      loadMerchantData();
+    } catch (err) {
+      alert(err.message || "Failed to create payment request");
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.innerText = "Generate Request";
+    }
+  });
+
+  // Copy Link Button
+  const copyBtn = document.getElementById("btn-copy-merchant-link");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", () => {
+      const linkInput = document.getElementById("merchant-link-input");
+      if (linkInput && linkInput.value) {
+        copyTextToClipboard(linkInput.value);
+      }
+    });
+  }
+
+  // Refresh Settlement History
+  const refreshBtn = document.getElementById("btn-refresh-merchant");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", loadMerchantData);
+  }
+}
+
+// ── Analytics Logic ──────────────────────────────────────────────────
+let analyticsData = null;
+let dailyVolumeChart = null;
+let weeklyVolumeChart = null;
+let assetDistributionChart = null;
+let settlementSpeedChart = null;
+
+async function loadAnalyticsData() {
+  try {
+    const res = await authFetch(`${API_BASE}/analytics`);
+    if (!res.ok) throw new Error("Failed to fetch analytics data");
+    analyticsData = await res.json();
+    renderAnalyticsUI();
+  } catch (err) {
+    console.error("[Analytics] Error loading analytics:", err);
+    showToast("Error loading analytics data");
+  }
+}
+
+function renderAnalyticsUI() {
+  if (!analyticsData) return;
+
+  const { metrics, charts } = analyticsData;
+
+  // 1. Render Metric Cards
+  const volumeEl = document.getElementById("analytics-stat-volume");
+  if (volumeEl) volumeEl.textContent = `$${metrics.totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  
+  const txsEl = document.getElementById("analytics-stat-txs");
+  if (txsEl) txsEl.textContent = metrics.totalTransactions.toLocaleString();
+  
+  const usersEl = document.getElementById("analytics-stat-users");
+  if (usersEl) usersEl.textContent = metrics.activeUsers.toString();
+  
+  const timeEl = document.getElementById("analytics-stat-time");
+  if (timeEl) timeEl.textContent = `${metrics.avgSettlementTime}s`;
+  
+  const savedEl = document.getElementById("analytics-stat-saved");
+  if (savedEl) savedEl.textContent = `$${(metrics.avgFeeSaved * metrics.totalTransactions).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  
+  const successEl = document.getElementById("analytics-stat-success");
+  if (successEl) successEl.textContent = `${metrics.successRate}%`;
+
+  // 2. Determine theme settings for Chart.js
+  const isDark = document.documentElement.classList.contains("dark");
+  const textColor = isDark ? "#cbd5e1" : "#334155";
+  const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.05)";
+  const primaryColor = "#4f46e5";
+  const secondaryColor = "#10b981";
+  const warningColor = "#f59e0b";
+  const dangerColor = "#ef4444";
+
+  // Shared font config
+  const fontConfig = {
+    family: "Inter, system-ui, -apple-system, sans-serif",
+    size: 11
+  };
+
+  // Helper to destroy charts cleanly
+  const destroyChart = (chart) => {
+    if (chart) chart.destroy();
+  };
+
+  // Chart 1: Daily Volume (Line Chart with Gradient Fill)
+  const ctxDaily = document.getElementById("chart-daily-volume")?.getContext("2d");
+  if (ctxDaily) {
+    destroyChart(dailyVolumeChart);
+    
+    // Create gradient
+    const gradient = ctxDaily.createLinearGradient(0, 0, 0, 200);
+    gradient.addColorStop(0, "rgba(79, 70, 229, 0.3)");
+    gradient.addColorStop(1, "rgba(79, 70, 229, 0.0)");
+
+    dailyVolumeChart = new Chart(ctxDaily, {
+      type: "line",
+      data: {
+        labels: charts.dailyVolume.map(d => d.label),
+        datasets: [{
+          label: "Volume (USD)",
+          data: charts.dailyVolume.map(d => d.value),
+          borderColor: primaryColor,
+          borderWidth: 3,
+          backgroundColor: gradient,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: primaryColor,
+          pointHoverRadius: 7
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            padding: 12,
+            backgroundColor: isDark ? "#1e293b" : "#ffffff",
+            titleColor: isDark ? "#ffffff" : "#1e293b",
+            bodyColor: isDark ? "#cbd5e1" : "#475569",
+            borderColor: "rgba(0, 0, 0, 0.1)",
+            borderWidth: 1
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: textColor, font: fontConfig }
+          },
+          y: {
+            grid: { color: gridColor },
+            ticks: { color: textColor, font: fontConfig }
+          }
+        }
+      }
+    });
+  }
+
+  // Chart 2: Asset Distribution (Doughnut Chart)
+  const ctxAsset = document.getElementById("chart-asset-distribution")?.getContext("2d");
+  if (ctxAsset) {
+    destroyChart(assetDistributionChart);
+    assetDistributionChart = new Chart(ctxAsset, {
+      type: "doughnut",
+      data: {
+        labels: charts.assetDistribution.map(d => d.label),
+        datasets: [{
+          data: charts.assetDistribution.map(d => d.value),
+          backgroundColor: [secondaryColor, primaryColor, warningColor, dangerColor],
+          borderWidth: isDark ? 2 : 1,
+          borderColor: isDark ? "#1e293b" : "#ffffff"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: { color: textColor, font: fontConfig, boxWidth: 12 }
+          }
+        },
+        cutout: "70%"
+      }
+    });
+  }
+
+  // Chart 3: Weekly Volume (Bar Chart)
+  const ctxWeekly = document.getElementById("chart-weekly-volume")?.getContext("2d");
+  if (ctxWeekly) {
+    destroyChart(weeklyVolumeChart);
+    weeklyVolumeChart = new Chart(ctxWeekly, {
+      type: "bar",
+      data: {
+        labels: charts.weeklyVolume.map(w => w.label),
+        datasets: [{
+          label: "Weekly Volume (USD)",
+          data: charts.weeklyVolume.map(w => w.value),
+          backgroundColor: "rgba(16, 185, 129, 0.85)",
+          borderRadius: 6,
+          hoverBackgroundColor: secondaryColor
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: textColor, font: fontConfig }
+          },
+          y: {
+            grid: { color: gridColor },
+            ticks: { color: textColor, font: fontConfig }
+          }
+        }
+      }
+    });
+  }
+
+  // Chart 4: Settlement Speed (Horizontal Bar Chart)
+  const ctxSpeed = document.getElementById("chart-settlement-speed")?.getContext("2d");
+  if (ctxSpeed) {
+    destroyChart(settlementSpeedChart);
+    settlementSpeedChart = new Chart(ctxSpeed, {
+      type: "bar",
+      data: {
+        labels: charts.settlementSpeed.map(s => s.label),
+        datasets: [{
+          label: "Transactions Count",
+          data: charts.settlementSpeed.map(s => s.value),
+          backgroundColor: "rgba(245, 158, 11, 0.85)",
+          borderRadius: 6,
+          hoverBackgroundColor: warningColor
+        }]
+      },
+      options: {
+        indexAxis: "y",
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: {
+            grid: { color: gridColor },
+            ticks: { color: textColor, font: fontConfig }
+          },
+          y: {
+            grid: { display: false },
+            ticks: { color: textColor, font: fontConfig }
+          }
+        }
+      }
+    });
+  }
+}
+
+function setupAnalytics() {
+  const refreshBtn = document.getElementById("btn-refresh-analytics");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", loadAnalyticsData);
+  }
+}
+

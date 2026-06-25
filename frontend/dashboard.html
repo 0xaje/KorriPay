@@ -13,6 +13,10 @@
   <title>KorriPay Dashboard</title>
   <!-- Tailwind CSS CDN with plugins -->
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <!-- QR Code library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+  <!-- Interactive Charting library -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
@@ -165,6 +169,18 @@
             <span class="material-symbols-outlined">account_balance_wallet</span>
             <span class="font-label-md text-label-md">Portfolio</span>
           </a>
+          <a id="side-nav-explorer" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
+            <span class="material-symbols-outlined">explore</span>
+            <span class="font-label-md text-label-md">Explorer</span>
+          </a>
+          <a id="side-nav-merchant" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
+            <span class="material-symbols-outlined">storefront</span>
+            <span class="font-label-md text-label-md">Merchant</span>
+          </a>
+          <a id="side-nav-analytics" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
+            <span class="material-symbols-outlined">query_stats</span>
+            <span class="font-label-md text-label-md">Analytics</span>
+          </a>
           <a id="side-nav-profile" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
             <span class="material-symbols-outlined">person</span>
             <span class="font-label-md text-label-md">Profile</span>
@@ -178,7 +194,7 @@
           <img class="w-10 h-10 rounded-full object-cover border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjU_oa8Gj5nPXicWEicktSvkVShudC8QRJoUIVwWtWtHO-NK0STn4sBDKySKN745dlhyUA4FyqdhBn469mw8qYR5Hsfm7TE_g8GJWXg2ydPTb6fibQuns2T5-KReB4z7r38VXkoOkrV28o6AwzyEbMQ7huWeq6EXOX2MsLkJ3W8Mll4xloeYmiCGUYMotWx0nyz2YDQ2EN1dThfUEnAIk1D9Yd4GB-CdxkdK4ZLj3ZBmekvOlzIttOX9vJN9P_2Y_meomQmeaM3tA" alt="Profile"/>
           <div class="overflow-hidden">
             <span class="block font-label-md text-label-md text-on-surface dark:text-white truncate font-bold">Oyeolorun Paul</span>
-            <span class="block text-xs text-outline dark:text-outline-variant truncate">0x71C8b...49A2</span>
+            <span id="sidebar-wallet-address" class="block text-xs text-outline dark:text-outline-variant truncate">0x71C8b...49A2</span>
           </div>
         </div>
         <button id="side-btn-disconnect" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-error/20 text-error hover:bg-error/10 active:scale-95 transition-all text-sm font-semibold">
@@ -404,7 +420,7 @@
                   <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
                   <input id="send-recipient-search" class="w-full h-14 bg-surface-container-low dark:bg-on-background/10 border-2 border-transparent focus:border-primary dark:focus:border-primary-fixed focus:bg-white dark:focus:bg-on-background/20 rounded-xl pl-12 pr-4 transition-all outline-none dark:text-white" placeholder="Search by name, @username, or wallet address..." type="text"/>
                 </div>
-                <button type="button" class="h-14 px-6 bg-surface-container-high dark:bg-on-background/20 hover:bg-surface-container-highest dark:hover:bg-on-background/30 text-primary dark:text-primary-fixed font-bold rounded-xl flex items-center justify-center gap-2 transition-colors">
+                <button id="btn-add-contact" type="button" class="h-14 px-6 bg-surface-container-high dark:bg-on-background/20 hover:bg-surface-container-highest dark:hover:bg-on-background/30 text-primary dark:text-primary-fixed font-bold rounded-xl flex items-center justify-center gap-2 transition-colors">
                   <span class="material-symbols-outlined">person_add</span>
                   <span>New Recipient</span>
                 </button>
@@ -418,41 +434,13 @@
                   <span class="material-symbols-outlined text-secondary dark:text-secondary-fixed-dim" style="font-variation-settings: 'FILL' 1;">star</span>
                   Favorites
                 </h3>
-                <button type="button" class="text-primary dark:text-primary-fixed font-label-md hover:underline">Manage</button>
+                <button type="button" class="text-primary dark:text-primary-fixed font-label-md hover:underline" id="btn-manage-contacts">Manage</button>
               </div>
               
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-sm">
-                <!-- Favorite Card 1 -->
-                <div class="send-recipient-card cursor-pointer group bg-white dark:bg-inverse-surface border border-outline-variant dark:border-outline/10 p-md rounded-xl flex flex-col items-center text-center hover:border-secondary dark:hover:border-secondary-fixed-dim hover:shadow-md transition-all" data-name="Elena Gilbert" data-address="0x4a2a...e92f" data-email="elena.g@mysticfalls.com" data-initials="EG">
-                  <div class="w-16 h-16 rounded-full overflow-hidden mb-3 border-2 border-transparent group-hover:border-secondary dark:group-hover:border-secondary-fixed-dim transition-colors">
-                    <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcTKEUwrbq1ef-k5okG51-ZooUmzVDy1jkyu8UeXFnnSu4Rqv--tX6C9pC8DOPxTpJKykHQtlJHNudXP5rhMn514ZJZ8dSRaCpkjcSZ42ZLomhPkHzJHPBJRIsZfDTvZQzZj6NybK5tEoEZXPzrEjvggGzYzKaPNgpIv188MTA54nVXkQ8W9mo5Gjsr8tSAyGYEm1GqRCKFk7GVO20pswcZkak_f-maqvvrZ5eiftO7xbxalWxZlDKodxY6e5A57n1Tqs9nxAciA4" alt="Elena Gilbert Avatar"/>
-                  </div>
-                  <p class="font-bold text-on-surface dark:text-white truncate w-full">Elena Gilbert</p>
-                  <p class="text-xs text-on-surface-variant dark:text-outline-variant font-mono">0x4a...e92f</p>
-                </div>
-                <!-- Favorite Card 2 -->
-                <div class="send-recipient-card cursor-pointer group bg-white dark:bg-inverse-surface border border-outline-variant dark:border-outline/10 p-md rounded-xl flex flex-col items-center text-center hover:border-secondary dark:hover:border-secondary-fixed-dim hover:shadow-md transition-all" data-name="Marcus Vane" data-address="0x12b5...a0bc" data-email="marcus@vaneventures.com" data-initials="MV">
-                  <div class="w-16 h-16 rounded-full overflow-hidden mb-3 border-2 border-transparent group-hover:border-secondary dark:group-hover:border-secondary-fixed-dim transition-colors">
-                    <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXB2VPy1gZUMI-c5aN0HsWorXNJ80fghgHRm8Xqcf1NxR-gYTc0AH_OFoIht_QPASec5i_HOWsrt3oATsbgaaT5wBBtTdsPL6n0te3fa4BzncwbJr25tN-hSd2uJt76AFN7Y9-krehW-WZnmrKaLdKPBF5nYOzQvgYuZMB55bGo5iQEHnnVQ-DTQXMhu5_4tZbI9eE4vGFiP8wkb25ybbtkyiR88rwhHGoxA1G-Lg-67yUfaDpu2iv8a5gztfjqVGSyYSp5geA2Mc" alt="Marcus Vane Avatar"/>
-                  </div>
-                  <p class="font-bold text-on-surface dark:text-white truncate w-full">Marcus Vane</p>
-                  <p class="text-xs text-on-surface-variant dark:text-outline-variant font-mono">0x12...a0bc</p>
-                </div>
-                <!-- Favorite Card 3 -->
-                <div class="send-recipient-card cursor-pointer group bg-white dark:bg-inverse-surface border border-outline-variant dark:border-outline/10 p-md rounded-xl flex flex-col items-center text-center hover:border-secondary dark:hover:border-secondary-fixed-dim hover:shadow-md transition-all" data-name="Saira Khan" data-address="0xf92c...33d1" data-email="saira.k@designco.in" data-initials="SK">
-                  <div class="w-16 h-16 rounded-full overflow-hidden mb-3 border-2 border-transparent group-hover:border-secondary dark:group-hover:border-secondary-fixed-dim transition-colors">
-                    <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCYF2alh6LXhnUYvaSjezr9j2nI5Wh5F-QTh9td64kw-hXlA5QjD5PyEwwWhksqIi46KIKm3u5PgTHOE1HWuX4nb5S3hk8b-gzi0qa5oHEAt4GZg0PVd-o0mBut8qiKww6IKcvb_9jFMlxeOy-lhBSrKiw7iP9wuiTPISiv3S2KYoVlhr1N_PC8U5Mxr0pINwk3eREgA7CQtSn-A-HPxNw9Ayp3d9JhTdW3JWndjKIp79xzHVZpPxrdwXsFIO_EKsz-x2zGPpMwukQ" alt="Saira Khan Avatar"/>
-                  </div>
-                  <p class="font-bold text-on-surface dark:text-white truncate w-full">Saira Khan</p>
-                  <p class="text-xs text-on-surface-variant dark:text-outline-variant font-mono">0xf9...33d1</p>
-                </div>
-                <!-- Favorite Card 4 -->
-                <div class="send-recipient-card cursor-pointer group bg-white dark:bg-inverse-surface border border-outline-variant dark:border-outline/10 p-md rounded-xl flex flex-col items-center text-center hover:border-secondary dark:hover:border-secondary-fixed-dim hover:shadow-md transition-all" data-name="Jordan Lee" data-address="0xbb8a...1122" data-email="jordan.l@techops.net" data-initials="JL">
-                  <div class="w-16 h-16 rounded-full overflow-hidden mb-3 border-2 border-transparent group-hover:border-secondary dark:group-hover:border-secondary-fixed-dim transition-colors">
-                    <img class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjZZ-sPmskK_X4EAAMFOLZZ9fXKO7yO1rLveBa3qxaL3vXOebmRQFkuEtgXdoX18gl5E2XMj-YapErjWtXjmnI_kQyMuoH8JwDXSu2mrFPqEyYxCtCxAbC3cVGlN-AayrTL16knkcTTQoLs4yP1ixP36_A5QHlI14n6812qcKYDZQ4GztKUItgRohGAFU65ydqz9H1A-j0fdavxPsARVjI7jRFCASMcdTEOxMXyILQ8C4knKkJH9P01A4cpLCdMzk2oLqLpkUq0fg" alt="Jordan Lee Avatar"/>
-                  </div>
-                  <p class="font-bold text-on-surface dark:text-white truncate w-full">Jordan Lee</p>
-                  <p class="text-xs text-on-surface-variant dark:text-outline-variant font-mono">0xbb...1122</p>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-sm" id="send-favorites-list">
+                <!-- Dynamically loaded favorites -->
+                <div class="col-span-4 p-8 text-center text-outline dark:text-outline-variant">
+                  <p class="text-sm">No favorite recipients saved yet.</p>
                 </div>
               </div>
             </div>
@@ -462,56 +450,12 @@
               <h3 class="font-headline-md text-primary dark:text-primary-fixed mb-sm px-2">Recent Transfers</h3>
               <div class="bg-white dark:bg-inverse-surface rounded-xl border border-outline-variant dark:border-outline/10 overflow-hidden">
                 <div class="divide-y divide-outline-variant/30 dark:divide-outline/15" id="send-recent-transfers-list">
-                  <!-- List Item 1 -->
-                  <div class="send-recent-item flex items-center justify-between p-4 hover:bg-surface-container-low dark:hover:bg-on-background/10 transition-colors cursor-pointer group" data-name="John Doe" data-address="0x7123...8821" data-email="john.doe@email.com" data-initials="JD">
-                    <div class="flex items-center gap-4">
-                      <div class="w-12 h-12 rounded-lg bg-surface-container-high dark:bg-on-background/25 flex items-center justify-center font-bold text-primary dark:text-primary-fixed">JD</div>
-                      <div>
-                        <p class="font-bold text-on-surface dark:text-white">John Doe</p>
-                        <p class="text-sm text-on-surface-variant dark:text-outline-variant">john.doe@email.com • 0x71...8821</p>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                      <span class="text-sm text-on-surface-variant dark:text-outline-variant hidden md:block font-mono">0x71...8821</span>
-                      <button type="button" class="p-2 text-primary dark:text-primary-fixed">
-                        <span class="material-symbols-outlined">chevron_right</span>
-                      </button>
-                    </div>
-                  </div>
-                  <!-- List Item 2 -->
-                  <div class="send-recent-item flex items-center justify-between p-4 hover:bg-surface-container-low dark:hover:bg-on-background/10 transition-colors cursor-pointer group" data-name="Tech Partners Inc." data-address="0xac15...f00d" data-email="billing@techpartners.io" data-initials="TP">
-                    <div class="flex items-center gap-4">
-                      <div class="w-12 h-12 rounded-lg bg-surface-container-high dark:bg-on-background/25 flex items-center justify-center font-bold text-primary dark:text-primary-fixed">TP</div>
-                      <div>
-                        <p class="font-bold text-on-surface dark:text-white">Tech Partners Inc.</p>
-                        <p class="text-sm text-on-surface-variant dark:text-outline-variant">billing@techpartners.io • 0xac...f00d</p>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                      <span class="text-sm text-on-surface-variant dark:text-outline-variant hidden md:block font-mono">0xac...f00d</span>
-                      <button type="button" class="p-2 text-primary dark:text-primary-fixed">
-                        <span class="material-symbols-outlined">chevron_right</span>
-                      </button>
-                    </div>
-                  </div>
-                  <!-- List Item 3 -->
-                  <div class="send-recent-item flex items-center justify-between p-4 hover:bg-surface-container-low dark:hover:bg-on-background/10 transition-colors cursor-pointer group" data-name="Sarah Miller" data-address="0xde44...6655" data-email="sarah.m@gmail.com" data-initials="SM">
-                    <div class="flex items-center gap-4">
-                      <div class="w-12 h-12 rounded-lg bg-surface-container-high dark:bg-on-background/25 flex items-center justify-center font-bold text-primary dark:text-primary-fixed">SM</div>
-                      <div>
-                        <p class="font-bold text-on-surface dark:text-white">Sarah Miller</p>
-                        <p class="text-sm text-on-surface-variant dark:text-outline-variant">sarah.m@gmail.com • 0xde...6655</p>
-                      </div>
-                    </div>
-                    <div class="flex items-center gap-4">
-                      <span class="text-sm text-on-surface-variant dark:text-outline-variant hidden md:block font-mono">0xde...6655</span>
-                      <button type="button" class="p-2 text-primary dark:text-primary-fixed">
-                        <span class="material-symbols-outlined">chevron_right</span>
-                      </button>
-                    </div>
+                  <!-- Dynamically loaded recent transfers -->
+                  <div class="p-8 text-center text-outline dark:text-outline-variant">
+                    <p class="text-sm">No recent transfers.</p>
                   </div>
                 </div>
-                <button type="button" class="w-full py-4 text-center text-primary dark:text-primary-fixed font-bold hover:bg-surface-container dark:hover:bg-on-background/10 transition-colors border-t border-outline-variant dark:border-outline/10">
+                <button type="button" id="btn-view-all-contacts" class="w-full py-4 text-center text-primary dark:text-primary-fixed font-bold hover:bg-surface-container dark:hover:bg-on-background/10 transition-colors border-t border-outline-variant dark:border-outline/10">
                   View All Contacts
                 </button>
               </div>
@@ -660,6 +604,50 @@
                 </span>
               </div>
             </div>
+            <!-- Settlement Optimizer Card -->
+            <div class="bg-primary/5 dark:bg-primary-container/10 border border-primary/20 dark:border-primary-fixed/10 rounded-lg p-md space-y-sm mb-md">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-xs text-primary dark:text-primary-fixed">
+                  <span class="material-symbols-outlined text-[20px] animate-pulse">auto_awesome</span>
+                  <span class="text-label-md font-bold uppercase tracking-wider">Settlement Optimizer</span>
+                </div>
+                <span class="text-[10px] bg-primary/10 dark:bg-primary-fixed-dim/20 text-primary dark:text-primary-fixed px-2 py-0.5 rounded font-bold">AI Recommended</span>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-sm">
+                <div class="space-y-1">
+                  <label class="text-[11px] text-on-surface-variant dark:text-outline-variant font-semibold">Network Load</label>
+                  <select id="optimizer-network-load" class="w-full bg-surface-container-high dark:bg-surface-dim border border-outline-variant/30 dark:border-outline/10 text-body-sm p-2 rounded-md outline-none dark:text-white">
+                    <option value="low">Low (Off-peak)</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High (Congested)</option>
+                  </select>
+                </div>
+                <div class="space-y-1">
+                  <div class="flex justify-between">
+                    <label class="text-[11px] text-on-surface-variant dark:text-outline-variant font-semibold">Gas Price</label>
+                    <span id="optimizer-gas-price-val" class="text-[11px] font-bold text-primary dark:text-primary-fixed">45 Gwei</span>
+                  </div>
+                  <input type="range" id="optimizer-gas-price" min="10" max="250" value="45" class="w-full h-1 bg-outline-variant/30 rounded-lg appearance-none cursor-pointer accent-primary">
+                </div>
+              </div>
+
+              <div class="pt-2 border-t border-outline-variant/20 dark:border-outline/5 space-y-2">
+                <div class="flex justify-between items-center text-body-sm">
+                  <span class="text-on-surface-variant dark:text-outline-variant">Recommended Route:</span>
+                  <span id="optimizer-route" class="font-bold text-primary dark:text-primary-fixed">Direct Bridge</span>
+                </div>
+                <div class="flex justify-between items-center text-body-sm">
+                  <span class="text-on-surface-variant dark:text-outline-variant">Estimated Fee:</span>
+                  <span id="optimizer-fee" class="font-semibold dark:text-white">$0.42</span>
+                </div>
+                <div class="flex justify-between items-center text-body-sm">
+                  <span class="text-on-surface-variant dark:text-outline-variant">Estimated Time:</span>
+                  <span id="optimizer-time" class="font-semibold dark:text-white">&lt; 2 minutes</span>
+                </div>
+              </div>
+            </div>
+
             <!-- Security Badge -->
             <div class="bg-surface-container-low dark:bg-surface-dim border border-outline-variant/30 dark:border-outline/10 rounded-lg p-sm flex items-start gap-md">
               <div class="w-10 h-10 rounded-full bg-primary/10 dark:bg-primary-fixed-dim/20 flex items-center justify-center text-primary dark:text-primary-fixed flex-shrink-0">
@@ -735,6 +723,10 @@
           <button id="btn-send-share" class="w-full h-12 bg-primary-container text-white rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md hover:brightness-110">
             <span class="material-symbols-outlined">receipt_long</span>
             Share Receipt
+          </button>
+          <button id="btn-send-save-contact" class="w-full h-12 bg-secondary text-white rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md hover:brightness-110">
+            <span class="material-symbols-outlined">person_add</span>
+            Save to Contacts
           </button>
           <button id="btn-send-done" class="w-full h-12 border-2 border-primary-container text-primary-container dark:border-primary dark:text-primary-fixed rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 active:scale-95 transition-all hover:bg-surface-container-low dark:hover:bg-surface-dim">
             <span class="material-symbols-outlined">history</span>
@@ -897,6 +889,22 @@
                   <p id="portfolio-asset-usdc-qty" class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant">1,000.00 USDC</p>
                 </div>
               </div>
+              <!-- Asset Item: MockKRW -->
+              <div class="asset-item flex items-center justify-between p-md hover:bg-surface-container-low dark:hover:bg-on-background/10 transition-all duration-200 cursor-pointer">
+                <div class="flex items-center gap-md">
+                  <div class="w-12 h-12 flex items-center justify-center rounded-full bg-[#5cfd80]/10 text-[#006e2a] dark:text-[#5cfd80]">
+                    <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
+                  </div>
+                  <div>
+                    <p class="font-headline-md text-headline-md text-on-surface dark:text-inverse-on-surface">Mock KRW</p>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant">MockKRW</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p id="portfolio-asset-mockkrw-fiat" class="font-headline-md text-headline-md text-on-surface dark:text-inverse-on-surface">₩0</p>
+                  <p id="portfolio-asset-mockkrw-qty" class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant">0.00 MockKRW</p>
+                </div>
+              </div>
             </div>
           </section>
         </div>
@@ -915,6 +923,7 @@
                   <circle id="donut-slice-btc" cx="18" cy="18" fill="transparent" r="15.915" stroke="#F7931A" stroke-dasharray="35 65" stroke-dashoffset="-40" stroke-width="3"></circle>
                   <circle id="donut-slice-eth" cx="18" cy="18" fill="transparent" r="15.915" stroke="#627EEA" stroke-dasharray="18 82" stroke-dashoffset="-75" stroke-width="3"></circle>
                   <circle id="donut-slice-usdc" cx="18" cy="18" fill="transparent" r="15.915" stroke="#2775CA" stroke-dasharray="7 93" stroke-dashoffset="-93" stroke-width="3"></circle>
+                  <circle id="donut-slice-mockkrw" cx="18" cy="18" fill="transparent" r="15.915" stroke="#5cfd80" class="dark:stroke-secondary-fixed-dim" stroke-dasharray="0 100" stroke-dashoffset="0" stroke-width="3"></circle>
                 </svg>
                 <div class="absolute inset-0 flex flex-col items-center justify-center">
                   <span class="font-label-sm text-label-sm text-on-surface-variant dark:text-outline-variant uppercase tracking-widest">Digital</span>
@@ -937,6 +946,10 @@
                 <div class="flex items-center gap-xs">
                   <div class="w-2 h-2 rounded-full bg-[#2775CA]"></div>
                   <span id="allocation-usdc-pct" class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant">USDC (7%)</span>
+                </div>
+                <div class="flex items-center gap-xs">
+                  <div class="w-2 h-2 rounded-full bg-[#5cfd80] dark:bg-secondary-fixed-dim"></div>
+                  <span id="allocation-mockkrw-pct" class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant">MockKRW (0%)</span>
                 </div>
               </div>
             </div>
@@ -1301,6 +1314,321 @@
       </div>
     </div>
 
+    <!-- ================== TAB: EXPLORER ================== -->
+    <div id="tab-explorer" class="tab-content space-y-md animate-fade-in hidden">
+      <h2 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed">Settlement Explorer</h2>
+      <p class="text-body-sm text-on-surface-variant dark:text-outline-variant">
+        Audit and trace all on-chain settlements processed via the KorriSettlement smart contract directly from the indexer logs.
+      </p>
+
+      <!-- Search & Filters -->
+      <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col md:flex-row gap-sm items-center justify-between">
+        <div class="relative w-full md:max-w-md">
+          <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+          <input id="explorer-search-input" type="text" placeholder="Search by Tx Hash, Wallet address, or Settlement ID..." class="w-full h-12 bg-surface-container-low dark:bg-on-background/10 border-2 border-transparent focus:border-primary focus:bg-white rounded-xl pl-12 pr-4 transition-all outline-none dark:text-white text-sm">
+        </div>
+        <div class="flex gap-sm w-full md:w-auto">
+          <select id="explorer-filter-status" class="h-12 bg-surface-container-low dark:bg-on-background/10 border-none rounded-xl px-4 text-sm dark:text-white outline-none cursor-pointer">
+            <option value="all">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Completed">Completed</option>
+          </select>
+          <button id="btn-refresh-explorer" class="h-12 px-6 bg-primary dark:bg-primary-container text-white dark:text-on-primary-container rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 cursor-pointer">
+            <span class="material-symbols-outlined text-sm">refresh</span>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-sm md:gap-md">
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Total Indexed</p>
+            <h3 id="explorer-stat-total" class="text-3xl font-extrabold text-primary dark:text-primary-fixed mt-1">0</h3>
+          </div>
+          <span class="material-symbols-outlined text-primary dark:text-primary-fixed text-4xl opacity-20">explore</span>
+        </div>
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Pending Settlements</p>
+            <h3 id="explorer-stat-pending" class="text-3xl font-extrabold text-amber-500 mt-1">0</h3>
+          </div>
+          <span class="material-symbols-outlined text-amber-500 text-4xl opacity-20">pending</span>
+        </div>
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Completed Settlements</p>
+            <h3 id="explorer-stat-completed" class="text-3xl font-extrabold text-green-500 mt-1">0</h3>
+          </div>
+          <span class="material-symbols-outlined text-green-500 text-4xl opacity-20">check_circle</span>
+        </div>
+      </div>
+
+      <!-- Explorer Table -->
+      <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl border border-outline-variant/20 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto w-full">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-surface-container-low dark:bg-on-background/5 border-b border-outline-variant/20 text-on-surface-variant dark:text-outline-variant font-label-md text-xs uppercase tracking-wider">
+                <th class="p-4">Settlement ID</th>
+                <th class="p-4">Sender</th>
+                <th class="p-4">Receiver</th>
+                <th class="p-4">Amount</th>
+                <th class="p-4">Network</th>
+                <th class="p-4">Status</th>
+                <th class="p-4">Timestamp</th>
+                <th class="p-4">Tx Hash</th>
+              </tr>
+            </thead>
+            <tbody id="explorer-table-body" class="text-sm dark:text-white divide-y divide-outline-variant/10">
+              <!-- Dynamically populated rows -->
+              <tr>
+                <td colspan="8" class="p-12 text-center text-outline dark:text-outline-variant">
+                  <span class="material-symbols-outlined text-4xl animate-spin">autorenew</span>
+                  <p class="mt-2">Loading indexed records...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================== TAB: MERCHANT ================== -->
+    <div id="tab-merchant" class="tab-content space-y-md animate-fade-in hidden">
+      <h2 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed">Merchant Pay Terminal</h2>
+      <p class="text-body-sm text-on-surface-variant dark:text-outline-variant">
+        Generate instant payment links and QR codes to request payments from customers, and track your settlements directly on-chain.
+      </p>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-md md:gap-lg items-start">
+        
+        <!-- Left: Generate Payment Request Form & Result (5 cols) -->
+        <div class="lg:col-span-5 space-y-md">
+          <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+            <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+              <span class="material-symbols-outlined text-primary">add_circle</span>
+              New Payment Request
+            </h3>
+            
+            <form id="form-merchant-request" class="space-y-sm pt-2">
+              <div>
+                <label class="block text-sm font-medium text-on-surface-variant dark:text-outline-variant mb-1">Amount</label>
+                <input type="number" id="merchant-amount" required min="0.01" step="0.01" placeholder="0.00" class="w-full px-3 py-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-lg bg-surface dark:bg-surface-dim focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-on-surface-variant dark:text-outline-variant mb-1">Currency</label>
+                <select id="merchant-currency" class="w-full px-3 py-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-lg bg-surface dark:bg-surface-dim focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white">
+                  <option value="USDC">USDC (Stablecoin)</option>
+                  <option value="ETH">ETH (Ethereum)</option>
+                  <option value="BTC">BTC (Bitcoin)</option>
+                  <option value="KRW">KRW (MockKRW)</option>
+                  <option value="USD">USD (KorriPay USD)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-on-surface-variant dark:text-outline-variant mb-1">Description / Memo</label>
+                <input type="text" id="merchant-description" required placeholder="e.g. Invoice #203 - Coffee & Goods" class="w-full px-3 py-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-lg bg-surface dark:bg-surface-dim focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white">
+              </div>
+              <button type="submit" class="w-full bg-primary text-white py-3 rounded-xl flex items-center justify-center gap-2 font-headline-md text-headline-md active:scale-95 hover:bg-opacity-95 transition-all shadow-md mt-4">
+                Generate Request
+              </button>
+            </form>
+          </div>
+
+          <!-- Result Box (Hidden initially) -->
+          <div id="merchant-request-result" class="hidden bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm text-center space-y-md animate-scale-up">
+            <h3 class="font-bold text-sm text-on-surface-variant dark:text-outline-variant uppercase tracking-wider">Payment Request Ready</h3>
+            
+            <!-- QR Code -->
+            <div class="bg-white p-4 rounded-2xl inline-block shadow-sm">
+              <canvas id="merchant-qr-canvas" class="mx-auto"></canvas>
+            </div>
+            
+            <!-- Link Copy -->
+            <div class="space-y-2">
+              <label class="block text-left text-xs font-semibold text-on-surface-variant dark:text-outline-variant">Share Checkout Link</label>
+              <div class="flex items-center gap-sm bg-surface-container-low dark:bg-on-background/10 border border-outline-variant/30 rounded-xl px-3 py-2">
+                <input id="merchant-link-input" type="text" readonly class="bg-transparent border-none text-xs font-mono w-full text-left outline-none dark:text-white" value="">
+                <button id="btn-copy-merchant-link" type="button" class="material-symbols-outlined text-primary hover:text-opacity-80 active:scale-90 transition-transform">content_copy</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Settlement History (7 cols) -->
+        <div class="lg:col-span-7 space-y-md">
+          <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+            <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm mb-sm">
+              <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">receipt_long</span>
+                Settlement History
+              </h3>
+              <button id="btn-refresh-merchant" type="button" class="p-2 text-outline hover:text-primary rounded-full hover:bg-surface-container-low transition-colors">
+                <span class="material-symbols-outlined text-sm">refresh</span>
+              </button>
+            </div>
+
+            <!-- List/Table -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr class="text-xs uppercase text-on-surface-variant dark:text-outline-variant border-b border-outline-variant/20 font-bold">
+                    <th class="p-3">Memo</th>
+                    <th class="p-3">Amount</th>
+                    <th class="p-3">Status</th>
+                    <th class="p-3">Date</th>
+                    <th class="p-3">Tx Hash</th>
+                  </tr>
+                </thead>
+                <tbody id="merchant-settlements-body" class="text-sm dark:text-white divide-y divide-outline-variant/10">
+                  <tr>
+                    <td colspan="5" class="p-8 text-center text-outline dark:text-outline-variant">
+                      <p class="text-sm">No settlement history yet.</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================== TAB: ANALYTICS ================== -->
+    <div id="tab-analytics" class="tab-content space-y-md animate-fade-in hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed">Analytics Dashboard</h2>
+          <p class="text-body-sm text-on-surface-variant dark:text-outline-variant">
+            Trace volume trends, network activity, settlement speeds, and gas optimization analytics.
+          </p>
+        </div>
+        <button id="btn-refresh-analytics" type="button" class="h-12 px-6 bg-primary dark:bg-primary-container text-white dark:text-on-primary-container rounded-xl font-bold text-sm hover:opacity-90 active:scale-95 transition-all flex items-center gap-2 cursor-pointer shadow-md">
+          <span class="material-symbols-outlined text-sm">refresh</span>
+          Refresh
+        </button>
+      </div>
+
+      <!-- Metrics Summary Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-sm md:gap-md">
+        <!-- Card 1: Total Volume -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Total Volume</p>
+            <h3 id="analytics-stat-volume" class="text-2xl font-extrabold text-primary dark:text-primary-fixed mt-1">$0.00</h3>
+          </div>
+          <div class="flex items-center gap-1 text-[11px] text-green-500 mt-2 font-bold">
+            <span class="material-symbols-outlined text-xs">trending_up</span> +14.2%
+          </div>
+        </div>
+
+        <!-- Card 2: Number of Transactions -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Transactions</p>
+            <h3 id="analytics-stat-txs" class="text-2xl font-extrabold text-primary dark:text-primary-fixed mt-1">0</h3>
+          </div>
+          <div class="flex items-center gap-1 text-[11px] text-green-500 mt-2 font-bold">
+            <span class="material-symbols-outlined text-xs">check_circle</span> 100% indexed
+          </div>
+        </div>
+
+        <!-- Card 3: Active Users -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Active Users</p>
+            <h3 id="analytics-stat-users" class="text-2xl font-extrabold text-primary dark:text-primary-fixed mt-1">0</h3>
+          </div>
+          <div class="flex items-center gap-1 text-[11px] text-primary dark:text-primary-fixed mt-2 font-bold">
+            <span class="material-symbols-outlined text-xs">people</span> Wallets
+          </div>
+        </div>
+
+        <!-- Card 4: Avg Settlement Time -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Avg Settlement</p>
+            <h3 id="analytics-stat-time" class="text-2xl font-extrabold text-primary dark:text-primary-fixed mt-1">0s</h3>
+          </div>
+          <div class="flex items-center gap-1 text-[11px] text-green-500 mt-2 font-bold">
+            <span class="material-symbols-outlined text-xs">bolt</span> Instant Payout
+          </div>
+        </div>
+
+        <!-- Card 5: Avg Fee Saved -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Avg Fee Saved</p>
+            <h3 id="analytics-stat-saved" class="text-2xl font-extrabold text-primary dark:text-primary-fixed mt-1">$0.00</h3>
+          </div>
+          <div class="flex items-center gap-1 text-[11px] text-green-500 mt-2 font-bold">
+            <span class="material-symbols-outlined text-xs">savings</span> Yield Optimised
+          </div>
+        </div>
+
+        <!-- Card 6: Successful Settlements % -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Success Rate</p>
+            <h3 id="analytics-stat-success" class="text-2xl font-extrabold text-primary dark:text-primary-fixed mt-1">0%</h3>
+          </div>
+          <div class="flex items-center gap-1 text-[11px] text-green-500 mt-2 font-bold">
+            <span class="material-symbols-outlined text-xs">shield</span> Secure
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-md md:gap-lg">
+        <!-- Daily Volume Chart (7 cols) -->
+        <div class="lg:col-span-7 bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+          <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">calendar_today</span>
+            Daily Settlement Volume (USD)
+          </h3>
+          <div class="relative w-full h-64">
+            <canvas id="chart-daily-volume"></canvas>
+          </div>
+        </div>
+
+        <!-- Asset Distribution Chart (5 cols) -->
+        <div class="lg:col-span-5 bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+          <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">pie_chart</span>
+            Asset Distribution
+          </h3>
+          <div class="relative w-full h-64 flex justify-center items-center">
+            <canvas id="chart-asset-distribution"></canvas>
+          </div>
+        </div>
+
+        <!-- Weekly Volume Chart (6 cols) -->
+        <div class="lg:col-span-6 bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+          <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">bar_chart</span>
+            Weekly Volume Breakdown
+          </h3>
+          <div class="relative w-full h-64">
+            <canvas id="chart-weekly-volume"></canvas>
+          </div>
+        </div>
+
+        <!-- Settlement Speed Chart (6 cols) -->
+        <div class="lg:col-span-6 bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+          <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary">speed</span>
+            Settlement Speed / Confirmation Times
+          </h3>
+          <div class="relative w-full h-64">
+            <canvas id="chart-settlement-speed"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ================== TAB: PROFILE ================== -->
     <!-- ================== TAB: PROFILE ================== -->
     <div id="tab-profile" class="tab-content space-y-md animate-fade-in hidden">
@@ -1407,7 +1735,7 @@
                   <span class="font-body-md text-on-surface dark:text-white">Network Selection</span>
                 </div>
                 <div class="flex items-center gap-1">
-                  <span class="font-body-md text-secondary dark:text-secondary-fixed font-medium">GIWA L2</span>
+                  <span id="profile-network-display" class="font-body-md text-secondary dark:text-secondary-fixed font-medium">GIWA L2</span>
                   <span class="material-symbols-outlined text-outline group-active:translate-x-1 transition-transform">chevron_right</span>
                 </div>
               </button>
@@ -1464,6 +1792,21 @@
     <a id="nav-portfolio" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">account_balance_wallet</span>
       <span class="font-label-md text-label-md">Portfolio</span>
+    </a>
+    <!-- Explorer -->
+    <a id="nav-explorer" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+      <span class="material-symbols-outlined">explore</span>
+      <span class="font-label-md text-label-md">Explorer</span>
+    </a>
+    <!-- Merchant -->
+    <a id="nav-merchant" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+      <span class="material-symbols-outlined">storefront</span>
+      <span class="font-label-md text-label-md">Merchant</span>
+    </a>
+    <!-- Analytics -->
+    <a id="nav-analytics" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+      <span class="material-symbols-outlined">query_stats</span>
+      <span class="font-label-md text-label-md">Analytics</span>
     </a>
     <!-- Profile -->
     <a id="nav-profile" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
@@ -1539,6 +1882,23 @@
         </div>
       </button>
 
+      <!-- MockKRW Asset Row -->
+      <button class="asset-select-row w-full flex items-center justify-between p-sm rounded-xl hover:bg-surface-container-low dark:hover:bg-on-background/10 transition-colors text-left" data-asset="MockKRW">
+        <div class="flex items-center gap-sm">
+          <div class="w-10 h-10 rounded-full bg-[#5cfd80]/10 text-[#006e2a] flex items-center justify-center">
+            <span class="material-symbols-outlined text-[20px]">payments</span>
+          </div>
+          <div>
+            <p class="font-headline-md text-label-md text-on-surface dark:text-inverse-on-surface font-bold">Mock KRW</p>
+            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant font-bold">MockKRW</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <p class="font-label-md text-label-md text-on-surface dark:text-inverse-on-surface font-bold" id="asset-select-balance-mockkrw">0.00 MockKRW</p>
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant" id="asset-select-value-mockkrw">$0.00</p>
+        </div>
+      </button>
+
       <!-- USD Asset Row -->
       <button class="asset-select-row w-full flex items-center justify-between p-sm rounded-xl hover:bg-surface-container-low dark:hover:bg-on-background/10 transition-colors text-left" data-asset="USD">
         <div class="flex items-center gap-sm">
@@ -1583,6 +1943,63 @@
         Confirm Transfer
       </button>
     </form>
+  </div>
+
+  <!-- Contact Modal (Save Recipient) -->
+  <div id="modal-contact" class="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-white dark:bg-inverse-surface rounded-t-2xl sm:rounded-2xl z-[100] hidden transform translate-y-full sm:translate-y-4 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30">
+    <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
+      <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">person_add</span>
+        Save Contact
+      </h3>
+      <button class="modal-close-btn material-symbols-outlined text-outline hover:text-primary rounded-full p-1 hover:bg-surface-container-low transition-colors">close</button>
+    </div>
+    <form id="form-contact" class="space-y-sm pt-2">
+      <div>
+        <label class="block text-sm font-medium text-on-surface-variant dark:text-outline-variant mb-1">Full Name</label>
+        <input type="text" id="contact-name" required placeholder="Elena Gilbert" class="w-full px-3 py-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-lg bg-surface dark:bg-surface-dim focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-on-surface-variant dark:text-outline-variant mb-1">Nickname (Optional)</label>
+        <input type="text" id="contact-nickname" placeholder="Elena" class="w-full px-3 py-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-lg bg-surface dark:bg-surface-dim focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white">
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-on-surface-variant dark:text-outline-variant mb-1">Wallet Address / Account Details</label>
+        <input type="text" id="contact-address" required placeholder="0x4a2a...e92f" class="w-full px-3 py-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-lg bg-surface dark:bg-surface-dim focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white font-mono text-sm">
+      </div>
+      <div class="flex items-center gap-2 py-1">
+        <input type="checkbox" id="contact-favorite" class="w-4 h-4 text-primary bg-surface border-outline-variant rounded focus:ring-primary">
+        <label for="contact-favorite" class="text-sm font-medium text-on-surface-variant dark:text-outline-variant cursor-pointer">Mark as Favorite Recipient</label>
+      </div>
+      <button type="submit" class="w-full bg-primary text-white py-3 rounded-xl flex items-center justify-center gap-2 font-headline-md text-headline-md active:scale-95 hover:bg-opacity-95 transition-all shadow-md mt-4">
+        Save Recipient
+      </button>
+    </form>
+  </div>
+
+  <!-- Manage Contacts Modal -->
+  <div id="modal-manage-contacts" class="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-lg bg-white dark:bg-inverse-surface rounded-t-2xl sm:rounded-2xl z-[100] hidden transform translate-y-full sm:translate-y-4 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30">
+    <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
+      <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">contacts</span>
+        Contacts Directory
+      </h3>
+      <button class="modal-close-btn material-symbols-outlined text-outline hover:text-primary rounded-full p-1 hover:bg-surface-container-low transition-colors">close</button>
+    </div>
+    
+    <!-- Search inside directory -->
+    <div class="relative pt-2">
+      <span class="material-symbols-outlined absolute left-3 top-[18px] text-outline text-sm">search</span>
+      <input id="directory-search-input" type="text" placeholder="Search contacts by name, nickname, or address..." class="w-full pl-9 pr-3 py-2 text-sm border border-outline-variant dark:border-on-surface-variant/30 rounded-lg bg-surface dark:bg-surface-dim focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent dark:text-white">
+    </div>
+
+    <!-- Scrollable directory list -->
+    <div class="max-h-80 overflow-y-auto divide-y divide-outline-variant/20 dark:divide-outline/10 pr-1" id="directory-contacts-list">
+      <!-- Loaded dynamically -->
+      <div class="py-8 text-center text-outline dark:text-outline-variant">
+        <p class="text-sm">No contacts saved yet.</p>
+      </div>
+    </div>
   </div>
 
   <!-- Add Money Modal -->
@@ -2127,6 +2544,103 @@
     </main>
   </div>
 
+  <!-- Floating Judge Demo Action Button -->
+  <button id="btn-judge-demo" class="fixed bottom-6 right-6 z-50 bg-secondary dark:bg-secondary-fixed text-white dark:text-primary px-6 py-4 rounded-full shadow-2xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all font-bold cursor-pointer border border-white/20 dark:border-primary/10">
+    <span class="material-symbols-outlined text-[20px] animate-pulse">rocket_launch</span>
+    <span class="text-label-md font-bold uppercase tracking-wider">Launch Judge Demo</span>
+  </button>
+
+  <!-- Judge Demo Modal -->
+  <div id="modal-demo" class="fixed inset-0 z-50 flex items-center justify-center hidden backdrop-blur-md bg-black/60 p-4">
+    <div class="bg-surface-container dark:bg-inverse-surface border border-outline-variant/30 dark:border-outline/10 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col p-md space-y-md">
+      <!-- Header -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-sm text-primary dark:text-primary-fixed">
+          <span class="material-symbols-outlined text-[24px] animate-bounce">rocket_launch</span>
+          <span class="font-headline-sm text-headline-sm font-bold dark:text-white">Presentation Mode</span>
+        </div>
+        <button id="btn-close-demo" type="button" class="text-on-surface-variant hover:text-on-surface dark:text-outline-variant dark:hover:text-white cursor-pointer">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+
+      <!-- Scenario Selector -->
+      <div class="space-y-1">
+        <label for="demo-scenario-select" class="block text-xs font-bold text-on-surface-variant dark:text-outline-variant">Select Demo Scenario</label>
+        <select id="demo-scenario-select" class="w-full h-11 bg-surface-container-low dark:bg-on-background/10 border-2 border-transparent focus:border-primary rounded-xl px-3 text-sm dark:text-white outline-none cursor-pointer">
+          <option value="1">Scenario 1: Korean Worker Remittance</option>
+          <option value="2">Scenario 2: Freelancer Payout Invoice</option>
+          <option value="3">Scenario 3: Merchant Instore QR Code</option>
+        </select>
+      </div>
+
+      <!-- Description -->
+      <p id="demo-scenario-description" class="text-body-sm text-on-surface-variant dark:text-outline-variant">
+        Experience the end-to-end KorriPay transaction cycle. This one-click demo simulates a 100,000 KRW transfer, converting it to MockKRW, initiating settlement, waiting for indexer sync, and refreshing the dashboard.
+      </p>
+
+      <!-- Progress Steps -->
+      <div class="space-y-md py-sm">
+        <!-- Step 1 -->
+        <div id="demo-step-1" class="flex items-center gap-md opacity-40 transition-all duration-300">
+          <div class="demo-step-icon w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">1</div>
+          <div class="flex-grow">
+            <p class="text-label-md font-bold dark:text-white demo-step-title">Initialize Sender Balance</p>
+            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant demo-step-desc">Adding 100,000 KRW fiat balance to user's wallet</p>
+          </div>
+          <div class="demo-step-status text-body-sm font-bold text-primary">Pending</div>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="demo-step-2" class="flex items-center gap-md opacity-40 transition-all duration-300">
+          <div class="demo-step-icon w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">2</div>
+          <div class="flex-grow">
+            <p class="text-label-md font-bold dark:text-white demo-step-title">Convert to MockKRW</p>
+            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant demo-step-desc">Wrapping fiat into MockKRW stablecoin wrapper</p>
+          </div>
+          <div class="demo-step-status text-body-sm font-bold text-primary">Pending</div>
+        </div>
+
+        <!-- Step 3 -->
+        <div id="demo-step-3" class="flex items-center gap-md opacity-40 transition-all duration-300">
+          <div class="demo-step-icon w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">3</div>
+          <div class="flex-grow">
+            <p class="text-label-md font-bold dark:text-white demo-step-title">Send via KorriSettlement</p>
+            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant demo-step-desc">Broadcasting initiateSettlement to smart contract</p>
+          </div>
+          <div class="demo-step-status text-body-sm font-bold text-primary">Pending</div>
+        </div>
+
+        <!-- Step 4 -->
+        <div id="demo-step-4" class="flex items-center gap-md opacity-40 transition-all duration-300">
+          <div class="demo-step-icon w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">4</div>
+          <div class="flex-grow">
+            <p class="text-label-md font-bold dark:text-white demo-step-title">Indexer Event Catch</p>
+            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant demo-step-desc">Indexer captures TransferCreated & updates PostgreSQL</p>
+          </div>
+          <div class="demo-step-status text-body-sm font-bold text-primary">Pending</div>
+        </div>
+
+        <!-- Step 5 -->
+        <div id="demo-step-5" class="flex items-center gap-md opacity-40 transition-all duration-300">
+          <div class="demo-step-icon w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">5</div>
+          <div class="flex-grow">
+            <p class="text-label-md font-bold dark:text-white demo-step-title">Dashboard Synchronized</p>
+            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant demo-step-desc">Reconciling balances and rendering updated history</p>
+          </div>
+          <div class="demo-step-status text-body-sm font-bold text-primary">Pending</div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-md pt-sm">
+        <button id="btn-start-demo" type="button" class="flex-grow bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container py-md rounded-xl font-bold hover:opacity-90 active:scale-95 transition-all shadow-md cursor-pointer">
+          Run Scenario
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Success Feedback (Toast) -->
   <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-on-surface text-surface py-3 px-6 rounded-full font-label-md text-label-md opacity-0 pointer-events-none transition-all duration-300 z-[200] shadow-xl flex items-center gap-2 max-w-sm text-center">
     <span id="toast-icon" class="material-symbols-outlined text-sm">check_circle</span>
@@ -2134,6 +2648,9 @@
   </div>
 
   <!-- Frontend logic -->
+  <script type="module" src="walletService.js"></script>
+  <script type="module" src="walletHooks.js"></script>
+  <script type="module" src="tokenService.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

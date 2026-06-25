@@ -6,11 +6,16 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "indexer": "node indexer.js"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "cors": "^2.8.5",
-    "express": "^4.21.1"
+    "ethers": "^6.17.0",
+    "express": "^4.21.1",
+    "pg": "^8.22.0",
+    "prisma": "^6.19.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"

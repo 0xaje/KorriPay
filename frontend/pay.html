@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+  <script>
+    if (localStorage.getItem("theme") === "dark" || (!localStorage.getItem("theme") && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  </script>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>KorriPay - Checkout</title>
+  <!-- Tailwind CSS CDN with plugins -->
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#0066cc",
+            secondary: "#00a36c"
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .light .glass-card {
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .animate-spin-slow {
+      animation: spin 8s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 light:bg-slate-50 text-slate-100 light:text-slate-900 min-h-screen flex items-center justify-center p-4">
+
+  <!-- Main checkout container -->
+  <div class="w-full max-w-md glass-card rounded-3xl p-6 md:p-8 shadow-2xl relative overflow-hidden transition-all duration-300">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary text-3xl font-bold">payments</span>
+        <span class="font-extrabold text-xl tracking-tight text-white light:text-slate-950">Korri<span class="text-primary">Pay</span> Checkout</span>
+      </div>
+      <button id="theme-toggle" class="p-2 rounded-full hover:bg-white/10 dark:hover:bg-white/5 transition-colors">
+        <span class="material-symbols-outlined" id="theme-icon">light_mode</span>
+      </button>
+    </div>
+
+    <!-- Error state -->
+    <div id="error-container" class="hidden text-center py-8 space-y-4">
+      <span class="material-symbols-outlined text-red-500 text-6xl">error</span>
+      <h3 class="text-lg font-bold text-white light:text-slate-900" id="error-title">Payment Request Not Found</h3>
+      <p class="text-sm text-slate-400 light:text-slate-500" id="error-message">This payment link might be broken, expired, or already paid.</p>
+      <a href="dashboard.html" class="inline-block px-6 py-2 bg-primary text-white font-semibold rounded-xl text-sm hover:opacity-90 transition-opacity">Return to Dashboard</a>
+    </div>
+
+    <!-- Loading state -->
+    <div id="loading-container" class="text-center py-12 space-y-4">
+      <div class="relative w-16 h-16 mx-auto">
+        <div class="absolute inset-0 rounded-full border-4 border-primary/20"></div>
+        <div class="absolute inset-0 rounded-full border-4 border-t-primary animate-spin"></div>
+      </div>
+      <p class="text-sm text-slate-400 light:text-slate-500">Retrieving checkout details...</p>
+    </div>
+
+    <!-- Main Payment Form (Hidden initially) -->
+    <div id="payment-container" class="hidden space-y-6">
+      
+      <!-- Merchant Info -->
+      <div class="text-center space-y-2">
+        <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
+          <span class="material-symbols-outlined text-3xl">storefront</span>
+        </div>
+        <h2 id="merchant-name" class="text-xl font-bold text-white light:text-slate-950">Loading Merchant...</h2>
+        <p id="payment-description" class="text-sm text-slate-400 light:text-slate-500">For services rendered</p>
+      </div>
+
+      <!-- Payment Amount -->
+      <div class="bg-white/5 light:bg-slate-100 rounded-2xl p-5 border border-white/5 light:border-slate-200 text-center">
+        <span class="text-xs text-slate-400 light:text-slate-500 uppercase tracking-wider font-semibold">Total Amount</span>
+        <div class="flex items-baseline justify-center gap-1 mt-1">
+          <h1 id="payment-amount" class="text-4xl font-extrabold text-white light:text-slate-950">0.00</h1>
+          <span id="payment-currency" class="text-lg font-bold text-primary">USDC</span>
+        </div>
+      </div>
+
+      <!-- Wallet Auth Check -->
+      <div id="auth-box" class="space-y-4">
+        <!-- Not logged in state -->
+        <div id="auth-logged-out" class="hidden space-y-4">
+          <div class="bg-amber-500/10 border border-amber-500/20 text-amber-500 text-xs rounded-xl p-3 flex gap-2">
+            <span class="material-symbols-outlined text-sm flex-shrink-0">warning</span>
+            <span>You need to authenticate your KorriPay wallet to complete this checkout.</span>
+          </div>
+          <button id="btn-login-demo" class="w-full h-12 bg-primary text-white rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-opacity-95 transition-all">
+            <span class="material-symbols-outlined">login</span>
+            Login to Pay (Demo Mode)
+          </button>
+        </div>
+
+        <!-- Logged in state -->
+        <div id="auth-logged-in" class="hidden space-y-4">
+          <div class="flex justify-between items-center bg-white/5 light:bg-slate-100 rounded-xl p-4 border border-white/5 light:border-slate-200">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+              </div>
+              <div>
+                <p id="user-display-email" class="text-xs font-semibold text-slate-400 light:text-slate-500">jane.doe@korri.pay</p>
+                <p class="text-sm font-bold text-white light:text-slate-900">Your Wallet Connected</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="text-xs text-slate-400 light:text-slate-500">Available Balance</p>
+              <p id="user-display-balance" class="text-sm font-extrabold text-emerald-500">$0.00</p>
+            </div>
+          </div>
+
+          <button id="btn-pay-now" class="w-full h-14 bg-primary text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-opacity-95 active:scale-98 transition-all shadow-lg">
+            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">lock</span>
+            Pay Now
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Success state -->
+    <div id="success-container" class="hidden text-center py-6 space-y-6">
+      <div class="relative w-24 h-24 mx-auto flex items-center justify-center bg-emerald-500/10 rounded-full text-emerald-500">
+        <span class="material-symbols-outlined text-5xl">check_circle</span>
+      </div>
+      <div class="space-y-1">
+        <h3 class="text-2xl font-bold text-white light:text-slate-950">Payment Successful</h3>
+        <p class="text-sm text-slate-400 light:text-slate-500">Receipt and settlement record updated.</p>
+      </div>
+
+      <div class="bg-white/5 light:bg-slate-100 rounded-2xl p-5 border border-white/5 light:border-slate-200 text-left space-y-3">
+        <div class="flex justify-between text-sm">
+          <span class="text-slate-400 light:text-slate-500">Merchant</span>
+          <span id="success-merchant" class="font-semibold text-white light:text-slate-900">Merchant Name</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-slate-400 light:text-slate-500">Amount Paid</span>
+          <span id="success-amount" class="font-extrabold text-emerald-500">10.00 USDC</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-slate-400 light:text-slate-500">Transaction Hash</span>
+          <span id="success-hash" class="font-mono text-xs text-primary max-w-[180px] truncate">0xabc...123</span>
+        </div>
+      </div>
+
+      <a href="dashboard.html" class="w-full h-12 bg-slate-800 light:bg-slate-200 text-white light:text-slate-800 rounded-xl font-semibold flex items-center justify-center gap-2 hover:bg-opacity-95 transition-all">
+        <span class="material-symbols-outlined">dashboard</span>
+        Back to Dashboard
+      </a>
+    </div>
+
+  </div>
+
+  <script>
+    const API_BASE = "/api";
+    let currentRequest = null;
+
+    // Theme Toggle
+    const themeToggle = document.getElementById("theme-toggle");
+    themeToggle.addEventListener("click", () => {
+      const isDark = document.documentElement.classList.toggle("dark");
+      document.documentElement.classList.toggle("light", !isDark);
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+      document.getElementById("theme-icon").innerText = isDark ? "light_mode" : "dark_mode";
+    });
+
+    // Parse request ID from query string
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestId = urlParams.get("id");
+
+    async function loadRequest() {
+      if (!requestId) {
+        showError("Invalid Checkout Link", "This payment link does not specify a payment request ID.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/merchant/request/${requestId}`);
+        if (!res.ok) {
+          showError("Payment Request Not Found", "The requested payment checkout could not be located in our database.");
+          return;
+        }
+
+        currentRequest = await res.json();
+        if (currentRequest.status === "Paid") {
+          showPaidSuccess(currentRequest);
+          return;
+        }
+
+        renderPaymentForm();
+      } catch (err) {
+        showError("Server Connection Error", "Unable to communicate with the checkout API.");
+      }
+    }
+
+    function renderPaymentForm() {
+      document.getElementById("loading-container").classList.add("hidden");
+      document.getElementById("payment-container").classList.remove("hidden");
+
+      document.getElementById("merchant-name").innerText = currentRequest.merchant.name;
+      document.getElementById("payment-description").innerText = currentRequest.description;
+      document.getElementById("payment-amount").innerText = currentRequest.amount.toLocaleString(undefined, { minimumFractionDigits: 2 });
+      document.getElementById("payment-currency").innerText = currentRequest.currency;
+
+      checkAuth();
+    }
+
+    async function checkAuth() {
+      const token = localStorage.getItem("korripay_session_token");
+      if (!token) {
+        document.getElementById("auth-logged-out").classList.remove("hidden");
+        document.getElementById("auth-logged-in").classList.add("hidden");
+        return;
+      }
+
+      // Fetch user profile info
+      try {
+        const res = await fetch(`${API_BASE}/dashboard`, {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        if (!res.ok) {
+          localStorage.removeItem("korripay_session_token");
+          checkAuth();
+          return;
+        }
+
+        const data = await res.json();
+        document.getElementById("auth-logged-out").classList.add("hidden");
+        document.getElementById("auth-logged-in").classList.remove("hidden");
+        document.getElementById("user-display-email").innerText = "jane.doe@korri.pay";
+
+        // Display balance based on currency requested
+        const currency = currentRequest.currency.toUpperCase();
+        let balance = data.balance; // default USD
+        let symbol = "$";
+        if (currency === "USDC") {
+          balance = data.usdcBalance;
+          symbol = "";
+        } else if (currency === "ETH") {
+          balance = data.ethBalance;
+          symbol = "Ξ";
+        } else if (currency === "BTC") {
+          balance = data.btcBalance;
+          symbol = "₿";
+        } else if (currency === "KRW" || currency === "MOCKKRW") {
+          balance = data.mockkrwBalance;
+          symbol = "₩";
+        }
+
+        document.getElementById("user-display-balance").innerText = `${symbol}${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })} ${currency}`;
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      }
+    }
+
+    // Demo Log in
+    document.getElementById("btn-login-demo").addEventListener("click", async () => {
+      try {
+        const res = await fetch(`${API_BASE}/auth/demo`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: "jane.doe@korri.pay", password: "demo" })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem("korripay_session_token", data.token);
+          checkAuth();
+        } else {
+          alert("Demo login failed");
+        }
+      } catch (err) {
+        alert("Connection error during demo login");
+      }
+    });
+
+    // Pay now button
+    document.getElementById("btn-pay-now").addEventListener("click", async () => {
+      const btn = document.getElementById("btn-pay-now");
+      btn.disabled = true;
+      btn.innerText = "Processing Payment...";
+      btn.classList.add("opacity-50");
+
+      const token = localStorage.getItem("korripay_session_token");
+      try {
+        const res = await fetch(`${API_BASE}/merchant/pay`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify({ paymentRequestId: requestId })
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          showPaidSuccess(result.paymentRequest);
+        } else {
+          const err = await res.json();
+          alert(err.error || "Payment failed");
+          btn.disabled = false;
+          btn.innerText = "Pay Now";
+          btn.classList.remove("opacity-50");
+        }
+      } catch (err) {
+        alert("Network error processing payment");
+        btn.disabled = false;
+        btn.innerText = "Pay Now";
+        btn.classList.remove("opacity-50");
+      }
+    });
+
+    function showPaidSuccess(request) {
+      document.getElementById("loading-container").classList.add("hidden");
+      document.getElementById("payment-container").classList.add("hidden");
+      document.getElementById("success-container").classList.remove("hidden");
+
+      document.getElementById("success-merchant").innerText = request.merchant ? request.merchant.name : "Merchant";
+      document.getElementById("success-amount").innerText = `${request.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} ${request.currency}`;
+      document.getElementById("success-hash").innerText = request.txHash || "0xCompleted";
+    }
+
+    function showError(title, msg) {
+      document.getElementById("loading-container").classList.add("hidden");
+      document.getElementById("payment-container").classList.add("hidden");
+      document.getElementById("error-container").classList.remove("hidden");
+      document.getElementById("error-title").innerText = title;
+      document.getElementById("error-message").innerText = msg;
+    }
+
+    loadRequest();
+  </script>
+</body>
+</html>

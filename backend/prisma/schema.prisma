@@ -1,0 +1,129 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String           @id @default(uuid())
+  name             String           @default("Jane Doe")
+  email            String?          @unique
+  walletAddress    String?          @unique
+  createdAt        DateTime         @default(now())
+  wallets          Wallet[]
+  kycs             Kyc[]
+  transactions     Transaction[]
+  contacts         Contact[]
+  merchantRequests PaymentRequest[] @relation("MerchantRequests")
+
+  @@map("users")
+}
+
+model Wallet {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  balance        Float    @default(1250.00)
+  savings        Float    @default(45.00)
+  btcBalance     Float    @default(14.82)
+  ethBalance     Float    @default(2.45)
+  usdcBalance    Float    @default(2450.00)
+  mockkrwBalance Float    @default(500000.00)
+
+  @@map("wallets")
+}
+
+model Transaction {
+  id        String   @id
+  title     String
+  type      String
+  amount    Float
+  date      String
+  timestamp Float
+  category  String
+  txHash    String?
+  status    String   @default("Success")
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("transactions")
+}
+
+model Kyc {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    String   @default("NotStarted")
+  updatedAt DateTime @updatedAt
+
+  @@map("kyc")
+}
+
+model Settlement {
+  id               String    @id
+  initiator        String
+  fromToken        String
+  toToken          String
+  amount           String
+  recipientDetails String
+  status           String    @default("Pending")
+  txHash           String?
+  confirmedTxHash  String?
+  createdAt        DateTime  @default(now())
+  confirmedAt      DateTime?
+
+  @@map("settlements")
+}
+
+model Contact {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletAddress    String
+  name             String
+  nickname         String?
+  isFavorite       Boolean  @default(false)
+  lastTransactedAt DateTime?
+  createdAt        DateTime @default(now())
+
+  @@unique([userId, walletAddress])
+  @@map("contacts")
+}
+
+model PaymentRequest {
+  id            String   @id @default(uuid())
+  merchantId    String
+  merchant      User     @relation("MerchantRequests", fields: [merchantId], references: [id], onDelete: Cascade)
+  amount        Float
+  currency      String
+  description   String
+  status        String   @default("Pending") // Pending, Paid, Expired
+  createdAt     DateTime @default(now())
+  paidAt        DateTime?
+  payerAddress  String?
+  txHash        String?
+
+  settlements   MerchantSettlement[]
+
+  @@map("payment_requests")
+}
+
+model MerchantSettlement {
+  id               String         @id @default(uuid())
+  paymentRequestId String
+  paymentRequest   PaymentRequest @relation(fields: [paymentRequestId], references: [id], onDelete: Cascade)
+  merchantId       String
+  amount           Float
+  currency         String
+  status           String         @default("Settled") // Settled, Processing, Failed
+  txHash           String?
+  createdAt        DateTime       @default(now())
+
+  @@map("merchant_settlements")
+}

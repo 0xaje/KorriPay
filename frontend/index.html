@@ -381,6 +381,28 @@
         </div>
         <span class="material-symbols-outlined text-outline">chevron_right</span>
       </button>
+
+      <!-- Divider -->
+      <div class="flex items-center my-sm">
+        <hr class="flex-grow border-outline-variant/30 dark:border-on-surface-variant/20">
+        <span class="px-3 text-xs text-outline dark:text-outline-variant uppercase font-semibold">Demo Mode</span>
+        <hr class="flex-grow border-outline-variant/30 dark:border-on-surface-variant/20">
+      </div>
+
+      <!-- Demo Email Login Form -->
+      <div id="demo-login-form" class="space-y-xs pt-xs">
+        <div class="flex flex-col gap-1">
+          <label for="demo-email" class="text-xs font-bold text-on-surface-variant dark:text-outline-variant">Email Address</label>
+          <input type="email" id="demo-email" placeholder="judge@korri.pay" class="w-full p-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl bg-transparent text-on-surface dark:text-white text-sm focus:outline-none focus:border-primary">
+        </div>
+        <div class="flex flex-col gap-1">
+          <label for="demo-password" class="text-xs font-bold text-on-surface-variant dark:text-outline-variant">Password</label>
+          <input type="password" id="demo-password" placeholder="••••••••" class="w-full p-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl bg-transparent text-on-surface dark:text-white text-sm focus:outline-none focus:border-primary">
+        </div>
+        <button id="btn-demo-login" class="w-full py-2 bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container rounded-xl font-bold hover:opacity-90 active:scale-95 transition-all text-sm cursor-pointer mt-2">
+          Sign In with Email
+        </button>
+      </div>
     </div>
 
     <!-- Connecting Spinner state -->
@@ -439,7 +461,48 @@
     document.getElementById("wallet-close-btn").addEventListener("click", closeWalletModal);
     overlay.addEventListener("click", closeWalletModal);
 
-    // Option selection simulation
+    // Email login handler for demo mode
+    const btnDemoLogin = document.getElementById("btn-demo-login");
+    if (btnDemoLogin) {
+      btnDemoLogin.addEventListener("click", async () => {
+        const email = document.getElementById("demo-email").value;
+        const password = document.getElementById("demo-password").value;
+
+        if (!email || !password) {
+          alert("Please enter both email and password.");
+          return;
+        }
+
+        btnDemoLogin.disabled = true;
+        btnDemoLogin.innerText = "Signing in...";
+
+        try {
+          const res = await fetch("http://localhost:5000/api/auth/demo", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+          });
+
+          if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || "Login failed");
+          }
+
+          const authData = await res.json();
+          localStorage.setItem("korripay_session_token", authData.token);
+          
+          window.location.href = "dashboard.html#home";
+        } catch (err) {
+          alert(err.message);
+        } finally {
+          btnDemoLogin.disabled = false;
+          btnDemoLogin.innerText = "Sign In with Email";
+        }
+      });
+    }
+
+    // Option selection simulation disabled for real WalletService/WalletHooks integration
+    /*
     document.querySelectorAll(".wallet-opt-btn").forEach(btn => {
       btn.addEventListener("click", () => {
         const name = btn.getAttribute("data-name");
@@ -452,6 +515,7 @@
         }, 1500);
       });
     });
+    */
 
     // Click interaction for bento cards
     document.querySelectorAll('.bento-card').forEach(card => {
@@ -484,5 +548,7 @@
       });
     }
   </script>
+  <script type="module" src="walletService.js"></script>
+  <script type="module" src="walletHooks.js"></script>
 </body>
 </html>

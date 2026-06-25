@@ -92,6 +92,11 @@ async function init() {
     sepolia,
   } = _chains;
 
+  // Use user-configured or fallback project ID for demo purposes
+  const projectId = (WALLETCONNECT_PROJECT_ID && WALLETCONNECT_PROJECT_ID !== "YOUR_WALLETCONNECT_PROJECT_ID")
+    ? WALLETCONNECT_PROJECT_ID
+    : "b56e18d47c72ab683b10814fe9495694"; // Fallback demo ID (safe for localhost)
+
   // Build wagmi config
   _config = createConfig({
     chains: [mainnet, polygon, arbitrum, optimism, base, sepolia],
@@ -99,7 +104,7 @@ async function init() {
       injected({ target: "metaMask" }),
       injected({ target: "coinbaseWallet" }),
       walletConnect({
-        projectId: WALLETCONNECT_PROJECT_ID,
+        projectId: projectId,
         metadata: {
           name:        "KorriPay",
           description: "Institutional-grade fintech dashboard",
@@ -350,6 +355,7 @@ window.WalletService = {
   formatAddress: formatAddressPublic,
   destroy,
   SUPPORTED_CHAINS,
+  getConfig: () => _config,
 };
 
 // Auto-init on load

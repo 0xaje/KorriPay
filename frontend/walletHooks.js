@@ -104,7 +104,7 @@ onStateChange(({ account }) => {
   _state.shortAddress = window.WalletService?.formatAddress(account.address) ?? null;
   _state.chainId      = account.chainId;
   _state.network      = window.WalletService
-    ? window.WalletService.getSupportedChains?.()[account.chainId] ?? null
+    ? window.WalletService.getAccount()?.network ?? null
     : null;
 });
 
@@ -116,16 +116,30 @@ onStateChange(({ account }) => {
 function el(id) { return document.getElementById(id); }
 
 /**
- * Update the profile wallet address display.
+ * Update the wallet address display in both the profile and the sidebar.
  */
 function updateAddressDisplay(address) {
   const displayEl = el("profile-wallet-address");
-  if (displayEl && address) {
-    displayEl.textContent = `${address.slice(0, 6)}...${address.slice(-4)}`;
-    displayEl.title       = address; // full address on hover
+  const sidebarEl = el("sidebar-wallet-address");
+  const formatted = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : "Not connected";
+
+  if (displayEl) {
+    displayEl.textContent = formatted;
+    if (address) displayEl.title = address;
   }
-  if (displayEl && !address) {
-    displayEl.textContent = "Not connected";
+  if (sidebarEl) {
+    sidebarEl.textContent = formatted;
+    if (address) sidebarEl.title = address;
+  }
+}
+
+/**
+ * Update the active network display in the profile.
+ */
+function updateNetworkDisplay(network) {
+  const networkEl = el("profile-network-display");
+  if (networkEl) {
+    networkEl.textContent = network ? network.name : "Not connected";
   }
 }
 
@@ -162,34 +176,63 @@ function bindConnectButtons() {
       try {
         const result = await window.WalletService.connect(type);
 
-        if (statusText) statusText.textContent = "Connected!";
+        if (statusText) statusText.textContent = "Requesting Auth Nonce...";
 
-        // Update address display immediately
+        // 1. Get nonce from server
+        const nonceRes = await fetch("http://localhost:5000/api/auth/nonce");
+        if (!nonceRes.ok) throw new Error("Failed to retrieve nonce from server");
+        const { nonce, tempId } = await nonceRes.json();
+
+        if (statusText) statusText.textContent = "Please sign SIWE request in wallet...";
+
+        // 2. Format SIWE message
+        const message = `Sign in to KorriPay.\nHost: localhost:5000\nAddress: ${result.address}\nNonce: ${nonce}\nStatement: Authenticate session.`;
+
+        // 3. Request signature from wallet
+        const signature = await window.WalletService.signMessage(message);
+
+        if (statusText) statusText.textContent = "Verifying signature...";
+
+        // 4. Verify signature on server
+        const verifyRes = await fetch("http://localhost:5000/api/auth/verify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message, signature, address: result.address, tempId })
+        });
+
+        if (!verifyRes.ok) {
+          const verifyErr = await verifyRes.json();
+          throw new Error(verifyErr.error || "SIWE verification failed");
+        }
+
+        const authData = await verifyRes.json();
+
+        // 5. Store session token
+        localStorage.setItem("korripay_session_token", authData.token);
+
+        if (statusText) statusText.textContent = "Authenticated successfully!";
         updateAddressDisplay(result.address);
 
-        // Small delay then navigate to dashboard
         setTimeout(() => {
           window.location.href = `dashboard.html#home`;
         }, 800);
 
       } catch (err) {
-        console.error("[WalletHooks] Connection error:", err);
+        console.error("[WalletHooks] SIWE Connection error:", err);
+
+        // Disconnect wallet if connected but SIWE failed to ensure clean state
+        try { await window.WalletService.disconnect(); } catch (e) {}
 
         // Reset modal back to options
         if (optionsPanel)    optionsPanel.classList.remove("hidden");
         if (connectingPanel) connectingPanel.classList.add("hidden");
         if (statusText)      statusText.textContent = "Connecting...";
 
-        // Show error (use app's toast if available, otherwise alert)
         const message = err.message?.includes("User rejected")
-          ? "Connection cancelled by user."
-          : err.message ?? "Failed to connect wallet.";
+          ? "Signature request cancelled by user."
+          : err.message ?? "Authentication failed.";
 
-        if (typeof showToast === "function") {
-          showToast(message, "error");
-        } else {
-          console.warn("[WalletHooks]", message);
-        }
+        alert(message);
       }
     });
   });
@@ -285,10 +328,12 @@ function bindHeroConnectButton() {
  */
 onStateChange(() => {
   updateAddressDisplay(_state.address);
+  updateNetworkDisplay(_state.network);
 });
 
 onConnect(({ address, chainId, network }) => {
   updateAddressDisplay(address);
+  updateNetworkDisplay(network);
 
   if (typeof showToast === "function") {
     const networkName = network?.name ?? `Chain ${chainId}`;
@@ -298,6 +343,7 @@ onConnect(({ address, chainId, network }) => {
 
 onDisconnect(() => {
   updateAddressDisplay(null);
+  updateNetworkDisplay(null);
 });
 
 // ── Balance fetching utility ─────────────────────────────────────────
@@ -321,15 +367,18 @@ async function fetchBalance(address, chainId) {
 
 // ── Guard: require wallet to access dashboard ────────────────────────
 
-/**
- * requireWallet(redirectTo)
- * Call on dashboard pages. Redirects to landing if no wallet connected.
- * NOTE: This is a soft guard (client-side only). Server auth needed for production.
- */
 function requireWallet(redirectTo = "index.html") {
+  const token = localStorage.getItem("korripay_session_token");
+  if (!token) {
+    console.info("[WalletHooks] No session token found — redirecting to", redirectTo);
+    window.location.href = redirectTo;
+    return;
+  }
+
   onReady(({ account }) => {
-    if (account.status !== "connected") {
-      console.info("[WalletHooks] No wallet connected — redirecting to", redirectTo);
+    const isDemoSession = token.startsWith("session-demo-");
+    if (account.status !== "connected" && !isDemoSession) {
+      console.info("[WalletHooks] No wallet connected and not in demo mode — redirecting to", redirectTo);
       window.location.href = redirectTo;
     }
   });
@@ -376,3 +425,8 @@ export {
   fetchBalance,
   requireWallet,
 };
+
+// Auto-guard dashboard.html pages
+if (window.location.pathname.includes("dashboard.html")) {
+  requireWallet("index.html");
+}
