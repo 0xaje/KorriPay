@@ -127,3 +127,23 @@ model MerchantSettlement {
 
   @@map("merchant_settlements")
 }
+
+model FxConversion {
+  id             String   @id @default(uuid())
+  userId         String
+  fromCurrency   String   // KRW | USD | NGN
+  toAsset        String   // MockKRW | USDC
+  inputAmount    Float
+  outputAmount   Float
+  exchangeRate   Float
+  feeUSD         Float    @default(0)
+  feeInOutput    Float    @default(0)
+  usdEquivalent  Float
+  rateSource     String   @default("live") // live | fallback
+  txHash         String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("fx_conversions")
+}

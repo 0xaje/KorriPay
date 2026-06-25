@@ -1792,18 +1792,83 @@ function escapeHtml(str) {
             .replace(/'/g, "&#039;");
 }
 
-// Multi-step send setup with currency conversion rates
+// Multi-step send setup with FX Engine integration
 let selectedCurrency = "USD";
-const exchangeRates = {
-  USD: 1.00,
-  KRW: 1400.00,
-  NGN: 1500.00
-};
-const exchangeSymbols = {
-  USD: "$",
-  KRW: "₩",
-  NGN: "₦"
-};
+let selectedOutputAsset = "USDC"; // MockKRW or USDC
+let _fxQuoteCache = null;         // Latest quote from FX Engine
+
+// Debounce helper
+function _debounce(fn, ms) {
+  let timer;
+  return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
+}
+
+// Map input currency to sensible output asset
+function _defaultAssetForCurrency(currency) {
+  return currency === 'KRW' ? 'MockKRW' : 'USDC';
+}
+
+// Format large numbers
+function _fmtNumber(n, decimals = 2) {
+  if (n == null || isNaN(n)) return '—';
+  return Number(n).toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+/**
+ * Fetch a live FX quote from the FX Engine backend and update the preview panel.
+ */
+async function refreshFXPreview(amount, currency) {
+  const loadingEl   = document.getElementById('fx-loading');
+  const rateRowsEl  = document.getElementById('fx-rate-rows');
+  const rateDisplay = document.getElementById('fx-rate-display');
+  const receiveEl   = document.getElementById('fx-receive-amount');
+  const feeEl       = document.getElementById('fx-fee-display');
+  const sourceEl    = document.getElementById('fx-source-badge');
+
+  if (!loadingEl || !rateRowsEl) return;
+
+  const toAsset = _defaultAssetForCurrency(currency);
+  selectedOutputAsset = toAsset;
+
+  // Show spinner
+  loadingEl.classList.remove('hidden');
+  rateRowsEl.classList.add('hidden');
+
+  try {
+    const res = await fetch('http://localhost:5000/api/fx/quote', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: amount || 1, fromCurrency: currency, toAsset }),
+    });
+
+    if (!res.ok) throw new Error('FX API error');
+    const quote = await res.json();
+    _fxQuoteCache = quote;
+
+    // Update display
+    if (rateDisplay) rateDisplay.textContent = quote.rate.display;
+    if (receiveEl)   receiveEl.textContent   = `${_fmtNumber(quote.output.netAmount, 4)} ${toAsset}`;
+    if (feeEl)       feeEl.textContent       = quote.fee.isZero ? 'Free ✓' : `${quote.fee.ratePercent}% — $${quote.fee.usdEquivalent.toFixed(4)}`;
+    if (sourceEl) {
+      sourceEl.textContent = quote.rate.source === 'live' ? 'Live ✦' : 'Fallback';
+      sourceEl.className = quote.rate.source === 'live'
+        ? 'text-xs px-2 py-0.5 rounded-full font-bold bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed'
+        : 'text-xs px-2 py-0.5 rounded-full font-bold bg-error-container text-on-error-container';
+    }
+
+    loadingEl.classList.add('hidden');
+    rateRowsEl.classList.remove('hidden');
+  } catch (err) {
+    if (loadingEl) {
+      loadingEl.innerHTML = '<span class="text-xs text-error">Rate unavailable — using fallback</span>';
+    }
+  }
+}
+
+const _debouncedFXRefresh = _debounce(refreshFXPreview, 400);
+
+// Legacy compatibility — used by Step 2 USD-equivalent calc
+const exchangeRates = { USD: 1.00, KRW: 1325.50, NGN: 1610.00 };
 
 function setupMultiStepSend() {
   const amountInput = document.getElementById("send-input-amount");
@@ -1836,41 +1901,39 @@ function setupMultiStepSend() {
       // Update button styling
       currencyBtns.forEach(b => {
         const label = b.querySelector('.font-bold');
-        const icon = b.querySelector('.material-symbols-outlined');
-        
+        const icon  = b.querySelector('.material-symbols-outlined');
+
         if (b.getAttribute("data-currency") === currency) {
           b.classList.add('border-primary', 'bg-primary-fixed-dim');
           b.classList.remove('border-transparent', 'bg-surface-container', 'dark:bg-surface-dim');
-          if (label) {
-            label.classList.add('text-primary');
-            label.classList.remove('text-on-surface-variant', 'dark:text-outline-variant');
-          }
-          if (icon) {
-            icon.classList.add('text-primary');
-            icon.classList.remove('text-outline');
-          }
+          if (label) { label.classList.add('text-primary'); label.classList.remove('text-on-surface-variant', 'dark:text-outline-variant'); }
+          if (icon)  { icon.classList.add('text-primary');  icon.classList.remove('text-outline'); }
         } else {
           b.classList.remove('border-primary', 'bg-primary-fixed-dim');
           b.classList.add('border-transparent', 'bg-surface-container', 'dark:bg-surface-dim');
-          if (label) {
-            label.classList.remove('text-primary');
-            label.classList.add('text-on-surface-variant', 'dark:text-outline-variant');
-          }
-          if (icon) {
-            icon.classList.remove('text-primary');
-            icon.classList.add('text-outline');
-          }
+          if (label) { label.classList.remove('text-primary'); label.classList.add('text-on-surface-variant', 'dark:text-outline-variant'); }
+          if (icon)  { icon.classList.remove('text-primary'); icon.classList.add('text-outline'); }
         }
       });
 
-      // Update currency display & rate text
       if (activeCurrencySpan) activeCurrencySpan.innerText = currency;
-      if (rateText) {
-        const rate = exchangeRates[currency].toLocaleString();
-        rateText.innerText = `1 USD = ${rate} ${currency}`;
-      }
+
+      // Refresh FX preview with live rate
+      const currentAmount = parseFloat(amountInput?.value) || 1;
+      _debouncedFXRefresh(currentAmount, currency);
     });
   });
+
+  // Refresh FX preview on amount input change
+  if (amountInput) {
+    amountInput.addEventListener('input', () => {
+      const amount = parseFloat(amountInput.value) || 0;
+      _debouncedFXRefresh(amount, selectedCurrency);
+    });
+  }
+
+  // Initial FX preview load
+  _debouncedFXRefresh(parseFloat(amountInput?.value) || 10, selectedCurrency);
 
   // Step 1 -> Step 2 (Amount -> Recipient Selection)
   if (nextBtn) {

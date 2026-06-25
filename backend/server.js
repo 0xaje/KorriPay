@@ -4,6 +4,7 @@ import path from 'url';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
 import { ethers } from 'ethers';
+import fxRouter from './fxController.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.fileURLToPath ? path.fileURLToPath(import.meta.url) : import.meta.url.replace("file://", "");
@@ -18,6 +19,18 @@ app.use(express.json());
 
 // Serve frontend static files
 app.use(express.static(__dirnamePath + '/../frontend'));
+
+// ── FX Engine Router ──────────────────────────────────────────────────────
+// Mount before requireAuth so public endpoints (/rates, /quote, /fee) work
+app.use('/api/fx', (req, res, next) => {
+  // Pass userId through if session exists (non-blocking)
+  const authHeader = req.headers.authorization;
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token && sessions.has(token)) {
+    req.userId = sessions.get(token);
+  }
+  next();
+}, fxRouter);
 
 // Nonce and session cache
 const nonces = new Map();   // tempId -> nonce
@@ -244,6 +257,7 @@ function getFormattedDate() {
 }
 
 // ==================== AUTHENTICATION ENDPOINTS ====================
+// (FX Engine routes already mounted above at /api/fx)
 
 app.get('/api/auth/nonce', (req, res) => {
   const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
