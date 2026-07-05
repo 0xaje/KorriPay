@@ -254,13 +254,15 @@ model ComplianceReport {
 }
 
 model Attestation {
-  id            String   @id @default(uuid())
-  issuer        String
-  subjectWallet String
-  schema        String
-  status        String   @default("Active")
-  timestamp     DateTime @default(now())
-  details       String?
+  id                String   @id @default(uuid())
+  issuer            String
+  subjectWallet     String
+  schema            String
+  status            String   @default("Active")
+  timestamp         DateTime @default(now())
+  details           String?
+  verificationState String   @default("Valid")
+  proof             String   @default("0xmockproof")
 
   @@map("attestations")
 }

@@ -2,15 +2,303 @@ import { PrismaClient } from '@prisma/client';
 import { webhookService } from './webhookService.js';
 
 const prisma = new PrismaClient();
+const isTest = typeof global.it === 'function' || process.env.NODE_ENV === 'test' || process.env.PORT === '0';
 
-// Valid schemas allowed by the abstraction layer
 const VALID_SCHEMAS = ['Identity', 'Merchant', 'Business', 'Payroll', 'Compliance'];
 const VALID_STATUSES = ['Active', 'Revoked', 'Expired'];
 
+/**
+ * Base abstract class defining the Attestation Provider interface.
+ */
+export class BaseAttestationProvider {
+  async issue(data) {
+    throw new Error("issue() not implemented on provider");
+  }
+
+  async verify(id) {
+    throw new Error("verify() not implemented on provider");
+  }
+
+  async revoke(id) {
+    throw new Error("revoke() not implemented on provider");
+  }
+
+  async list(filters) {
+    throw new Error("list() not implemented on provider");
+  }
+}
+
+/**
+ * Mock Attestation Provider implementation.
+ */
+export class MockTrustProvider extends BaseAttestationProvider {
+  async issue({ issuer, subjectWallet, schema, details }) {
+    const detailsStr = details ? (typeof details === 'object' ? JSON.stringify(details) : details) : null;
+    const proofVal = `mock-signature-ecdsa-sha256-0x${Buffer.from(issuer + subjectWallet + schema + Date.now()).toString('hex').slice(0, 40)}`;
+
+    const attestation = await prisma.attestation.create({
+      data: {
+        issuer,
+        subjectWallet,
+        schema,
+        status: 'Active',
+        verificationState: 'Valid',
+        proof: proofVal,
+        details: detailsStr
+      }
+    });
+
+    return attestation;
+  }
+
+  async verify(id) {
+    const att = await prisma.attestation.findUnique({ where: { id } });
+    if (!att) {
+      return { valid: false, error: "Attestation not found" };
+    }
+    if (att.status !== 'Active' || att.verificationState !== 'Valid') {
+      return { valid: false, status: att.status, verificationState: att.verificationState, error: `Attestation is ${att.status}` };
+    }
+    return { valid: true, attestation: att };
+  }
+
+  async revoke(id) {
+    const attestation = await prisma.attestation.findUnique({ where: { id } });
+    if (!attestation) {
+      throw new Error("Attestation not found");
+    }
+
+    const updated = await prisma.attestation.update({
+      where: { id },
+      data: { 
+        status: 'Revoked',
+        verificationState: 'Revoked'
+      }
+    });
+    return updated;
+  }
+
+  async list(filters = {}) {
+    const where = {};
+    if (filters.subjectWallet) {
+      where.subjectWallet = filters.subjectWallet;
+    }
+    if (filters.schema) {
+      where.schema = filters.schema;
+    }
+    if (filters.status) {
+      where.status = filters.status;
+    }
+
+    return prisma.attestation.findMany({
+      where,
+      orderBy: { timestamp: 'desc' }
+    });
+  }
+}
+
+/**
+ * Future Dojang Attestation Provider implementation.
+ */
+export class DojangTrustProvider extends BaseAttestationProvider {
+  async issue({ issuer, subjectWallet, schema, details }) {
+    const dojangIssuer = issuer.startsWith('did:dojang:') ? issuer : `did:dojang:${issuer}`;
+    const detailsObj = typeof details === 'object' ? details : (details ? JSON.parse(details) : {});
+    detailsObj.provider = "Dojang";
+    detailsObj.liveness = detailsObj.liveness || "Passed";
+    const detailsStr = JSON.stringify(detailsObj);
+
+    const proofVal = `dojang-proof-sig-0x${Buffer.from(dojangIssuer + subjectWallet + schema + Date.now()).toString('hex').slice(0, 40)}`;
+
+    const attestation = await prisma.attestation.create({
+      data: {
+        issuer: dojangIssuer,
+        subjectWallet,
+        schema,
+        status: 'Active',
+        verificationState: 'Valid',
+        proof: proofVal,
+        details: detailsStr
+      }
+    });
+
+    return attestation;
+  }
+
+  async verify(id) {
+    const att = await prisma.attestation.findUnique({ where: { id } });
+    if (!att) {
+      return { valid: false, error: "Attestation not found" };
+    }
+    const isDojangSig = att.proof && att.proof.startsWith("dojang-");
+    if (!isDojangSig) {
+      return { valid: false, error: "Invalid Dojang proof signature format" };
+    }
+    if (att.status !== 'Active' || att.verificationState !== 'Valid') {
+      return { valid: false, status: att.status, verificationState: att.verificationState, error: `Attestation is ${att.status}` };
+    }
+    return { valid: true, attestation: att };
+  }
+
+  async revoke(id) {
+    const attestation = await prisma.attestation.findUnique({ where: { id } });
+    if (!attestation) {
+      throw new Error("Attestation not found");
+    }
+    const updated = await prisma.attestation.update({
+      where: { id },
+      data: { 
+        status: 'Revoked',
+        verificationState: 'Revoked'
+      }
+    });
+    return updated;
+  }
+
+  async list(filters = {}) {
+    const where = {};
+    if (filters.subjectWallet) {
+      where.subjectWallet = filters.subjectWallet;
+    }
+    if (filters.schema) {
+      where.schema = filters.schema;
+    }
+    if (filters.status) {
+      where.status = filters.status;
+    }
+    where.issuer = { startsWith: 'did:dojang:', mode: 'insensitive' };
+
+    return prisma.attestation.findMany({
+      where,
+      orderBy: { timestamp: 'desc' }
+    });
+  }
+}
+
+/**
+ * Future Enterprise Attestation Provider implementation.
+ */
+export class EnterpriseTrustProvider extends BaseAttestationProvider {
+  async issue({ issuer, subjectWallet, schema, details }) {
+    const entIssuer = issuer.startsWith('did:enterprise:') ? issuer : `did:enterprise:${issuer}`;
+    const detailsObj = typeof details === 'object' ? details : (details ? JSON.parse(details) : {});
+    detailsObj.provider = "Enterprise";
+    detailsObj.level = detailsObj.level || "Gold";
+    const detailsStr = JSON.stringify(detailsObj);
+
+    const proofVal = `enterprise-kms-sig-0x${Buffer.from(entIssuer + subjectWallet + schema + Date.now()).toString('hex').slice(0, 40)}`;
+
+    const attestation = await prisma.attestation.create({
+      data: {
+        issuer: entIssuer,
+        subjectWallet,
+        schema,
+        status: 'Active',
+        verificationState: 'Valid',
+        proof: proofVal,
+        details: detailsStr
+      }
+    });
+
+    return attestation;
+  }
+
+  async verify(id) {
+    const att = await prisma.attestation.findUnique({ where: { id } });
+    if (!att) {
+      return { valid: false, error: "Attestation not found" };
+    }
+    const isEnterpriseSig = att.proof && att.proof.startsWith("enterprise-");
+    if (!isEnterpriseSig) {
+      return { valid: false, error: "Invalid Enterprise KMS signature format" };
+    }
+    if (att.status !== 'Active' || att.verificationState !== 'Valid') {
+      return { valid: false, status: att.status, verificationState: att.verificationState, error: `Attestation is ${att.status}` };
+    }
+    return { valid: true, attestation: att };
+  }
+
+  async revoke(id) {
+    const attestation = await prisma.attestation.findUnique({ where: { id } });
+    if (!attestation) {
+      throw new Error("Attestation not found");
+    }
+    const updated = await prisma.attestation.update({
+      where: { id },
+      data: { 
+        status: 'Revoked',
+        verificationState: 'Revoked'
+      }
+    });
+    return updated;
+  }
+
+  async list(filters = {}) {
+    const where = {};
+    if (filters.subjectWallet) {
+      where.subjectWallet = filters.subjectWallet;
+    }
+    if (filters.schema) {
+      where.schema = filters.schema;
+    }
+    if (filters.status) {
+      where.status = filters.status;
+    }
+    where.issuer = { startsWith: 'did:enterprise:', mode: 'insensitive' };
+
+    return prisma.attestation.findMany({
+      where,
+      orderBy: { timestamp: 'desc' }
+    });
+  }
+}
+
+/**
+ * Trust Layer Provider Manager/Registry.
+ */
+export class TrustProviderRegistry {
+  constructor() {
+    this.providers = new Map();
+    this.activeProviderName = (process.env.TRUST_PROVIDER || 'mock').toLowerCase();
+  }
+
+  registerProvider(name, provider) {
+    this.providers.set(name.toLowerCase(), provider);
+  }
+
+  setActiveProvider(name) {
+    const lowerName = name.toLowerCase();
+    if (!this.providers.has(lowerName)) {
+      throw new Error(`Provider '${name}' is not registered`);
+    }
+    this.activeProviderName = lowerName;
+    console.log(`[Trust Layer] Switched active provider to: ${this.activeProviderName}`);
+  }
+
+  getActiveProvider() {
+    const provider = this.providers.get(this.activeProviderName);
+    if (!provider) {
+      if (this.activeProviderName === 'mock') {
+        const mockProv = new MockTrustProvider();
+        this.registerProvider('mock', mockProv);
+        return mockProv;
+      }
+      throw new Error(`Active provider '${this.activeProviderName}' is not registered`);
+    }
+    return provider;
+  }
+}
+
+export const trustProviderRegistry = new TrustProviderRegistry();
+
+trustProviderRegistry.registerProvider('mock', new MockTrustProvider());
+trustProviderRegistry.registerProvider('dojang', new DojangTrustProvider());
+trustProviderRegistry.registerProvider('enterprise', new EnterpriseTrustProvider());
+
+/**
+ * AttestationService orchestrator that delegates to the active trust provider.
+ */
 export class AttestationService {
-  /**
-   * Create and store a new attestation.
-   */
   async createAttestation({ issuer, subjectWallet, schema, details }) {
     if (!issuer) {
       throw new Error("Attestation Failed: Issuer address is required");
@@ -22,36 +310,25 @@ export class AttestationService {
       throw new Error(`Attestation Failed: Invalid schema. Must be one of: ${VALID_SCHEMAS.join(', ')}`);
     }
 
-    const detailsStr = details ? (typeof details === 'object' ? JSON.stringify(details) : details) : null;
+    const activeProvider = trustProviderRegistry.getActiveProvider();
+    const attestation = await activeProvider.issue({ issuer, subjectWallet, schema, details });
 
-    const attestation = await prisma.attestation.create({
-      data: {
-        issuer,
-        subjectWallet,
-        schema,
-        status: 'Active',
-        details: detailsStr
-      }
-    });
-
-    console.log(`[AttestationService] Created ${schema} attestation: ${attestation.id} for ${subjectWallet}`);
+    console.log(`[AttestationService] Created ${schema} attestation: ${attestation.id} for ${subjectWallet} using provider: ${trustProviderRegistry.activeProviderName}`);
     
-    // Dispatch Webhook Event: attestation.issued
     webhookService.dispatchEvent('attestation.issued', {
       attestationId: attestation.id,
       issuer: attestation.issuer,
       subjectWallet: attestation.subjectWallet,
       schema: attestation.schema,
       status: attestation.status,
+      verificationState: attestation.verificationState,
+      proof: attestation.proof,
       timestamp: attestation.timestamp.toISOString()
     });
 
     return attestation;
   }
 
-  /**
-   * Get an attestation by ID.
-   */
   async getAttestation(id) {
     const attestation = await prisma.attestation.findUnique({
       where: { id }
@@ -66,29 +343,13 @@ export class AttestationService {
     return attestation;
   }
 
-  /**
-   * List/filter attestations.
-   */
-  async listAttestations({ subjectWallet, schema, status } = {}) {
-    const where = {};
-    if (subjectWallet) where.subjectWallet = subjectWallet;
-    if (schema) {
-      if (!VALID_SCHEMAS.includes(schema)) {
-        throw new Error(`Invalid schema filter. Must be one of: ${VALID_SCHEMAS.join(', ')}`);
-      }
-      where.schema = schema;
-    }
-    if (status) {
-      if (!VALID_STATUSES.includes(status)) {
-        throw new Error(`Invalid status filter. Must be one of: ${VALID_STATUSES.join(', ')}`);
-      }
-      where.status = status;
+  async listAttestations(filters = {}) {
+    if (filters.schema && !VALID_SCHEMAS.includes(filters.schema)) {
+      throw new Error(`Invalid schema filter. Must be one of: ${VALID_SCHEMAS.join(', ')}`);
     }
 
-    const list = await prisma.attestation.findMany({
-      where,
-      orderBy: { timestamp: 'desc' }
-    });
+    const activeProvider = trustProviderRegistry.getActiveProvider();
+    const list = await activeProvider.list(filters);
 
     return list.map(att => {
       if (att.details) {
@@ -102,36 +363,17 @@ export class AttestationService {
     });
   }
 
-  /**
-   * Revoke an active attestation.
-   */
   async revokeAttestation(id) {
-    const attestation = await prisma.attestation.findUnique({ where: { id } });
-    if (!attestation) {
-      throw new Error("Attestation not found");
-    }
+    const activeProvider = trustProviderRegistry.getActiveProvider();
+    const updated = await activeProvider.revoke(id);
 
-    const updated = await prisma.attestation.update({
-      where: { id },
-      data: { status: 'Revoked' }
-    });
-
-    console.log(`[AttestationService] Revoked attestation: ${id}`);
+    console.log(`[AttestationService] Revoked attestation: ${id} using provider: ${trustProviderRegistry.activeProviderName}`);
     return updated;
   }
 
-  /**
-   * Verify if an attestation is valid (active and exists).
-   */
   async verifyAttestation(id) {
-    const attestation = await prisma.attestation.findUnique({ where: { id } });
-    if (!attestation) {
-      return { valid: false, error: "Attestation not found" };
-    }
-    if (attestation.status !== 'Active') {
-      return { valid: false, status: attestation.status, error: `Attestation is ${attestation.status}` };
-    }
-    return { valid: true, attestation };
+    const activeProvider = trustProviderRegistry.getActiveProvider();
+    return activeProvider.verify(id);
   }
 }
 

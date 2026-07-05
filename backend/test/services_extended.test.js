@@ -54,6 +54,8 @@ describe('KorriPay Extended Service Logic Tests', () => {
       expect(testAttestation.id).to.not.be.undefined;
       expect(testAttestation.schema).to.equal('Identity');
       expect(testAttestation.status).to.equal('Active');
+      expect(testAttestation.verificationState).to.equal('Valid');
+      expect(testAttestation.proof).to.not.be.undefined;
     });
 
     it('should list attestations filtered by subject and schema', async () => {
@@ -73,9 +75,54 @@ describe('KorriPay Extended Service Logic Tests', () => {
 
       const revoked = await attestationService.revokeAttestation(testAttestation.id);
       expect(revoked.status).to.equal('Revoked');
+      expect(revoked.verificationState).to.equal('Revoked');
 
       const verifyRevoked = await attestationService.verifyAttestation(testAttestation.id);
       expect(verifyRevoked.valid).to.be.false;
+    });
+
+    it('should support switching to Dojang provider and issuing Dojang-prefixed attestations', async () => {
+      const { trustProviderRegistry } = await import('../src/services/attestationService.js');
+      trustProviderRegistry.setActiveProvider('dojang');
+
+      const dojangAtt = await attestationService.createAttestation({
+        issuer: 'government-registry',
+        subjectWallet: testUser.walletAddress,
+        schema: 'Compliance',
+        details: { liveness: 'Passed' }
+      });
+
+      expect(dojangAtt.issuer).to.equal('did:dojang:government-registry');
+      expect(dojangAtt.proof.startsWith('dojang-proof-sig-')).to.be.true;
+      expect(dojangAtt.verificationState).to.equal('Valid');
+
+      const verifyRes = await attestationService.verifyAttestation(dojangAtt.id);
+      expect(verifyRes.valid).to.be.true;
+
+      // Switch back
+      trustProviderRegistry.setActiveProvider('mock');
+    });
+
+    it('should support switching to Enterprise provider and issuing Enterprise-prefixed attestations', async () => {
+      const { trustProviderRegistry } = await import('../src/services/attestationService.js');
+      trustProviderRegistry.setActiveProvider('enterprise');
+
+      const entAtt = await attestationService.createAttestation({
+        issuer: 'kms-service',
+        subjectWallet: testUser.walletAddress,
+        schema: 'Merchant',
+        details: { level: 'Gold' }
+      });
+
+      expect(entAtt.issuer).to.equal('did:enterprise:kms-service');
+      expect(entAtt.proof.startsWith('enterprise-kms-sig-')).to.be.true;
+      expect(entAtt.verificationState).to.equal('Valid');
+
+      const verifyRes = await attestationService.verifyAttestation(entAtt.id);
+      expect(verifyRes.valid).to.be.true;
+
+      // Switch back
+      trustProviderRegistry.setActiveProvider('mock');
     });
   });
 

@@ -131,6 +131,31 @@ describe('KorriPay REST API Tests', () => {
       expect(res.body.score).to.be.a('number');
     });
 
+    it('GET and POST /api/v1/trust/provider should get and set the active trust provider', async () => {
+      const getRes = await request(app)
+        .get('/api/v1/trust/provider')
+        .set('Authorization', 'Bearer session-demo-test')
+        .expect(200);
+      expect(getRes.body.success).to.be.true;
+      expect(getRes.body.provider).to.equal('mock');
+
+      const postRes = await request(app)
+        .post('/api/v1/trust/provider')
+        .set('Authorization', 'Bearer session-demo-test')
+        .send({ provider: 'dojang' })
+        .expect(200);
+      expect(postRes.body.success).to.be.true;
+      expect(postRes.body.provider).to.equal('dojang');
+
+      const postBackRes = await request(app)
+        .post('/api/v1/trust/provider')
+        .set('Authorization', 'Bearer session-demo-test')
+        .send({ provider: 'mock' })
+        .expect(200);
+      expect(postBackRes.body.success).to.be.true;
+      expect(postBackRes.body.provider).to.equal('mock');
+    });
+
     it('POST /api/v1/identity/verify should update identity status', async () => {
       const res = await request(app)
         .post('/api/v1/identity/verify')

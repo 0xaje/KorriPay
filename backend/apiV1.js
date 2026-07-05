@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 
 import { PrismaClient } from '@prisma/client';
 import { settlementService } from './src/services/settlementService.js';
-import { attestationService } from './src/services/attestationService.js';
+import { attestationService, trustProviderRegistry } from './src/services/attestationService.js';
 import { screenTransaction, logComplianceCheck } from './complianceService.js';
 import { recipientResolver } from './src/services/recipientResolver.js';
 import { serviceRegistry } from './src/giwa/serviceRegistry.js';
@@ -481,6 +481,62 @@ router.post('/attestations', async (req, res) => {
     });
 
     res.status(201).json({ success: true, attestation: att });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * @openapi
+ * /api/v1/trust/provider:
+ *   get:
+ *     summary: Retrieve the active Trust Layer provider name
+ *     description: Returns the currently active attestation provider (mock, dojang, or enterprise).
+ *     security:
+ *       - cookieAuth: []
+ *     responses:
+ *       200:
+ *         description: Active provider name returned successfully
+ *   post:
+ *     summary: Switch the active Trust Layer provider
+ *     description: Changes the active attestation provider for the Trust Layer dynamically.
+ *     security:
+ *       - cookieAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - provider
+ *             properties:
+ *               provider:
+ *                 type: string
+ *                 enum: [mock, dojang, enterprise]
+ *     responses:
+ *       200:
+ *         description: Provider switched successfully
+ *       400:
+ *         description: Invalid provider name
+ */
+router.get('/trust/provider', async (req, res) => {
+  try {
+    const active = trustProviderRegistry.activeProviderName;
+    res.json({ success: true, provider: active });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/trust/provider', async (req, res) => {
+  try {
+    const { provider } = req.body;
+    if (!provider) {
+      return res.status(400).json({ error: "Provider name is required" });
+    }
+    trustProviderRegistry.setActiveProvider(provider);
+    res.json({ success: true, provider: trustProviderRegistry.activeProviderName });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
