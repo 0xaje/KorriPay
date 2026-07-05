@@ -181,13 +181,41 @@
             <span class="material-symbols-outlined">storefront</span>
             <span class="font-label-md text-label-md">Merchant</span>
           </a>
+          <a id="side-nav-merchant-portal" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
+            <span class="material-symbols-outlined">payments</span>
+            <span class="font-label-md text-label-md">Settlement Portal</span>
+          </a>
           <a id="side-nav-analytics" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
             <span class="material-symbols-outlined">query_stats</span>
             <span class="font-label-md text-label-md">Analytics</span>
           </a>
+          <a id="side-nav-giwa" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
+            <span class="material-symbols-outlined">lan</span>
+            <span class="font-label-md text-label-md">GIWA Status</span>
+          </a>
+          <a id="side-nav-operations" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
+            <span class="material-symbols-outlined">settings_ethernet</span>
+            <span class="font-label-md text-label-md">Operations</span>
+          </a>
+          <a id="side-nav-compliance" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
+            <span class="material-symbols-outlined">gavel</span>
+            <span class="font-label-md text-label-md">Compliance</span>
+          </a>
           <a id="side-nav-profile" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
             <span class="material-symbols-outlined">person</span>
             <span class="font-label-md text-label-md">Profile</span>
+          </a>
+          <a id="side-nav-treasury" href="/treasury" class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
+            <span class="material-symbols-outlined">account_balance</span>
+            <span class="font-label-md text-label-md font-bold">Treasury</span>
+          </a>
+          <a id="side-nav-organization" href="/organization" class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
+            <span class="material-symbols-outlined">corporate_fare</span>
+            <span class="font-label-md text-label-md font-bold">Organization</span>
+          </a>
+          <a id="side-nav-admin" href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-amber-605 dark:text-amber-400 hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-300 transition-colors active:scale-95 transition-transform hidden">
+            <span class="material-symbols-outlined">admin_panel_settings</span>
+            <span class="font-label-md text-label-md font-bold">Admin Console</span>
           </a>
         </nav>
       </div>
@@ -314,6 +342,46 @@
                 <h3 class="font-label-md text-label-md text-on-secondary-container font-semibold">Smart Savings</h3>
                 <p class="font-body-sm text-body-sm text-on-surface-variant">You saved $<span id="savings-val">45.00</span> this month in fees</p>
               </div>
+            </div>
+          </section>
+
+          <!-- GIWA Network Intelligence Widget -->
+          <section id="giwa-intelligence-widget" class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md shadow-sm border border-outline-variant/20 space-y-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">lan</span>
+                GIWA Network Status
+              </h3>
+              <span id="widget-giwa-health-badge" class="bg-green-500/10 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> --/100
+              </span>
+            </div>
+            <p class="font-body-sm text-body-sm text-outline">Real-time status of the settlement layer.</p>
+            
+            <div class="grid grid-cols-2 gap-sm text-xs mt-2">
+              <div class="p-2 bg-surface-container dark:bg-surface-dim rounded-lg">
+                <span class="block text-outline text-[10px] uppercase font-bold tracking-wider">Block Height</span>
+                <span id="widget-giwa-block" class="font-mono font-bold dark:text-white">#--</span>
+              </div>
+              <div class="p-2 bg-surface-container dark:bg-surface-dim rounded-lg">
+                <span class="block text-outline text-[10px] uppercase font-bold tracking-wider">RPC Latency</span>
+                <span id="widget-giwa-latency" class="font-bold text-secondary">-- ms</span>
+              </div>
+              <div class="p-2 bg-surface-container dark:bg-surface-dim rounded-lg">
+                <span class="block text-outline text-[10px] uppercase font-bold tracking-wider">Sequencer</span>
+                <span id="widget-giwa-sequencer" class="font-bold text-green-500">--</span>
+              </div>
+              <div class="p-2 bg-surface-container dark:bg-surface-dim rounded-lg">
+                <span class="block text-outline text-[10px] uppercase font-bold tracking-wider">Gas Price</span>
+                <span id="widget-giwa-gas" class="font-bold dark:text-white">-- Gwei</span>
+              </div>
+            </div>
+
+            <div class="pt-2 flex justify-between items-center">
+              <span id="widget-giwa-rating" class="text-xs font-semibold text-primary dark:text-primary-fixed-dim">--</span>
+              <button type="button" onclick="window.location.hash = 'giwa';" class="text-xs font-bold text-secondary hover:underline flex items-center gap-0.5 cursor-pointer">
+                Full Details <span class="material-symbols-outlined text-sm">chevron_right</span>
+              </button>
             </div>
           </section>
 
@@ -461,6 +529,21 @@
                   <span class="material-symbols-outlined">person_add</span>
                   <span>New Recipient</span>
                 </button>
+              </div>
+            </div>
+
+            <!-- Resolved Recipient Container (Dynamic API resolution) -->
+            <div id="resolved-recipient-container" class="hidden bg-white dark:bg-inverse-surface p-md rounded-xl border border-outline-variant dark:border-outline/10 shadow-[0_4px_12px_rgba(0,51,102,0.05)] space-y-3">
+              <h4 class="text-xs uppercase tracking-wider text-outline font-bold">Resolved Recipient</h4>
+              <div id="resolved-recipient-card" class="flex items-center justify-between p-3 bg-surface-container-low dark:bg-on-background/5 rounded-xl border border-outline-variant/30 hover:border-primary dark:hover:border-primary-fixed transition-all cursor-pointer">
+                <div class="flex items-center gap-3">
+                  <div id="resolved-avatar" class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm">R</div>
+                  <div>
+                    <p id="resolved-name" class="font-bold text-on-surface dark:text-white">Friendly Name</p>
+                    <p id="resolved-address" class="text-xs text-outline dark:text-outline-variant font-mono">0x...</p>
+                  </div>
+                </div>
+                <span class="material-symbols-outlined text-primary dark:text-primary-fixed">check_circle</span>
               </div>
             </div>
 
@@ -817,6 +900,40 @@
 
     <!-- ================== TAB: PORTFOLIO ================== -->
     <div id="tab-portfolio" class="tab-content space-y-md animate-fade-in hidden">
+      
+      <!-- Prominent Connected Network Status Bar -->
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface-container-lowest dark:bg-inverse-surface border border-outline-variant dark:border-outline/10 rounded-xl p-md shadow-sm">
+        <div class="flex items-center gap-3">
+          <span class="relative flex h-3.5 w-3.5">
+            <span id="portfolio-net-status-pulse" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span id="portfolio-net-status-dot" class="relative inline-flex rounded-full h-3.5 w-3.5 bg-green-500"></span>
+          </span>
+          <div>
+            <p class="text-[10px] text-outline dark:text-outline-variant font-bold uppercase tracking-wider">Connected Network</p>
+            <h4 id="portfolio-net-name" class="font-bold text-on-surface dark:text-white flex items-center gap-1.5">
+              <span>GIWA Testnet (L2 Rollup)</span>
+              <span class="px-1.5 py-0.5 bg-primary/10 text-primary dark:text-primary-fixed text-[9px] rounded-full border border-primary/20 font-mono">Chain ID: 99</span>
+            </h4>
+          </div>
+        </div>
+        <div class="flex items-center gap-md flex-wrap">
+          <div class="text-left sm:text-right">
+            <p class="text-[9px] text-outline dark:text-outline-variant font-bold uppercase">L2 Gas Price</p>
+            <p id="portfolio-net-gas" class="text-xs font-bold font-mono text-on-surface dark:text-white">-- Gwei</p>
+          </div>
+          <div class="w-[1px] h-6 bg-outline-variant dark:bg-outline/20"></div>
+          <div class="text-left sm:text-right">
+            <p class="text-[9px] text-outline dark:text-outline-variant font-bold uppercase">L2 TPS</p>
+            <p id="portfolio-net-tps" class="text-xs font-bold font-mono text-on-surface dark:text-white">--/s</p>
+          </div>
+          <div class="w-[1px] h-6 bg-outline-variant dark:bg-outline/20"></div>
+          <div class="text-left sm:text-right">
+            <p class="text-[9px] text-outline dark:text-outline-variant font-bold uppercase">Block Height</p>
+            <p id="portfolio-net-height" class="text-xs font-bold font-mono text-on-surface dark:text-white">#--</p>
+          </div>
+        </div>
+      </div>
+
       <div class="portfolio-grid">
         <!-- Main Content Area -->
         <div class="space-y-lg">
@@ -944,6 +1061,21 @@
               </div>
             </div>
           </section>
+
+          <!-- Settlement Queue & Pending Confirmations Section -->
+          <section class="space-y-sm">
+            <div class="flex justify-between items-center px-base">
+              <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed">Settlement Queue</h3>
+              <span id="queue-count-badge" class="px-3 py-1 text-xs font-bold bg-amber-500/10 text-amber-500 rounded-full border border-amber-500/20">0 Pending</span>
+            </div>
+            <div id="portfolio-settlement-queue" class="bg-surface-container-lowest dark:bg-inverse-surface border border-outline-variant dark:border-outline/10 rounded-xl shadow-sm divide-y divide-outline-variant dark:divide-outline/10 overflow-hidden">
+              <!-- Default Skeleton state -->
+              <div class="animate-pulse p-md flex flex-col gap-3">
+                <div class="h-4 bg-outline-variant/30 dark:bg-outline/10 rounded w-1/4"></div>
+                <div class="h-10 bg-outline-variant/20 dark:bg-outline/5 rounded w-full"></div>
+              </div>
+            </div>
+          </section>
         </div>
 
         <!-- Sidebar / Secondary Content -->
@@ -1028,6 +1160,60 @@
             </div>
             <div class="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
               <span class="material-symbols-outlined text-[120px] text-on-primary dark:text-primary-fixed">security</span>
+            </div>
+          </section>
+
+          <!-- Attestation Status Card -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface border border-outline-variant dark:border-outline/10 rounded-xl p-md shadow-[0_4px_12px_rgba(0,51,102,0.05)]">
+            <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2 mb-md">
+              <span class="material-symbols-outlined text-primary dark:text-primary-fixed">badge</span>
+              Compliance Attestations
+            </h3>
+            <div id="portfolio-attestation-list" class="grid grid-cols-2 gap-sm">
+              <!-- Dynamically populated -->
+              <div class="col-span-2 flex justify-center py-4">
+                <span class="text-xs text-outline">Loading compliance status...</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Cryptographic Proof History Card -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface border border-outline-variant dark:border-outline/10 rounded-xl p-md shadow-[0_4px_12px_rgba(0,51,102,0.05)]">
+            <div class="flex justify-between items-center mb-md">
+              <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+                <span class="material-symbols-outlined text-green-500" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+                Proof History
+              </h3>
+              <button id="btn-refresh-proofs" class="text-xs text-primary dark:text-primary-fixed font-bold hover:underline flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+              </button>
+            </div>
+            <div id="portfolio-proof-history" class="space-y-sm max-h-[280px] overflow-y-auto pr-1">
+              <!-- Dynamically populated proofs -->
+              <div class="p-4 text-center text-outline">
+                <span class="text-xs">No proofs generated yet</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Explorer Links Card -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface border border-outline-variant dark:border-outline/10 rounded-xl p-md shadow-[0_4px_12px_rgba(0,51,102,0.05)]">
+            <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed mb-md">Explorer Quick Links</h3>
+            <div class="grid grid-cols-1 gap-2">
+              <a id="explorer-link-sequencer" href="http://localhost:5000/api-docs" target="_blank" class="flex items-center justify-between p-3 bg-surface-container-low dark:bg-on-background/5 rounded-lg border border-outline-variant/30 hover:border-primary dark:hover:border-primary-fixed transition-all text-xs font-bold text-on-surface dark:text-white">
+                <span class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-sm text-primary dark:text-primary-fixed">dns</span>
+                  L2 Sequencer (Swagger)
+                </span>
+                <span class="material-symbols-outlined text-sm">open_in_new</span>
+              </a>
+              <a id="explorer-link-explorer" href="#explorer" class="flex items-center justify-between p-3 bg-surface-container-low dark:bg-on-background/5 rounded-lg border border-outline-variant/30 hover:border-primary dark:hover:border-primary-fixed transition-all text-xs font-bold text-on-surface dark:text-white">
+                <span class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-sm text-secondary">explore</span>
+                  L2 Transaction Explorer
+                </span>
+                <span class="material-symbols-outlined text-sm">open_in_new</span>
+              </a>
             </div>
           </section>
         </aside>
@@ -1439,6 +1625,51 @@
         Generate instant payment links and QR codes to request payments from customers, and track your settlements directly on-chain.
       </p>
 
+      <!-- Merchant Statistics Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-sm md:gap-md mb-2">
+        <!-- Merchant ID -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Merchant ID</p>
+          <h3 id="merchant-stat-id" class="text-xs font-extrabold text-primary dark:text-primary-fixed mt-1.5 font-mono truncate">Loading...</h3>
+        </div>
+
+        <!-- Verification Status -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Verification Status</p>
+          <div class="mt-2 flex items-center gap-1.5">
+            <span id="merchant-stat-verification-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+            <span id="merchant-stat-verification" class="text-xs font-bold text-on-surface dark:text-white">Loading...</span>
+          </div>
+        </div>
+
+        <!-- Settlement Volume -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Settlement Volume</p>
+          <h3 id="merchant-stat-volume" class="text-sm font-extrabold text-primary dark:text-primary-fixed mt-1.5">$0.00</h3>
+        </div>
+
+        <!-- Settlement Success Rate -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Success Rate</p>
+          <h3 id="merchant-stat-success-rate" class="text-sm font-extrabold text-green-500 mt-1.5">100.0%</h3>
+        </div>
+
+        <!-- Average Settlement Time -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Avg Settlement Time</p>
+          <h3 id="merchant-stat-time" class="text-sm font-extrabold text-primary dark:text-primary-fixed mt-1.5">--</h3>
+        </div>
+
+        <!-- Compliance Status -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Compliance Status</p>
+          <div class="mt-2 flex items-center gap-1.5">
+            <span id="merchant-stat-compliance-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+            <span id="merchant-stat-compliance" class="text-xs font-bold text-on-surface dark:text-white">Loading...</span>
+          </div>
+        </div>
+      </div>
+
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-md md:gap-lg items-start">
         
         <!-- Left: Generate Payment Request Form & Result (5 cols) -->
@@ -1534,6 +1765,107 @@
       </div>
     </div>
 
+    <!-- ================== TAB: MERCHANT SETTLEMENT PORTAL ================== -->
+    <div id="tab-merchant-portal" class="tab-content space-y-md animate-fade-in hidden">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed">Merchant Settlement Portal</h2>
+          <p class="text-body-sm text-on-surface-variant dark:text-outline-variant">
+            Monitor settlement runs, verify cryptographic proofs, and export records for accounting.
+          </p>
+        </div>
+        <button id="btn-export-csv" class="h-10 px-4 bg-primary text-white rounded-lg hover:bg-opacity-90 active:scale-95 transition-all flex items-center gap-2 font-bold text-xs shadow-sm cursor-pointer">
+          <span class="material-symbols-outlined text-sm">download</span>
+          Export CSV
+        </button>
+      </div>
+
+      <!-- Metrics Row -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-sm md:gap-md">
+        <!-- Daily Settlements -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Daily Settlements</p>
+          <h3 id="portal-metric-daily" class="text-lg font-extrabold text-primary dark:text-primary-fixed mt-1">$0.00</h3>
+          <p class="text-[9px] text-outline mt-0.5">Settled in last 24 hours</p>
+        </div>
+
+        <!-- Pending Settlements -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Pending Settlements</p>
+          <h3 id="portal-metric-pending" class="text-lg font-extrabold text-amber-500 mt-1">$0.00</h3>
+          <p id="portal-metric-pending-count" class="text-[9px] text-outline mt-0.5">0 transactions in queue</p>
+        </div>
+
+        <!-- Completed Settlements -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Completed Settlements</p>
+          <h3 id="portal-metric-completed" class="text-lg font-extrabold text-green-500 mt-1">$0.00</h3>
+          <p id="portal-metric-completed-count" class="text-[9px] text-outline mt-0.5">0 total settled requests</p>
+        </div>
+
+        <!-- Settlement Proofs -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Settlement Proofs</p>
+          <h3 id="portal-metric-proofs" class="text-lg font-extrabold text-primary dark:text-primary-fixed mt-1">0 Verified</h3>
+          <p class="text-[9px] text-outline mt-0.5">ZK-proof verified batches</p>
+        </div>
+      </div>
+
+      <!-- Search and Filtering controls -->
+      <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col md:flex-row gap-4 justify-between items-center">
+        <div class="flex items-center gap-sm bg-surface-container-low dark:bg-on-background/10 border border-outline-variant/30 rounded-xl px-3 py-2 w-full md:max-w-xs">
+          <span class="material-symbols-outlined text-outline text-sm">search</span>
+          <input id="portal-search-input" type="text" placeholder="Search by memo or hash..." class="bg-transparent border-none text-xs w-full outline-none dark:text-white">
+        </div>
+        <div class="flex items-center gap-3 w-full md:w-auto">
+          <div class="w-full md:w-40">
+            <select id="portal-filter-status" class="w-full px-3 py-2 text-xs border border-outline-variant dark:border-on-surface-variant/30 rounded-lg bg-surface dark:bg-surface-dim focus:outline-none dark:text-white">
+              <option value="all">All Statuses</option>
+              <option value="Settled">Completed</option>
+              <option value="Processing">Pending</option>
+              <option value="Failed">Failed</option>
+            </select>
+          </div>
+          <div class="w-full md:w-40">
+            <select id="portal-filter-currency" class="w-full px-3 py-2 text-xs border border-outline-variant dark:border-on-surface-variant/30 rounded-lg bg-surface dark:bg-surface-dim focus:outline-none dark:text-white">
+              <option value="all">All Currencies</option>
+              <option value="USDC">USDC</option>
+              <option value="ETH">ETH</option>
+              <option value="BTC">BTC</option>
+              <option value="KRW">MockKRW</option>
+              <option value="USD">USD</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Settlements Table -->
+      <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="text-xs uppercase text-on-surface-variant dark:text-outline-variant border-b border-outline-variant/20 font-bold">
+                <th class="p-3">Reference / Memo</th>
+                <th class="p-3">Amount</th>
+                <th class="p-3">Status</th>
+                <th class="p-3">Tx Hash & Proof</th>
+                <th class="p-3">Date</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="portal-settlements-body" class="text-sm dark:text-white divide-y divide-outline-variant/10">
+              <tr>
+                <td colspan="6" class="p-8 text-center text-outline dark:text-outline-variant">
+                  <span class="material-symbols-outlined text-3xl animate-spin">autorenew</span>
+                  <p class="mt-2 text-xs">Loading settlements...</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- ================== TAB: ANALYTICS ================== -->
     <div id="tab-analytics" class="tab-content space-y-md animate-fade-in hidden">
       <div class="flex items-center justify-between">
@@ -1616,6 +1948,49 @@
             <span class="material-symbols-outlined text-xs">shield</span> Secure
           </div>
         </div>
+      </div>
+
+      <!-- GIWA L2 Integration Summary Widget -->
+      <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-md">
+        <div class="flex items-center gap-md">
+          <div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+            <span class="material-symbols-outlined text-[28px] animate-spin-slow">lan</span>
+          </div>
+          <div>
+            <h4 class="font-headline-sm text-headline-sm text-primary dark:text-primary-fixed flex items-center gap-2">
+              GIWA Layer-2 Settlement Engine
+              <span class="inline-flex items-center gap-1 bg-green-500/10 text-green-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Active
+              </span>
+            </h4>
+            <p class="text-xs text-on-surface-variant dark:text-outline-variant mt-0.5">
+              Settlements processed via GIWA L2 Sequencer. Block confirmations are finalized automatically.
+            </p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-sm text-center md:text-left">
+          <div class="px-4 border-r border-outline-variant/20">
+            <span class="block text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">GIWA Network</span>
+            <span id="analytics-giwa-network" class="text-sm font-bold dark:text-white">GIWA L2 Mainnet</span>
+          </div>
+          <div class="px-4 border-r border-outline-variant/20">
+            <span class="block text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">L2 Block Height</span>
+            <span id="analytics-giwa-block" class="text-sm font-mono font-bold dark:text-white">#2,450,810</span>
+          </div>
+          <div class="px-4 border-r border-outline-variant/20">
+            <span class="block text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">L2 Throughput</span>
+            <span id="analytics-giwa-tps" class="text-sm font-bold text-secondary">14.2 TPS</span>
+          </div>
+          <div class="px-4">
+            <span class="block text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Confirmations</span>
+            <span id="analytics-giwa-confirmations" class="text-sm font-bold text-primary dark:text-primary-fixed-dim">0</span>
+          </div>
+        </div>
+
+        <button type="button" onclick="window.location.hash = 'giwa';" class="h-10 px-4 bg-secondary dark:bg-secondary-container text-on-secondary dark:text-on-secondary-container rounded-lg font-bold text-xs hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 cursor-pointer">
+          <span class="material-symbols-outlined text-sm">visibility</span> View GIWA Status
+        </button>
       </div>
 
       <!-- Charts Section -->
@@ -1742,6 +2117,9 @@
             </div>
           </section>
 
+          <!-- KorriPay Compliance Passport Component -->
+          <compliance-passport></compliance-passport>
+
           <!-- Payments Card -->
           <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md shadow-sm border border-outline-variant/20 space-y-4">
             <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider mb-2">Payments</h3>
@@ -1803,6 +2181,408 @@
       </div>
     </div>
 
+    <!-- ================== TAB: GIWA STATUS ================== -->
+    <div id="tab-giwa" class="tab-content space-y-md animate-fade-in hidden">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed">GIWA L2 Integration Network</h2>
+          <p class="text-body-sm text-on-surface-variant dark:text-outline-variant">
+            Monitor real-time Global Institutional Wallet Architecture sequencer blocks, settlement confirmations, and network metrics.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="giwa-status-dot" class="w-3.5 h-3.5 rounded-full bg-green-500 animate-pulse"></span>
+          <span id="giwa-status-text" class="text-xs font-bold text-green-500 uppercase tracking-wider">Sequencer Operational</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-md md:gap-lg items-start">
+        
+        <!-- Left Column: Network Health & Metrics (4 cols on lg) -->
+        <div class="lg:col-span-4 space-y-md">
+          <!-- Network Details Card -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+            <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider">L2 Network Identity</h3>
+            <div class="space-y-sm text-sm">
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Network Name</span>
+                <span id="giwa-net-name" class="font-semibold dark:text-white">GIWA L2 Mainnet</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Chain ID</span>
+                <span id="giwa-net-chain" class="font-semibold dark:text-white">92837</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Connected Peers</span>
+                <span id="giwa-net-peers" class="font-semibold text-secondary">148 nodes</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Explorer Status</span>
+                <span id="giwa-net-explorer-status" class="font-semibold text-green-500">Online</span>
+              </div>
+              <div class="py-1">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium block text-xs mb-1">Sequencer Address</span>
+                <span id="giwa-net-seq-addr" class="font-mono text-[10px] break-all bg-surface-container dark:bg-surface-dim p-1.5 rounded block text-zinc-500 dark:text-zinc-400 select-all">0x17F53eE27DaDbe44CE8928ddbe44ce8824c3bC86</span>
+              </div>
+              <div class="py-1">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium block text-xs mb-1">L1 Bridge Contract</span>
+                <span id="giwa-net-bridge-addr" class="font-mono text-[10px] break-all bg-surface-container dark:bg-surface-dim p-1.5 rounded block text-zinc-500 dark:text-zinc-400 select-all">0x88F53eE27DaDbe44CE8928ddbe44ce8824c3bC87</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Live Sequencer Stats Card -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+            <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider">Sequencer Performance</h3>
+            <div class="space-y-sm text-sm">
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Uptime Guarantee</span>
+                <span id="giwa-seq-uptime" class="font-semibold text-secondary">99.98%</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">RPC Latency</span>
+                <span id="giwa-seq-latency" class="font-semibold text-secondary">-- ms</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">L2 Gas Cost</span>
+                <span id="giwa-seq-gas" class="font-semibold dark:text-white">18.4 Gwei</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Network Throughput</span>
+                <span id="giwa-seq-tps" class="font-semibold text-primary dark:text-primary-fixed-dim">14.2 TPS</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Block Height</span>
+                <span id="giwa-seq-block" class="font-mono font-bold dark:text-white">#2,450,810</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Right Column: Heartbeat Feed and Settlement Confirmations (8 cols on lg) -->
+        <div class="lg:col-span-8 space-y-md">
+          <!-- Live Block Feed -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+            <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider flex items-center gap-1">
+              <span class="w-2.5 h-2.5 rounded-full bg-green-500 animate-ping"></span> Live L2 Block Heartbeat
+            </h3>
+            <div id="giwa-block-heartbeat-feed" class="space-y-xs max-h-48 overflow-y-auto pr-1 flex flex-col-reverse">
+              <!-- Instantiated dynamically with scrolling cards -->
+            </div>
+          </section>
+
+          <!-- L2 Settlements confirmations -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider">Settlement Confirmations log</h3>
+              <div class="flex items-center gap-2 text-xs">
+                <span class="text-outline">Average Settlement Time:</span>
+                <span id="giwa-avg-time" class="font-bold text-primary dark:text-white">32s</span>
+              </div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm border-collapse">
+                <thead>
+                  <tr class="text-outline dark:text-outline-variant text-[11px] font-bold border-b border-outline-variant/20 uppercase">
+                    <th class="pb-2">Token Pair</th>
+                    <th class="pb-2">Amount</th>
+                    <th class="pb-2">On-Chain Tx</th>
+                    <th class="pb-2">Confirmations</th>
+                    <th class="pb-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody id="giwa-settlements-tbody" class="divide-y divide-outline-variant/10 dark:divide-zinc-800">
+                  <!-- Loaded from DB -->
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+
+      </div>
+
+      <!-- Historical Performance Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-md md:gap-lg mt-md">
+        <!-- Health & Latency History Chart -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+          <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary font-bold">show_chart</span>
+            Health Score & Latency History
+          </h3>
+          <div class="relative w-full h-64">
+            <canvas id="chart-giwa-health-latency"></canvas>
+          </div>
+        </div>
+
+        <!-- Gas Price & Block Time History Chart -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+          <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary font-bold">insights</span>
+            Gas Price & Block Time Trends
+          </h3>
+          <div class="relative w-full h-64">
+            <canvas id="chart-giwa-gas-time"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================== TAB: OPERATIONS DASHBOARD ================== -->
+    <div id="tab-operations" class="tab-content space-y-md animate-fade-in hidden">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed">Operations Health Dashboard</h2>
+          <p class="text-body-sm text-on-surface-variant dark:text-outline-variant">
+            Real-time monitoring of node RPCs, transactional database latency, indexer syncing status, and settlement pipelines.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-green-500/10 text-green-500 border border-green-500/20">
+            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+            LIVE MONITORING ACTIVE
+          </span>
+        </div>
+      </div>
+
+      <!-- Health Overview Grid -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-sm md:gap-md">
+        <!-- RPC Health -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">RPC Health</p>
+            <h3 id="ops-rpc-status" class="text-lg font-extrabold text-green-500 mt-1">Healthy</h3>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-outline mt-2">
+            <span>Latency</span>
+            <span id="ops-rpc-latency">45ms</span>
+          </div>
+        </div>
+
+        <!-- Indexer Health -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Indexer Health</p>
+            <h3 id="ops-indexer-status" class="text-lg font-extrabold text-green-500 mt-1">Healthy</h3>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-outline mt-2">
+            <span>Last Block</span>
+            <span id="ops-indexer-block" class="font-mono">#182390</span>
+          </div>
+        </div>
+
+        <!-- API Health -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">API Health</p>
+            <h3 id="ops-api-status" class="text-lg font-extrabold text-green-500 mt-1">Healthy</h3>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-outline mt-2">
+            <span>Memory Usage</span>
+            <span id="ops-api-memory">42 MB</span>
+          </div>
+        </div>
+
+        <!-- Database Health -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm flex flex-col justify-between">
+          <div>
+            <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Database Health</p>
+            <h3 id="ops-db-status" class="text-lg font-extrabold text-green-500 mt-1">Healthy</h3>
+          </div>
+          <div class="flex items-center justify-between text-[10px] text-outline mt-2">
+            <span>Query Ping</span>
+            <span id="ops-db-latency">4ms</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pipeline Queue Metrics Grid -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-sm md:gap-md">
+        <!-- Settlement Queue -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider font-semibold">Settlement Queue</p>
+          <div class="flex justify-between items-baseline mt-1">
+            <h3 id="ops-queue-pending" class="text-2xl font-black text-primary dark:text-primary-fixed">0</h3>
+            <span id="ops-queue-amount" class="text-[11px] font-bold text-outline">$0.00 pending</span>
+          </div>
+          <p class="text-[9px] text-outline mt-1">Transactions queued for settling</p>
+        </div>
+
+        <!-- Average Confirmation Time -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider font-semibold">Avg Confirmation Time</p>
+          <h3 id="ops-queue-confirm" class="text-2xl font-black text-secondary mt-1">6.8s</h3>
+          <p class="text-[9px] text-outline mt-1">Sequence to block completion time</p>
+        </div>
+
+        <!-- Failed Settlements -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider font-semibold">Failed Settlements</p>
+          <h3 id="ops-queue-failed" class="text-2xl font-black text-red-500 mt-1">0</h3>
+          <p class="text-[9px] text-outline mt-1">Runs completed with status failure</p>
+        </div>
+
+        <!-- Retry Queue -->
+        <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm">
+          <p class="text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider font-semibold">Retry Queue</p>
+          <h3 id="ops-queue-retry" class="text-2xl font-black text-amber-500 mt-1">0</h3>
+          <p class="text-[9px] text-outline mt-1">Pending automatic retry dispatch</p>
+        </div>
+      </div>
+
+      <!-- Live Pipeline Monitor Logs -->
+      <div class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+        <div class="flex items-center justify-between">
+          <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider">Live Pipeline Monitor</h3>
+          <span class="text-[10px] text-outline font-semibold">Refreshes every 10s</span>
+        </div>
+        <div class="font-mono text-xs bg-surface-container dark:bg-surface-dim p-4 rounded-xl space-y-2 text-on-surface-variant dark:text-zinc-400 max-h-60 overflow-y-auto" id="ops-log-console">
+          <!-- Instantiated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ================== TAB: COMPLIANCE ================== -->
+    <div id="tab-compliance" class="tab-content space-y-md animate-fade-in hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-md md:gap-lg items-start">
+        
+        <!-- Left Column: User Compliance Profile & Interactive Simulation Control Panel (4 cols on lg) -->
+        <div class="lg:col-span-4 space-y-md">
+          <!-- User Compliance Status Card -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md shadow-sm border border-outline-variant/20">
+            <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider mb-sm">My Compliance Profile</h3>
+            <div class="flex flex-col items-center py-4 border-b border-outline-variant/10 mb-4">
+              <!-- Risk Tier Shield -->
+              <div id="compliance-risk-shield" class="w-16 h-16 rounded-full flex items-center justify-center mb-sm bg-green-500/10 text-green-500">
+                <span class="material-symbols-outlined text-[32px]">shield</span>
+              </div>
+              <h4 id="compliance-risk-tier" class="font-headline-md font-bold text-green-500">Low Risk</h4>
+              <p class="text-xs text-outline dark:text-outline-variant">Automated Rating</p>
+            </div>
+            <div class="space-y-sm text-sm">
+              <div class="flex justify-between">
+                <span class="text-on-surface-variant dark:text-outline-variant">KYC Status</span>
+                <span id="compliance-kyc-status" class="font-semibold text-secondary">Verified</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-on-surface-variant dark:text-outline-variant">Single Tx Limit</span>
+                <span id="compliance-single-limit" class="font-semibold dark:text-white">$2,000.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-on-surface-variant dark:text-outline-variant">Daily Velocity Limit</span>
+                <span id="compliance-daily-limit" class="font-semibold dark:text-white">$5,000.00</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-on-surface-variant dark:text-outline-variant">Suspicious Trigger</span>
+                <span id="compliance-suspicious-limit" class="font-semibold dark:text-white">$1,000.00</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Interactive Control Center (Demo Simulation) -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md shadow-sm border border-outline-variant/20 space-y-sm">
+            <div class="flex items-center gap-xs text-primary dark:text-primary-fixed mb-xs">
+              <span class="material-symbols-outlined">tune</span>
+              <h3 class="font-label-sm uppercase tracking-wider text-outline dark:text-outline-variant">Demo Simulation Center</h3>
+            </div>
+            <p class="text-xs text-outline dark:text-outline-variant">Simulate Compliance Officer overrides and verify rule-blocking scenarios in real-time.</p>
+            
+            <form id="form-simulation-profile" class="space-y-sm pt-2">
+              <div class="space-y-1">
+                <label class="text-[11px] font-semibold text-on-surface-variant dark:text-outline-variant">Risk Tier Override</label>
+                <select id="sim-risk-level" class="w-full bg-surface-container dark:bg-surface-dim border border-outline-variant/30 text-body-sm p-2 rounded-md outline-none dark:text-white">
+                  <option value="Low">Low Risk</option>
+                  <option value="Medium">Medium Risk</option>
+                  <option value="High">High Risk</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-between py-1">
+                <label class="text-[11px] font-semibold text-on-surface-variant dark:text-outline-variant">Enforce KYC screening</label>
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input id="sim-kyc-enforced" checked class="sr-only peer" type="checkbox"/>
+                  <div class="w-9 h-5 bg-surface-container-highest dark:bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+                </label>
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] font-semibold text-on-surface-variant dark:text-outline-variant">Single Tx Limit ($)</label>
+                <input id="sim-single-limit" type="number" class="w-full bg-surface-container dark:bg-surface-dim border border-outline-variant/30 text-body-sm p-2 rounded-md outline-none dark:text-white" value="2000" />
+              </div>
+              <div class="space-y-1">
+                <label class="text-[11px] font-semibold text-on-surface-variant dark:text-outline-variant">Daily Velocity Limit ($)</label>
+                <input id="sim-daily-limit" type="number" class="w-full bg-surface-container dark:bg-surface-dim border border-outline-variant/30 text-body-sm p-2 rounded-md outline-none dark:text-white" value="5000" />
+              </div>
+              <button type="submit" class="w-full h-10 bg-primary text-white text-xs font-bold rounded-lg hover:bg-opacity-95 transition-all mt-2">
+                Apply Custom Profile
+              </button>
+            </form>
+          </section>
+        </div>
+        
+        <!-- Right Column: Rules Management, Live Logs & Report Center (8 cols on lg) -->
+        <div class="lg:col-span-8 space-y-md md:space-y-lg">
+          <!-- Compliance Rules Management Panel -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md shadow-sm border border-outline-variant/20 space-y-sm">
+            <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider mb-xs">Compliance Screening Rules</h3>
+            <div id="compliance-rules-list" class="divide-y divide-outline-variant/20 dark:divide-on-surface-variant/20 space-y-3">
+              <!-- Dynamically loaded rules -->
+              <div class="p-4 text-center text-outline animate-pulse text-xs">Loading screening rules...</div>
+            </div>
+          </section>
+
+          <!-- Audit Log Trail (Live transaction screening feed) -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md shadow-sm border border-outline-variant/20 space-y-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider">Screening Audit Trail</h3>
+              <button id="btn-refresh-compliance-logs" class="text-xs text-primary dark:text-primary-fixed-dim hover:underline flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-sm mt-2 border-collapse">
+                <thead>
+                  <tr class="border-b border-outline-variant/20 dark:border-outline/10 text-xs text-outline dark:text-outline-variant">
+                    <th class="py-2 pr-4 font-semibold">Time</th>
+                    <th class="py-2 pr-4 font-semibold">User</th>
+                    <th class="py-2 pr-4 font-semibold">Tx Details</th>
+                    <th class="py-2 pr-4 font-semibold">Risk Score</th>
+                    <th class="py-2 pr-4 font-semibold">Result</th>
+                  </tr>
+                </thead>
+                <tbody id="compliance-logs-tbody">
+                  <!-- Dynamically populated -->
+                  <tr>
+                    <td colspan="5" class="py-6 text-center text-outline dark:text-outline-variant text-xs">No compliance screening events recorded yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Compliance Audit Report Center -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md shadow-sm border border-outline-variant/20 space-y-md">
+            <div class="flex justify-between items-center">
+              <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider">Compliance Report Center</h3>
+              <div class="flex gap-xs">
+                <select id="report-days-select" class="bg-surface-container dark:bg-surface-dim border border-outline-variant/30 text-xs p-1.5 rounded-md outline-none dark:text-white">
+                  <option value="7">Last 7 Days</option>
+                  <option value="30" selected>Last 30 Days</option>
+                  <option value="90">Last 90 Days</option>
+                </select>
+                <button id="btn-generate-report" class="bg-secondary-container text-on-secondary-container dark:text-secondary-fixed text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 active:scale-95 transition-all">
+                  <span class="material-symbols-outlined text-sm">analytics</span> Generate Report
+                </button>
+              </div>
+            </div>
+
+            <!-- List of reports -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-sm" id="compliance-reports-grid">
+              <!-- Dynamically populated -->
+              <div class="col-span-2 py-4 text-center text-outline dark:text-outline-variant text-xs">No reports compiled yet. Click "Generate Report" above.</div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
     </main>
 
     </div> <!-- End Main Content Area -->
@@ -1840,15 +2620,40 @@
       <span class="material-symbols-outlined">storefront</span>
       <span class="font-label-md text-label-md">Merchant</span>
     </a>
+    <!-- Settlement Portal -->
+    <a id="nav-merchant-portal" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+      <span class="material-symbols-outlined">payments</span>
+      <span class="font-label-md text-label-md">Settlements</span>
+    </a>
     <!-- Analytics -->
     <a id="nav-analytics" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">query_stats</span>
       <span class="font-label-md text-label-md">Analytics</span>
     </a>
+    <!-- GIWA -->
+    <a id="nav-giwa" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+      <span class="material-symbols-outlined">lan</span>
+      <span class="font-label-md text-label-md">GIWA</span>
+    </a>
+    <!-- Operations -->
+    <a id="nav-operations" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+      <span class="material-symbols-outlined">settings_ethernet</span>
+      <span class="font-label-md text-label-md">Ops</span>
+    </a>
+    <!-- Compliance -->
+    <a id="nav-compliance" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+      <span class="material-symbols-outlined">gavel</span>
+      <span class="font-label-md text-label-md">Compliance</span>
+    </a>
     <!-- Profile -->
     <a id="nav-profile" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">person</span>
       <span class="font-label-md text-label-md">Profile</span>
+    </a>
+    <!-- Admin -->
+    <a id="nav-admin" href="admin.html" class="flex flex-col items-center justify-center text-amber-600 dark:text-amber-400 px-4 py-1.5 hover:text-amber-700 dark:hover:text-amber-300 transition-colors active:scale-90 transition-transform hidden">
+      <span class="material-symbols-outlined">admin_panel_settings</span>
+      <span class="font-label-md text-label-md font-bold">Admin</span>
     </a>
   </nav>
 
@@ -1858,7 +2663,7 @@
   <div id="modal-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] hidden opacity-0 transition-opacity duration-300"></div>
 
   <!-- Select Asset Modal -->
-  <div id="modal-select-asset" class="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-white dark:bg-inverse-surface rounded-t-2xl sm:rounded-2xl z-[100] hidden transform translate-y-full sm:translate-y-4 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30">
+  <div id="modal-select-asset" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-md bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
       <h3 id="select-asset-modal-title" class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
         <span class="material-symbols-outlined text-primary">account_balance_wallet</span>
@@ -1956,7 +2761,7 @@
   </div>
 
   <!-- Send Money Modal -->
-  <div id="modal-send" class="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-white dark:bg-inverse-surface rounded-t-2xl sm:rounded-2xl z-[100] hidden transform translate-y-full sm:translate-y-4 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30">
+  <div id="modal-send" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-md bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
       <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
         <span class="material-symbols-outlined text-primary">send</span>
@@ -1983,7 +2788,7 @@
   </div>
 
   <!-- Contact Modal (Save Recipient) -->
-  <div id="modal-contact" class="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-white dark:bg-inverse-surface rounded-t-2xl sm:rounded-2xl z-[100] hidden transform translate-y-full sm:translate-y-4 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30">
+  <div id="modal-contact" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-md bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
       <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
         <span class="material-symbols-outlined text-primary">person_add</span>
@@ -2015,7 +2820,7 @@
   </div>
 
   <!-- Manage Contacts Modal -->
-  <div id="modal-manage-contacts" class="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-lg bg-white dark:bg-inverse-surface rounded-t-2xl sm:rounded-2xl z-[100] hidden transform translate-y-full sm:translate-y-4 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30">
+  <div id="modal-manage-contacts" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-lg bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
       <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
         <span class="material-symbols-outlined text-primary">contacts</span>
@@ -2040,7 +2845,7 @@
   </div>
 
   <!-- Add Money Modal -->
-  <div id="modal-add" class="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-white dark:bg-inverse-surface rounded-t-2xl sm:rounded-2xl z-[100] hidden transform translate-y-full sm:translate-y-4 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30">
+  <div id="modal-add" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-md bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
       <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
         <span class="material-symbols-outlined text-primary">add_circle</span>
@@ -2071,7 +2876,7 @@
   </div>
 
   <!-- Pay Bill Modal -->
-  <div id="modal-pay" class="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-white dark:bg-inverse-surface rounded-t-2xl sm:rounded-2xl z-[100] hidden transform translate-y-full sm:translate-y-4 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30">
+  <div id="modal-pay" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-md bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
       <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
         <span class="material-symbols-outlined text-primary">payments</span>
@@ -2104,6 +2909,157 @@
         Pay Bill Now
       </button>
     </form>
+  </div>
+
+  <!-- Compliance Report Details Modal -->
+  <div id="modal-report" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-2xl bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
+      <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">analytics</span>
+        <span id="modal-report-title">Compliance Audit Report</span>
+      </h3>
+      <button class="modal-close-btn material-symbols-outlined text-outline hover:text-primary rounded-full p-1 hover:bg-surface-container-low transition-colors">close</button>
+    </div>
+    <div class="space-y-md pt-2">
+      <div class="flex justify-between items-center text-xs text-outline dark:text-outline-variant font-mono border-b border-outline-variant/15 pb-2">
+        <span>Report ID: <span id="modal-report-id">REP-123</span></span>
+        <span>Compiled At: <span id="modal-report-date">June 26, 2026</span></span>
+      </div>
+      <div class="prose max-w-none text-sm dark:text-white leading-relaxed whitespace-pre-wrap font-sans" id="modal-report-content">
+        <!-- Filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Settlement Proof Details Modal -->
+  <div id="modal-proof" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-lg bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
+      <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+        <span class="material-symbols-outlined text-primary">verified_user</span>
+        <span>Settlement Proof</span>
+      </h3>
+      <button class="modal-close-btn material-symbols-outlined text-outline hover:text-primary rounded-full p-1 hover:bg-surface-container-low transition-colors">close</button>
+    </div>
+    
+    <div class="pt-2 space-y-md">
+      <!-- Status Banner -->
+      <div class="flex items-center justify-between p-sm rounded-xl bg-secondary-container/10 border border-secondary/15">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-green-500 font-bold" id="proof-status-icon">check_circle</span>
+          <span class="font-semibold text-sm text-on-surface dark:text-white" id="proof-status-text">Valid Settlement</span>
+        </div>
+        <span class="font-mono text-xs text-outline dark:text-outline-variant bg-surface-container px-2 py-1 rounded" id="proof-settlement-id">N/A</span>
+      </div>
+
+      <!-- Pipeline Visualization -->
+      <div class="p-sm bg-surface-container-low dark:bg-surface-container-high rounded-xl border border-outline-variant/10">
+        <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold mb-sm">Settlement Processing Pipeline</p>
+        <div class="flex items-center justify-between mt-4 mb-2 text-center text-[10px] text-outline font-semibold select-none relative">
+          <!-- Horizontal connector line -->
+          <div class="absolute left-2 right-2 top-3 h-0.5 bg-outline-variant/30 z-0"></div>
+          <div class="absolute left-2 top-3 h-0.5 bg-primary/70 z-0 transition-all duration-500" id="pipeline-progress-bar" style="width: 0%;"></div>
+
+          <!-- Stage 1 -->
+          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-requested">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-requested">1</div>
+            <span class="mt-1 scale-90">Req</span>
+          </div>
+
+          <!-- Stage 2 -->
+          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-compliance">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-compliance">2</div>
+            <span class="mt-1 scale-90">Comp</span>
+          </div>
+
+          <!-- Stage 3 -->
+          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-route">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-route">3</div>
+            <span class="mt-1 scale-90">Route</span>
+          </div>
+
+          <!-- Stage 4 -->
+          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-execution">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-execution">4</div>
+            <span class="mt-1 scale-90">Exec</span>
+          </div>
+
+          <!-- Stage 5 -->
+          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-confirmation">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-confirmation">5</div>
+            <span class="mt-1 scale-90">Conf</span>
+          </div>
+
+          <!-- Stage 6 -->
+          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-proof">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-proof">6</div>
+            <span class="mt-1 scale-90">Proof</span>
+          </div>
+
+          <!-- Stage 7 -->
+          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-archive">
+            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-archive">7</div>
+            <span class="mt-1 scale-90">Arch</span>
+          </div>
+        </div>
+        <!-- Active Stage Label -->
+        <p class="text-xs text-center font-bold mt-sm text-primary dark:text-primary-fixed" id="pipeline-active-stage-label">Current Stage: Settlement Requested</p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-sm">
+        <div class="p-sm bg-surface-container-low dark:bg-surface-container-high rounded-xl border border-outline-variant/10">
+          <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold">Settlement Duration</p>
+          <p class="font-bold text-headline-md text-primary dark:text-primary-fixed-dim mt-1" id="proof-duration">3 seconds</p>
+        </div>
+        <div class="p-sm bg-surface-container-low dark:bg-surface-container-high rounded-xl border border-outline-variant/10">
+          <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold">Gas Used (L2)</p>
+          <p class="font-bold text-headline-md text-on-surface dark:text-white mt-1" id="proof-gas-used">154,320</p>
+        </div>
+      </div>
+
+      <!-- Detail rows -->
+      <div class="space-y-sm text-sm border-t border-outline-variant/20 pt-sm">
+        <div class="flex justify-between py-1">
+          <span class="text-outline dark:text-outline-variant">Transaction Hash</span>
+          <div class="flex items-center gap-1 font-mono text-xs">
+            <span class="text-on-surface dark:text-white font-semibold" id="proof-tx-hash">0xabcdef...</span>
+            <button class="material-symbols-outlined text-outline hover:text-primary text-sm p-0.5" id="btn-copy-proof-hash" title="Copy Hash">content_copy</button>
+          </div>
+        </div>
+        <div class="flex justify-between py-1">
+          <span class="text-outline dark:text-outline-variant">L2 Block Number</span>
+          <span class="font-mono text-xs text-on-surface dark:text-white font-semibold" id="proof-block-number">23516695</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span class="text-outline dark:text-outline-variant">Timestamp</span>
+          <span class="text-on-surface dark:text-white font-semibold text-xs" id="proof-timestamp">June 26, 2026, 11:00 AM</span>
+        </div>
+      </div>
+
+      <!-- Replay Section -->
+      <div class="border-t border-outline-variant/20 pt-sm space-y-sm">
+        <div class="flex items-center justify-between">
+          <button id="btn-replay-lifecycle" class="flex items-center gap-1.5 px-md py-sm bg-secondary-container/20 hover:bg-secondary-container/30 text-secondary dark:text-secondary-fixed rounded-xl font-label-md transition-colors text-xs font-semibold">
+            <span class="material-symbols-outlined text-sm">play_circle</span>
+            <span>Replay Lifecycle</span>
+          </button>
+          <button id="btn-download-timeline" class="flex items-center gap-1.5 px-md py-sm bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-fixed rounded-xl font-label-md transition-colors text-xs font-semibold hidden">
+            <span class="material-symbols-outlined text-sm">download</span>
+            <span>Download Timeline</span>
+          </button>
+        </div>
+        
+        <!-- Replay Logs Container -->
+        <div id="replay-logs-container" class="hidden p-sm bg-surface-container-low dark:bg-zinc-900 rounded-xl border border-outline-variant/10 font-mono text-[10px] space-y-2 max-h-48 overflow-y-auto">
+          <!-- Populated during replay simulation -->
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-sm">
+        <button id="btn-close-proof-modal" class="px-md py-sm bg-primary text-white rounded-full font-label-md hover:bg-primary/95 transition-colors">
+          Dismiss Proof
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Identity Verification Modal -->
@@ -2685,6 +3641,7 @@
   </div>
 
   <!-- Frontend logic -->
+  <script type="module" src="src/components/CompliancePassport.js"></script>
   <script type="module" src="walletService.js"></script>
   <script type="module" src="walletHooks.js"></script>
   <script type="module" src="tokenService.js"></script>

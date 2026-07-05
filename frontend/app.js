@@ -20,6 +20,10 @@ async function authFetch(url, options = {}) {
   }
   return res;
 }
+
+window.API_BASE = API_BASE;
+window.authFetch = authFetch;
+
 let isBackendConnected = false;
 
 // Mock Fallback Data (if backend is unreachable)
@@ -60,10 +64,33 @@ let state = {
   transactions: []
 };
 
+// Check if the user is an admin to show Admin Console navigation link
+async function checkAdminStatus() {
+  const token = localStorage.getItem("korripay_session_token");
+  if (!token) return;
+  try {
+    const res = await fetch("http://localhost:5000/api/auth/me", {
+      headers: { "Authorization": `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const user = await res.json();
+      if (user.role === 'ADMIN') {
+        const sideAdmin = document.getElementById("side-nav-admin");
+        const navAdmin = document.getElementById("nav-admin");
+        if (sideAdmin) sideAdmin.classList.remove("hidden");
+        if (navAdmin) navAdmin.classList.remove("hidden");
+      }
+    }
+  } catch (err) {
+    console.error("Failed to check admin status:", err);
+  }
+}
+
 // Initialize Application
 document.addEventListener("DOMContentLoaded", () => {
   setupDarkMode();
   setupNavigation();
+  checkAdminStatus();
   setupModals();
   setupFormHandlers();
   setupFiltersAndSearch();
@@ -75,6 +102,8 @@ document.addEventListener("DOMContentLoaded", () => {
   setupExplorerListeners();
   setupMerchant();
   setupAnalytics();
+  setupCompliance();
+  setupGiwa();
   
   // Dev Reset
   const devResetBtn = document.getElementById("btn-dev-reset");
@@ -205,6 +234,8 @@ function checkHashRoute() {
     window.confettiActive = false;
   }
 
+  // We keep the GIWA interval running to support auto-updates on the home dashboard status widget!
+ 
   if (hash === "#send") {
     switchTab("tab-send");
   } else if (hash === "#history") {
@@ -228,13 +259,56 @@ function checkHashRoute() {
     if (typeof loadMerchantData === "function") {
       loadMerchantData();
     }
+  } else if (hash === "#merchant-portal") {
+    switchTab("tab-merchant-portal");
+    if (typeof loadMerchantPortalData === "function") {
+      loadMerchantPortalData();
+    }
   } else if (hash === "#analytics") {
     switchTab("tab-analytics");
     if (typeof loadAnalyticsData === "function") {
       loadAnalyticsData();
     }
+    if (typeof loadGiwaData === "function") {
+      loadGiwaData();
+      if (!window.giwaTimerInterval) {
+        window.giwaTimerInterval = setInterval(loadGiwaData, 30000);
+      }
+    }
+  } else if (hash === "#giwa") {
+    switchTab("tab-giwa");
+    if (typeof loadGiwaData === "function") {
+      loadGiwaData();
+      if (!window.giwaTimerInterval) {
+        window.giwaTimerInterval = setInterval(loadGiwaData, 30000);
+      }
+    }
+  } else if (hash === "#operations") {
+    switchTab("tab-operations");
+    if (typeof loadOperationsData === "function") {
+      loadOperationsData();
+      if (!window.opsTimerInterval) {
+        window.opsTimerInterval = setInterval(loadOperationsData, 10000);
+      }
+    }
+  } else if (hash === "#compliance") {
+    switchTab("tab-compliance");
+    if (typeof loadComplianceData === "function") {
+      loadComplianceData();
+    }
   } else {
     switchTab("tab-home");
+  }
+}
+
+async function loadCompliancePassport() {
+  const passportEl = document.querySelector("compliance-passport");
+  if (passportEl && typeof passportEl.refresh === "function") {
+    try {
+      await passportEl.refresh();
+    } catch (err) {
+      console.warn("[App] Failed to load compliance passport:", err);
+    }
   }
 }
 
@@ -297,7 +371,10 @@ function switchTab(tabId) {
     else if (tabId === "tab-explorer") desktopTitle.textContent = "Explorer";
     else if (tabId === "tab-merchant") desktopTitle.textContent = "Merchant Pay";
     else if (tabId === "tab-analytics") desktopTitle.textContent = "Analytics Dashboard";
-    else if (tabId === "tab-profile") desktopTitle.textContent = "My Profile";
+    else if (tabId === "tab-profile") {
+      desktopTitle.textContent = "My Profile";
+      loadCompliancePassport();
+    }
   }
 
   // Scroll to top of body when switching pages
@@ -330,6 +407,11 @@ function setupModals() {
     btn.addEventListener("click", () => closeAllModals());
   });
 
+  const dismissProofBtn = document.getElementById("btn-close-proof-modal");
+  if (dismissProofBtn) {
+    dismissProofBtn.addEventListener("click", () => closeAllModals());
+  }
+
   overlay.addEventListener("click", () => closeAllModals());
   
   // ESC key listener
@@ -349,8 +431,8 @@ function openModal(modalId) {
   void overlay.offsetWidth;
   
   overlay.classList.add("opacity-100");
-  targetModal.classList.add("opacity-100", "translate-y-0", "sm:translate-y-0");
-  targetModal.classList.remove("translate-y-full", "sm:translate-y-4");
+  targetModal.classList.add("opacity-100", "scale-100");
+  targetModal.classList.remove("scale-95", "opacity-0");
 }
 
 function closeAllModals() {
@@ -360,8 +442,8 @@ function closeAllModals() {
   overlay.classList.remove("opacity-100");
   
   modals.forEach(modal => {
-    modal.classList.remove("opacity-100", "translate-y-0", "sm:translate-y-0");
-    modal.classList.add("translate-y-full", "sm:translate-y-4");
+    modal.classList.remove("opacity-100", "scale-100");
+    modal.classList.add("scale-95", "opacity-0");
   });
 
   setTimeout(() => {
@@ -469,6 +551,17 @@ async function loadData() {
     const data = await res.json();
     
     state = data;
+
+    // Fetch profile details for wallet address
+    try {
+      const meRes = await authFetch(`${API_BASE}/auth/me`);
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        state.walletAddress = meData.walletAddress;
+      }
+    } catch (e) {
+      console.warn("Failed to fetch me details", e);
+    }
     // Hydrate multi-currency balances from API response
     if (data.currencies) {
       state.currencies = data.currencies;
@@ -751,7 +844,235 @@ function updatePortfolioUI() {
   if (swapFromBalanceEl) {
     swapFromBalanceEl.textContent = `Balance: $${fiat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
+
+  // Trigger enhanced dashboard data load
+  loadEnhancedDashboardData();
 }
+
+async function loadEnhancedDashboardData() {
+  const tpsEl = document.getElementById("portfolio-net-tps");
+  const gasEl = document.getElementById("portfolio-net-gas");
+  const heightEl = document.getElementById("portfolio-net-height");
+  const netNameEl = document.getElementById("portfolio-net-name");
+  
+  // 1. Fetch Network Status
+  try {
+    const res = await fetch(`${API_BASE}/giwa/status`);
+    if (res.ok) {
+      const data = await res.json();
+      if (tpsEl) tpsEl.textContent = `${data.sequencer?.tps ?? 0}/s`;
+      if (gasEl) gasEl.textContent = `${data.sequencer?.gasPriceGwei ?? 0} Gwei`;
+      if (heightEl) heightEl.textContent = `#${data.sequencer?.blockHeight ?? 0}`;
+      
+      const statusDot = document.getElementById("portfolio-net-status-dot");
+      const statusPulse = document.getElementById("portfolio-net-status-pulse");
+      const isOnline = data.sequencer && data.sequencer.status === "Operational";
+
+      if (statusDot) {
+        statusDot.className = `relative inline-flex rounded-full h-3.5 w-3.5 ${isOnline ? 'bg-green-500' : 'bg-red-500'}`;
+      }
+      if (statusPulse) {
+        statusPulse.className = `animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isOnline ? 'bg-green-400' : 'bg-red-400'}`;
+      }
+
+      if (netNameEl) {
+        netNameEl.innerHTML = `
+          <span>${data.network?.name ?? 'GIWA Testnet'}</span>
+          <span class="px-1.5 py-0.5 bg-primary/10 text-primary dark:text-primary-fixed text-[9px] rounded-full border border-primary/20 font-mono">Chain ID: ${data.network?.chainId ?? 99}</span>
+        `;
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load network status:", err);
+  }
+
+  // 2. Fetch Attestations
+  const attListEl = document.getElementById("portfolio-attestation-list");
+  if (attListEl) {
+    try {
+      const res = await authFetch(`${API_BASE}/v1/attestations`);
+      if (res.ok) {
+        const data = await res.json();
+        const attestations = data.attestations || [];
+        
+        const schemas = ['Identity', 'Merchant', 'Business', 'Compliance'];
+        
+        if (attestations.length === 0) {
+          attListEl.innerHTML = schemas.map(schema => {
+            let icon = 'shield';
+            if (schema === 'Merchant') icon = 'storefront';
+            if (schema === 'Business') icon = 'domain';
+            if (schema === 'Compliance') icon = 'gavel';
+
+            return `
+              <div onclick="requestMockAttestation('${schema}')" class="flex flex-col items-center justify-center p-3 bg-surface-container-low dark:bg-on-background/5 rounded-xl border border-dashed border-outline-variant hover:border-primary dark:hover:border-primary-fixed transition-all cursor-pointer group text-center">
+                <span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-2xl mb-1">${icon}</span>
+                <span class="font-bold text-[11px] text-on-surface dark:text-white">${schema}</span>
+                <span class="text-[9px] text-outline mt-0.5 group-hover:underline">Click to Attest</span>
+              </div>
+            `;
+          }).join("");
+        } else {
+          attListEl.innerHTML = schemas.map(schema => {
+            const found = attestations.find(a => a.schema === schema);
+            let icon = 'shield';
+            if (schema === 'Merchant') icon = 'storefront';
+            if (schema === 'Business') icon = 'domain';
+            if (schema === 'Compliance') icon = 'gavel';
+
+            if (found) {
+              const statusColor = found.status === 'Active' ? 'text-green-500 bg-green-500/10 border-green-500/25' : 'text-neutral-500 bg-neutral-500/10 border-neutral-500/25';
+              return `
+                <div class="flex flex-col items-center justify-center p-3 bg-surface-container-low dark:bg-on-background/5 rounded-xl border border-outline-variant/40 text-center relative overflow-hidden">
+                  <span class="material-symbols-outlined ${found.status === 'Active' ? 'text-green-500' : 'text-outline'} text-2xl mb-1">${icon}</span>
+                  <span class="font-bold text-[11px] text-on-surface dark:text-white">${schema}</span>
+                  <span class="px-2 py-0.5 text-[9px] font-bold rounded-full mt-1.5 border ${statusColor}">${found.status}</span>
+                </div>
+              `;
+            } else {
+              return `
+                <div onclick="requestMockAttestation('${schema}')" class="flex flex-col items-center justify-center p-3 bg-surface-container-low dark:bg-on-background/5 rounded-xl border border-dashed border-outline-variant hover:border-primary dark:hover:border-primary-fixed transition-all cursor-pointer group text-center">
+                  <span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-2xl mb-1">${icon}</span>
+                  <span class="font-bold text-[11px] text-on-surface dark:text-white">${schema}</span>
+                  <span class="text-[9px] text-outline mt-0.5 group-hover:underline">Click to Attest</span>
+                </div>
+              `;
+            }
+          }).join("");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load attestations:", err);
+      attListEl.innerHTML = `<p class="col-span-2 text-center text-xs text-red-500 py-4">Failed to load attestations</p>`;
+    }
+  }
+
+  // 3. Fetch Settlements & Proofs
+  const queueEl = document.getElementById("portfolio-settlement-queue");
+  const queueCountEl = document.getElementById("queue-count-badge");
+  const proofHistoryEl = document.getElementById("portfolio-proof-history");
+
+  try {
+    const settlementsRes = await authFetch(`${API_BASE}/v1/settlements`);
+    const proofsRes = await authFetch(`${API_BASE}/v1/proofs`);
+
+    if (settlementsRes.ok && proofsRes.ok) {
+      const settlementsData = await settlementsRes.json();
+      const proofsData = await proofsRes.json();
+
+      const settlements = settlementsData.settlements || [];
+      const proofs = proofsData.proofs || [];
+
+      const pendingTx = settlements.filter(s => s.status === "Pending");
+      if (queueCountEl) queueCountEl.textContent = `${pendingTx.length} Pending`;
+
+      if (queueEl) {
+        if (pendingTx.length === 0) {
+          queueEl.innerHTML = `
+            <div class="p-6 text-center text-outline dark:text-outline-variant">
+              <span class="material-symbols-outlined text-3xl mb-1">hourglass_empty</span>
+              <p class="text-xs">No settlements currently in queue</p>
+            </div>
+          `;
+        } else {
+          queueEl.innerHTML = pendingTx.map(tx => {
+            const shortRecipient = tx.recipientDetails ? (tx.recipientDetails.length > 20 ? tx.recipientDetails.slice(0, 18) + "..." : tx.recipientDetails) : "Unknown";
+            const amountFormatted = Number(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 });
+            const toToken = tx.toToken === "0x0000000000000000000000000000000000000000" ? "ETH" : "MockKRW";
+            
+            return `
+              <div class="p-md flex items-center justify-between hover:bg-surface-container-low dark:hover:bg-on-background/10 transition-colors">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-sm animate-spin">sync</span>
+                  </div>
+                  <div>
+                    <p class="font-bold text-xs text-on-surface dark:text-white">Settling to ${shortRecipient}</p>
+                    <p class="text-[10px] text-outline font-mono">${tx.txHash ? tx.txHash.slice(0,10)+"..."+tx.txHash.slice(-8) : 'Pending Sequencer'}</p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p class="font-bold text-xs text-amber-500">${amountFormatted} ${toToken}</p>
+                  <p class="text-[9px] text-outline">Confirmations: 0/12</p>
+                </div>
+              </div>
+            `;
+          }).join("");
+        }
+      }
+
+      if (proofHistoryEl) {
+        if (proofs.length === 0) {
+          proofHistoryEl.innerHTML = `
+            <div class="p-6 text-center text-outline dark:text-outline-variant">
+              <span class="material-symbols-outlined text-3xl mb-1">lock_open</span>
+              <p class="text-xs">No proofs generated yet</p>
+            </div>
+          `;
+        } else {
+          proofHistoryEl.innerHTML = proofs.map(proof => {
+            const statusColor = proof.proofStatus === 'Valid' ? 'text-green-500 bg-green-500/10 border-green-500/25' : 'text-neutral-500 bg-neutral-500/10 border-neutral-500/25';
+            const shortTxHash = proof.txHash ? `${proof.txHash.slice(0, 6)}...${proof.txHash.slice(-4)}` : 'N/A';
+            const dateStr = new Date(proof.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            return `
+              <div class="flex items-center justify-between p-3 bg-surface-container-low dark:bg-on-background/5 rounded-xl border border-outline-variant/30 hover:border-primary dark:hover:border-primary-fixed transition-all">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-sm">verified</span>
+                  </div>
+                  <div>
+                    <p class="font-bold text-xs text-on-surface dark:text-white">Block #${proof.blockNumber}</p>
+                    <p class="text-[9px] text-outline font-mono">TX: <a href="#explorer" class="underline text-primary dark:text-primary-fixed">${shortTxHash}</a></p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="px-2 py-0.5 text-[9px] font-bold rounded-full border ${statusColor}">${proof.proofStatus}</span>
+                  <p class="text-[9px] text-outline mt-1">${proof.settlementDuration}s speed • ${dateStr}</p>
+                </div>
+              </div>
+            `;
+          }).join("");
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Failed to load settlements and proofs:", err);
+  }
+}
+
+async function requestMockAttestation(schema) {
+  try {
+    const subjectWallet = state.walletAddress || "0xf15010414E953a58Cb4Ff99C4e7b02E0138bDc01";
+    
+    showToast(`Requesting attestation for ${schema}...`);
+    
+    const res = await authFetch(`${API_BASE}/v1/attestations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        issuer: "0x0000000000000000000000000000000000000000",
+        subjectWallet,
+        schema,
+        details: {
+          note: `Auto-generated compliance passport attestation for ${schema}`,
+          timestamp: Date.now()
+        }
+      })
+    });
+
+    if (res.ok) {
+      showToast(`${schema} Attestation generated successfully!`, "success");
+      await loadEnhancedDashboardData();
+    } else {
+      const errData = await res.json();
+      showToast(errData.error || "Failed to generate attestation", "error");
+    }
+  } catch (err) {
+    showToast("Attestation request failed", "error");
+  }
+}
+window.requestMockAttestation = requestMockAttestation;
 
 function setupPortfolio() {
   // Simple micro-interaction for asset items
@@ -766,6 +1087,7 @@ function setupPortfolio() {
   const btnDeposit = document.getElementById("btn-portfolio-deposit");
   const btnWithdraw = document.getElementById("btn-portfolio-withdraw");
   const btnSwap = document.getElementById("btn-portfolio-swap");
+  const btnRefreshProofs = document.getElementById("btn-refresh-proofs");
 
   if (btnDeposit) {
     btnDeposit.addEventListener("click", () => {
@@ -780,6 +1102,12 @@ function setupPortfolio() {
   if (btnSwap) {
     btnSwap.addEventListener("click", () => {
       window.location.hash = "swap";
+    });
+  }
+  if (btnRefreshProofs) {
+    btnRefreshProofs.addEventListener("click", async () => {
+      showToast("Refreshing proofs...");
+      await loadEnhancedDashboardData();
     });
   }
 }
@@ -1366,6 +1694,57 @@ function setupSwap() {
   calculateSwap();
 }
 
+function updatePipelineStepper(stage) {
+  const stages = [
+    "Settlement Requested",
+    "Compliance Screening",
+    "Route Selection",
+    "Execution",
+    "Confirmation",
+    "Proof Generation",
+    "Archive"
+  ];
+  
+  const stepKeys = ["requested", "compliance", "route", "execution", "confirmation", "proof", "archive"];
+  const currentIdx = stages.indexOf(stage);
+  
+  // Set connector line width
+  const progressBar = document.getElementById("pipeline-progress-bar");
+  if (progressBar) {
+    if (currentIdx <= 0) {
+      progressBar.style.width = "0%";
+    } else {
+      const percentage = (currentIdx / (stages.length - 1)) * 100;
+      progressBar.style.width = `${percentage}%`;
+    }
+  }
+
+  // Update step bubble colors
+  stepKeys.forEach((key, index) => {
+    const icon = document.getElementById(`step-icon-${key}`);
+    if (icon) {
+      if (index < currentIdx) {
+        // Completed step
+        icon.className = "w-6 h-6 rounded-full flex items-center justify-center bg-green-500 border-2 border-green-600 text-white text-[10px] font-bold transition-all duration-300";
+        icon.innerHTML = `<span class="material-symbols-outlined text-[12px] font-bold">check</span>`;
+      } else if (index === currentIdx) {
+        // Active step
+        icon.className = "w-6 h-6 rounded-full flex items-center justify-center bg-primary border-2 border-primary-dark text-white text-[10px] font-bold scale-110 shadow transition-all duration-300 animate-pulse";
+        icon.innerHTML = `${index + 1}`;
+      } else {
+        // Pending step
+        icon.className = "w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold text-outline transition-all duration-300";
+        icon.innerHTML = `${index + 1}`;
+      }
+    }
+  });
+
+  const label = document.getElementById("pipeline-active-stage-label");
+  if (label) {
+    label.textContent = `Current Stage: ${stage || 'Settlement Requested'}`;
+  }
+}
+
 function createTransactionRow(tx) {
   const row = document.createElement("div");
   row.className = "p-md flex items-center justify-between hover:bg-surface-container dark:hover:bg-inverse-surface/40 transition-colors cursor-pointer group";
@@ -1394,7 +1773,7 @@ function createTransactionRow(tx) {
       iconBgClass = "bg-tertiary-container/10 text-on-tertiary-fixed-variant dark:text-tertiary-fixed-dim";
     }
   }
-
+ 
   // Status Badge
   let statusBadge = `<span class="px-2 py-0.5 rounded-full bg-[#E2F5E9] dark:bg-[#002108] text-[#006e2a] dark:text-[#3ce36a] font-label-sm text-label-sm">Success</span>`;
   if (status === "Pending") {
@@ -1402,12 +1781,12 @@ function createTransactionRow(tx) {
   } else if (status === "Failed") {
     statusBadge = `<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm">Failed</span>`;
   }
-
+ 
   // Amount & Subtext
   let amountText = `-$${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
   let amountClass = "text-on-surface dark:text-white font-semibold";
   let subValue = tx.category;
-
+ 
   if (status === "Failed") {
     amountClass = "text-outline line-through";
     subValue = "Insufficient Funds";
@@ -1416,10 +1795,10 @@ function createTransactionRow(tx) {
     amountClass = "text-on-secondary-container dark:text-secondary-fixed font-bold";
     amountText = `+$${tx.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
   }
-
+ 
   // Format Time representation from date
   const timeOnly = tx.date.includes("•") ? tx.date.split("•")[1].trim() : tx.date;
-
+ 
   row.innerHTML = `
     <div class="flex items-center gap-md">
       <div class="w-12 h-12 rounded-full ${iconBgClass} flex items-center justify-center">
@@ -1439,9 +1818,222 @@ function createTransactionRow(tx) {
       <p class="font-body-sm text-body-sm text-outline dark:text-outline-variant mt-1">${subValue}</p>
     </div>
   `;
+ 
+  // Row click event to show details in toast or proof modal
+  row.addEventListener("click", async () => {
+    if (tx.type === "send" && (tx.txHash || tx.id)) {
+      try {
+        const queryId = tx.txHash || tx.id;
+        const response = await authFetch(`${API_BASE}/settlements/${queryId}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.settlement) {
+            document.getElementById("proof-settlement-id").textContent = data.settlement.id;
+            
+            const proof = data.proof;
+            if (proof) {
+              document.getElementById("proof-status-icon").textContent = "check_circle";
+              document.getElementById("proof-status-icon").className = "material-symbols-outlined text-green-500 font-bold";
+              document.getElementById("proof-status-text").textContent = "Verified Settlement";
+              document.getElementById("proof-duration").textContent = `${proof.settlementDuration}s`;
+              document.getElementById("proof-gas-used").textContent = Number(proof.gasUsed).toLocaleString();
+              
+              const shortHash = proof.txHash.length > 18 
+                ? (proof.txHash.substring(0, 10) + "..." + proof.txHash.substring(proof.txHash.length - 8))
+                : proof.txHash;
+              document.getElementById("proof-tx-hash").textContent = shortHash;
+              document.getElementById("proof-block-number").textContent = proof.blockNumber;
+              
+              const dateObj = new Date(proof.timestamp);
+              document.getElementById("proof-timestamp").textContent = dateObj.toLocaleString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+              });
+              
+              const copyBtn = document.getElementById("btn-copy-proof-hash");
+              if (copyBtn) {
+                copyBtn.onclick = (e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(proof.txHash);
+                  showToast("Transaction hash copied!");
+                };
+              }
+            } else {
+              // Settlement exists but proof is pending (or simulating block reception)
+              document.getElementById("proof-status-icon").textContent = "pending";
+              document.getElementById("proof-status-icon").className = "material-symbols-outlined text-amber-500 font-bold";
+              document.getElementById("proof-status-text").textContent = "Settlement Pending";
+              document.getElementById("proof-duration").textContent = "Pending";
+              document.getElementById("proof-gas-used").textContent = "Pending";
+              document.getElementById("proof-tx-hash").textContent = tx.txHash ? (tx.txHash.substring(0, 10) + "...") : "N/A";
+              document.getElementById("proof-block-number").textContent = "Pending";
+              document.getElementById("proof-timestamp").textContent = new Date(data.settlement.createdAt).toLocaleString();
+            }
+            
+            // Visualize pipeline stage step markers
+            updatePipelineStepper(data.settlement.pipelineStage);
+            
+            // Set up Settlement Replay
+            const replayBtn = document.getElementById("btn-replay-lifecycle");
+            const downloadBtn = document.getElementById("btn-download-timeline");
+            const logsContainer = document.getElementById("replay-logs-container");
+            
+            if (logsContainer) {
+              logsContainer.classList.add("hidden");
+              logsContainer.innerHTML = "";
+            }
+            if (downloadBtn) {
+              downloadBtn.classList.add("hidden");
+            }
+            
+            let timelineLogs = [];
+            
+            if (replayBtn) {
+              replayBtn.onclick = async (e) => {
+                e.stopPropagation();
+                
+                if (logsContainer) {
+                  logsContainer.classList.remove("hidden");
+                  logsContainer.innerHTML = `<div class="text-zinc-500 italic">Initializing replay player...</div>`;
+                }
+                
+                let history = [];
+                try {
+                  history = JSON.parse(data.settlement.pipelineHistory || "[]");
+                } catch (err) {}
+                
+                if (history.length === 0) {
+                  history = [
+                    { stage: "Settlement Requested", timestamp: data.settlement.createdAt },
+                    { stage: "Compliance Screening", timestamp: new Date(new Date(data.settlement.createdAt).getTime() + 600) },
+                    { stage: "Route Selection", timestamp: new Date(new Date(data.settlement.createdAt).getTime() + 1400) },
+                    { stage: "Execution", timestamp: new Date(new Date(data.settlement.createdAt).getTime() + 2000) },
+                    { stage: "Confirmation", timestamp: new Date(new Date(data.settlement.createdAt).getTime() + 3200) },
+                    { stage: "Proof Generation", timestamp: new Date(new Date(data.settlement.createdAt).getTime() + 3800) },
+                    { stage: "Archive", timestamp: data.settlement.confirmedAt || new Date(new Date(data.settlement.createdAt).getTime() + 4200) }
+                  ];
+                }
 
-  // Row click event to show details in toast
-  row.addEventListener("click", () => {
+                timelineLogs = [];
+                logsContainer.innerHTML = "";
+                
+                for (let i = 0; i < history.length; i++) {
+                  const step = history[i];
+                  updatePipelineStepper(step.stage);
+                  
+                  const timeStr = new Date(step.timestamp).toLocaleTimeString();
+                  let actor = "System";
+                  let action = "";
+                  let block = "Pending";
+                  let gas = "N/A";
+                  let confirmation = "Pending";
+                  let explorerLink = "N/A";
+                  
+                  const amount = data.settlement.amount;
+                  const token = data.settlement.fromToken;
+                  const txHash = data.settlement.confirmedTxHash || data.settlement.txHash || "0x0000...000";
+                  
+                  const giwaExplorer = window.WalletService?.SUPPORTED_CHAINS?.giwa?.explorer || "https://explorer.giwa.io";
+
+                  if (step.stage === "Settlement Requested") {
+                    actor = "Initiator";
+                    action = `Initialized settlement request of ${amount} ${token}`;
+                  } else if (step.stage === "Compliance Screening") {
+                    actor = "Compliance Engine";
+                    action = `Risk assessment: Pass. AML check completed.`;
+                  } else if (step.stage === "Route Selection") {
+                    actor = "Routing Service";
+                    action = `Resolved destination address. Pathway active.`;
+                  } else if (step.stage === "Execution") {
+                    actor = "Sequencer";
+                    action = `Transaction packaged and broadcasted.`;
+                    explorerLink = `${giwaExplorer}/tx/${txHash}`;
+                  } else if (step.stage === "Confirmation") {
+                    actor = "L2 Validator Node";
+                    action = `Block confirmation achieved.`;
+                    block = proof ? proof.blockNumber : "23516695";
+                    confirmation = "1 Confirmation";
+                    explorerLink = `${giwaExplorer}/tx/${txHash}`;
+                  } else if (step.stage === "Proof Generation") {
+                    actor = "EAS Schema Registry";
+                    action = `Cryptographic receipt signed and cached on EAS.`;
+                    block = proof ? proof.blockNumber : "23516695";
+                    gas = proof ? proof.gasUsed : "154320";
+                    confirmation = "Finalized";
+                    explorerLink = `${giwaExplorer}/tx/${txHash}`;
+                  } else if (step.stage === "Archive") {
+                    actor = "Ledger Bookkeeper";
+                    action = `Balances locked. Settlement status saved to ledger database.`;
+                    block = proof ? proof.blockNumber : "23516695";
+                    gas = proof ? proof.gasUsed : "154320";
+                    confirmation = "Finalized";
+                    explorerLink = `${giwaExplorer}/tx/${txHash}`;
+                  } else {
+                    action = `Transitioned to state: ${step.stage}`;
+                  }
+                  
+                  const logLine = `[${timeStr}] [${actor}] ${action} (Block: ${block}, Gas: ${gas}, Link: ${explorerLink})`;
+                  timelineLogs.push(logLine);
+                  
+                  const lineDiv = document.createElement("div");
+                  lineDiv.className = "text-green-500 border-l-2 border-green-500 pl-2 py-0.5 animate-fade-in";
+                  lineDiv.textContent = logLine;
+                  logsContainer.appendChild(lineDiv);
+                  logsContainer.scrollTop = logsContainer.scrollHeight;
+                  
+                  await new Promise(r => setTimeout(r, 600));
+                }
+                
+                if (downloadBtn) {
+                  downloadBtn.classList.remove("hidden");
+                }
+              };
+            }
+            
+            if (downloadBtn) {
+              downloadBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (timelineLogs.length === 0) return;
+                
+                const fileContent = [
+                  `KORRIPAY SETTLEMENT LIFECYCLE REPORT`,
+                  `====================================`,
+                  `Settlement ID: ${data.settlement.id}`,
+                  `Initiator: ${data.settlement.initiator}`,
+                  `Amount: ${data.settlement.amount} ${data.settlement.fromToken}`,
+                  `Created At: ${new Date(data.settlement.createdAt).toISOString()}`,
+                  `====================================`,
+                  `CHRONOLOGICAL TIMELINE LOGS:`,
+                  ...timelineLogs.map((log, idx) => `${idx + 1}. ${log}`),
+                  `====================================`,
+                  `End of report.`
+                ].join("\n");
+                
+                const blob = new Blob([fileContent], { type: "text/plain" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `timeline-${data.settlement.id}.txt`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showToast("Timeline report downloaded successfully!");
+              };
+            }
+            
+            openModal("modal-proof");
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("[App] Failed to load settlement proof details:", err);
+      }
+    }
+    
     showToast(`Tx ID: ${tx.id} - ${tx.title} - $${tx.amount}`);
   });
 
@@ -2494,15 +3086,26 @@ function setupMultiStepSend() {
 
   // Search input filtering
   const searchInput = document.getElementById("send-recipient-search");
+  const resolvedContainer = document.getElementById("resolved-recipient-container");
+  const resolvedCard = document.getElementById("resolved-recipient-card");
+  const resolvedNameEl = document.getElementById("resolved-name");
+  const resolvedAddressEl = document.getElementById("resolved-address");
+  const resolvedAvatarEl = document.getElementById("resolved-avatar");
+  let resolveTimeout = null;
+
   if (searchInput) {
     searchInput.addEventListener("input", (e) => {
-      const query = e.target.value.toLowerCase().trim();
-      
+      const query = e.target.value.trim();
+      const queryLower = query.toLowerCase();
+
+      // Hide resolved container immediately on typing
+      if (resolvedContainer) resolvedContainer.classList.add("hidden");
+
       recipientCards.forEach(card => {
         const name = card.getAttribute("data-name").toLowerCase();
         const address = card.getAttribute("data-address").toLowerCase();
         const email = (card.getAttribute("data-email") || "").toLowerCase();
-        if (name.includes(query) || address.includes(query) || email.includes(query)) {
+        if (name.includes(queryLower) || address.includes(queryLower) || email.includes(queryLower)) {
           card.classList.remove("hidden");
         } else {
           card.classList.add("hidden");
@@ -2513,12 +3116,48 @@ function setupMultiStepSend() {
         const name = item.getAttribute("data-name").toLowerCase();
         const address = item.getAttribute("data-address").toLowerCase();
         const email = (item.getAttribute("data-email") || "").toLowerCase();
-        if (name.includes(query) || address.includes(query) || email.includes(query)) {
+        if (name.includes(queryLower) || address.includes(queryLower) || email.includes(queryLower)) {
           item.classList.remove("hidden");
         } else {
           item.classList.add("hidden");
         }
       });
+
+      // Clear previous timeout
+      if (resolveTimeout) clearTimeout(resolveTimeout);
+
+      // Trigger resolution if the query meets resolver criteria
+      const isWalletAddress = /^0x[a-fA-F0-9]{40}$/.test(query);
+      const isUsername = query.startsWith("@") || (/^[a-zA-Z0-9_-]+$/.test(query) && !query.startsWith("0x") && !queryLower.endsWith(".up.id"));
+      const isUpId = queryLower.endsWith(".up.id");
+
+      if (query.length > 2 && (isWalletAddress || isUsername || isUpId)) {
+        resolveTimeout = setTimeout(async () => {
+          try {
+            const response = await authFetch(`${API_BASE}/v1/recipients/resolve?query=${encodeURIComponent(query)}`);
+            if (response.ok) {
+              const data = await response.json();
+              if (data.resolved && resolvedContainer && resolvedNameEl && resolvedAddressEl && resolvedAvatarEl) {
+                resolvedNameEl.textContent = data.name;
+                resolvedAddressEl.textContent = data.address;
+                
+                const initials = data.name.split(" ").map(n => n[0]).join("").toUpperCase().substring(0, 2);
+                resolvedAvatarEl.textContent = initials;
+
+                resolvedContainer.classList.remove("hidden");
+
+                // Bind click to select the resolved recipient
+                resolvedCard.onclick = () => {
+                  selectRecipient(data.name, data.address, initials, null);
+                  showToast(`Selected resolved recipient: ${data.name}`);
+                };
+              }
+            }
+          } catch (err) {
+            console.warn("[App] Recipient resolution failed:", err);
+          }
+        }, 400);
+      }
     });
   }
 
@@ -3776,6 +4415,56 @@ async function loadMerchantData() {
       </tr>
     `;
 
+    // Fetch stats
+    try {
+      const statsRes = await authFetch(`${API_BASE}/merchant/stats`);
+      if (statsRes.ok) {
+        const stats = await statsRes.json();
+        
+        const idEl = document.getElementById("merchant-stat-id");
+        const verificationEl = document.getElementById("merchant-stat-verification");
+        const verificationDot = document.getElementById("merchant-stat-verification-dot");
+        const volumeEl = document.getElementById("merchant-stat-volume");
+        const successRateEl = document.getElementById("merchant-stat-success-rate");
+        const timeEl = document.getElementById("merchant-stat-time");
+        const complianceEl = document.getElementById("merchant-stat-compliance");
+        const complianceDot = document.getElementById("merchant-stat-compliance-dot");
+
+        if (idEl) idEl.textContent = stats.merchantId || "N/A";
+        
+        if (verificationEl) {
+          verificationEl.textContent = stats.verificationStatus || "Unverified";
+          if (verificationDot) {
+            const isVerified = stats.verificationStatus === "Verified";
+            verificationDot.className = `w-2.5 h-2.5 rounded-full ${isVerified ? "bg-green-500" : "bg-amber-500 animate-pulse"}`;
+          }
+        }
+
+        if (volumeEl) {
+          volumeEl.textContent = `$${Number(stats.settlementVolume || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        if (successRateEl) {
+          successRateEl.textContent = `${Number(stats.settlementSuccessRate || 100).toFixed(1)}%`;
+        }
+
+        if (timeEl) {
+          const t = stats.averageSettlementTime;
+          timeEl.textContent = t ? `${Number(t).toFixed(1)}s` : "--";
+        }
+
+        if (complianceEl) {
+          complianceEl.textContent = stats.complianceStatus || "Pending";
+          if (complianceDot) {
+            const isCompliant = stats.complianceStatus === "Compliant";
+            complianceDot.className = `w-2.5 h-2.5 rounded-full ${isCompliant ? "bg-green-500" : "bg-amber-500 animate-pulse"}`;
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[Merchant] Error loading stats:", err);
+    }
+
     const res = await authFetch(`${API_BASE}/merchant/settlements`);
     if (!res.ok) throw new Error("Failed to fetch merchant settlements");
     merchantSettlements = await res.json();
@@ -3929,6 +4618,413 @@ function setupMerchant() {
     refreshBtn.addEventListener("click", loadMerchantData);
   }
 }
+
+// ── Merchant Settlement Portal Logic ──────────────────────────────────
+let portalSettlements = [];
+let portalProofs = [];
+let portalListenersAttached = false;
+
+async function loadMerchantPortalData() {
+  const tableBody = document.getElementById("portal-settlements-body");
+  if (!tableBody) return;
+
+  try {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="p-8 text-center text-outline dark:text-outline-variant">
+          <span class="material-symbols-outlined text-3xl animate-spin">autorenew</span>
+          <p class="mt-2 text-xs">Loading settlement records...</p>
+        </td>
+      </tr>
+    `;
+
+    // 1. Fetch settlements
+    const settlementsRes = await authFetch(`${API_BASE}/merchant/settlements`);
+    if (!settlementsRes.ok) throw new Error("Failed to fetch merchant settlements");
+    portalSettlements = await settlementsRes.json();
+
+    // 2. Fetch proofs
+    try {
+      const proofsRes = await authFetch(`${API_BASE}/v1/proofs`);
+      if (proofsRes.ok) {
+        const proofsData = await proofsRes.json();
+        portalProofs = proofsData.proofs || [];
+      }
+    } catch (err) {
+      console.error("[Portal] Failed to fetch proofs:", err);
+    }
+
+    // 3. Compute Metrics
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    
+    // Daily: successfully settled in last 24 hours
+    const dailySettled = portalSettlements.filter(s => 
+      (s.status === 'Settled' || s.status === 'Success') && 
+      (now - new Date(s.createdAt).getTime() <= oneDayMs)
+    );
+    const dailyVol = dailySettled.reduce((sum, s) => sum + s.amount, 0);
+
+    // Pending
+    const pendingSettled = portalSettlements.filter(s => s.status === 'Processing' || s.status === 'Pending');
+    const pendingVol = pendingSettled.reduce((sum, s) => sum + s.amount, 0);
+
+    // Completed
+    const completedSettled = portalSettlements.filter(s => s.status === 'Settled' || s.status === 'Success');
+    const completedVol = completedSettled.reduce((sum, s) => sum + s.amount, 0);
+
+    // Proofs verified
+    const provenCount = portalSettlements.filter(s => 
+      portalProofs.some(p => p.txHash && s.txHash && p.txHash.toLowerCase() === s.txHash.toLowerCase())
+    ).length;
+
+    // Render Metrics
+    const metricDailyEl = document.getElementById("portal-metric-daily");
+    const metricPendingEl = document.getElementById("portal-metric-pending");
+    const metricPendingCountEl = document.getElementById("portal-metric-pending-count");
+    const metricCompletedEl = document.getElementById("portal-metric-completed");
+    const metricCompletedCountEl = document.getElementById("portal-metric-completed-count");
+    const metricProofsEl = document.getElementById("portal-metric-proofs");
+
+    if (metricDailyEl) metricDailyEl.textContent = `$${dailyVol.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (metricPendingEl) metricPendingEl.textContent = `$${pendingVol.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (metricPendingCountEl) metricPendingCountEl.textContent = `${pendingSettled.length} transaction${pendingSettled.length === 1 ? '' : 's'} in queue`;
+    if (metricCompletedEl) metricCompletedEl.textContent = `$${completedVol.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (metricCompletedCountEl) metricCompletedCountEl.textContent = `${completedSettled.length} total settled request${completedSettled.length === 1 ? '' : 's'}`;
+    if (metricProofsEl) metricProofsEl.textContent = `${provenCount} Verified`;
+
+    // 4. Render Table list with search and filters
+    renderPortalTable();
+
+    // 5. Setup event listeners once
+    setupPortalListeners();
+  } catch (err) {
+    console.error("[Portal] Error loading data:", err);
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="p-8 text-center text-error font-medium">
+          <span class="material-symbols-outlined text-3xl">error</span>
+          <p class="mt-2 text-xs">Failed to load settlements. Please log in or try again.</p>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function renderPortalTable() {
+  const tableBody = document.getElementById("portal-settlements-body");
+  if (!tableBody) return;
+
+  const searchQuery = (document.getElementById("portal-search-input")?.value || "").toLowerCase();
+  const statusFilter = document.getElementById("portal-filter-status")?.value || "all";
+  const currencyFilter = document.getElementById("portal-filter-currency")?.value || "all";
+
+  const filtered = portalSettlements.filter(s => {
+    // Search filter
+    const memoMatch = s.paymentRequest?.description?.toLowerCase().includes(searchQuery) || s.id.toLowerCase().includes(searchQuery);
+    const hashMatch = s.txHash?.toLowerCase().includes(searchQuery);
+    const searchMatch = memoMatch || hashMatch;
+
+    // Status filter
+    let statusMatch = true;
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'Settled') {
+        statusMatch = s.status === 'Settled' || s.status === 'Success';
+      } else if (statusFilter === 'Processing') {
+        statusMatch = s.status === 'Processing' || s.status === 'Pending';
+      } else {
+        statusMatch = s.status === statusFilter;
+      }
+    }
+
+    // Currency filter
+    let currencyMatch = true;
+    if (currencyFilter !== 'all') {
+      currencyMatch = s.currency === currencyFilter;
+    }
+
+    return searchMatch && statusMatch && currencyMatch;
+  });
+
+  if (filtered.length === 0) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="6" class="p-8 text-center text-outline dark:text-outline-variant">
+          <span class="material-symbols-outlined text-3xl">search_off</span>
+          <p class="mt-2 text-xs">No matching settlements found</p>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tableBody.innerHTML = filtered.map(s => {
+    const memo = s.paymentRequest?.description || "Payment Payout";
+    const amountStr = `${Number(s.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${s.currency}`;
+    const dateStr = new Date(s.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) + " " + new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Status Badge
+    let statusClass = "text-amber-500 bg-amber-500/10 border-amber-500/25";
+    if (s.status === "Settled" || s.status === "Success") {
+      statusClass = "text-green-500 bg-green-500/10 border-green-500/25";
+    } else if (s.status === "Failed") {
+      statusClass = "text-red-500 bg-red-500/10 border-red-500/25";
+    }
+
+    // Proof Match
+    const hasProof = portalProofs.some(p => p.txHash && s.txHash && p.txHash.toLowerCase() === s.txHash.toLowerCase());
+    const proofLabel = hasProof 
+      ? `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-green-500/10 text-green-500 border border-green-500/20"><span class="material-symbols-outlined text-[10px]">verified</span>ZK Proof</span>`
+      : `<span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-neutral-500/10 text-neutral-400 border border-neutral-500/10">No Proof</span>`;
+
+    const txLink = s.txHash 
+      ? `<div class="flex flex-col gap-0.5 font-mono text-[10px]">
+          <a href="#explorer" class="underline text-primary dark:text-primary-fixed hover:opacity-85">${s.txHash.slice(0, 8)}...${s.txHash.slice(-6)}</a>
+          <div>${proofLabel}</div>
+         </div>`
+      : `<span class="text-outline text-xs">Pending sequencer</span>`;
+
+    return `
+      <tr class="hover:bg-surface-container-low dark:hover:bg-on-background/5 transition-colors">
+        <td class="p-3 font-semibold text-on-surface dark:text-white">${memo}</td>
+        <td class="p-3 font-bold text-primary dark:text-primary-fixed">${amountStr}</td>
+        <td class="p-3">
+          <span class="px-2.5 py-0.5 text-[10px] font-bold rounded-full border ${statusClass}">${s.status}</span>
+        </td>
+        <td class="p-3">${txLink}</td>
+        <td class="p-3 text-xs text-outline font-medium">${dateStr}</td>
+        <td class="p-3 text-right">
+          <button onclick="downloadReceiptPDF('${s.id}')" class="px-3 py-1.5 bg-surface-container-low dark:bg-on-background/10 text-primary dark:text-primary-fixed rounded-lg text-xs font-bold border border-outline-variant/30 hover:border-primary dark:hover:border-primary-fixed transition-all cursor-pointer inline-flex items-center gap-1 active:scale-95">
+            <span class="material-symbols-outlined text-xs">picture_as_pdf</span>
+            Receipt
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function setupPortalListeners() {
+  if (portalListenersAttached) return;
+  portalListenersAttached = true;
+
+  const searchInput = document.getElementById("portal-search-input");
+  const filterStatus = document.getElementById("portal-filter-status");
+  const filterCurrency = document.getElementById("portal-filter-currency");
+  const csvBtn = document.getElementById("btn-export-csv");
+
+  if (searchInput) {
+    searchInput.addEventListener("input", renderPortalTable);
+  }
+  if (filterStatus) {
+    filterStatus.addEventListener("change", renderPortalTable);
+  }
+  if (filterCurrency) {
+    filterCurrency.addEventListener("change", renderPortalTable);
+  }
+  if (csvBtn) {
+    csvBtn.addEventListener("click", exportPortalCSV);
+  }
+}
+
+function exportPortalCSV() {
+  if (portalSettlements.length === 0) {
+    showToast("No settlements to export", "warning");
+    return;
+  }
+
+  const headers = ["Settlement ID", "Memo / Reference", "Amount", "Currency", "Status", "Tx Hash", "Created Date"];
+  const rows = portalSettlements.map(s => [
+    s.id,
+    s.paymentRequest?.description || "Payment Payout",
+    s.amount,
+    s.currency,
+    s.status,
+    s.txHash || "N/A",
+    s.createdAt
+  ]);
+
+  const csvContent = "data:text/csv;charset=utf-8," 
+    + [headers.join(","), ...rows.map(e => e.map(val => `"${val}"`).join(","))].join("\n");
+  
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `korripay_settlements_${new Date().toISOString().split('T')[0]}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  showToast("CSV exported successfully", "success");
+}
+
+function downloadReceiptPDF(settlementId) {
+  const settlement = portalSettlements.find(s => s.id === settlementId);
+  if (!settlement) {
+    showToast("Settlement not found", "error");
+    return;
+  }
+
+  const hasProof = portalProofs.some(p => p.txHash && settlement.txHash && p.txHash.toLowerCase() === settlement.txHash.toLowerCase());
+
+  const printWindow = window.open("", "_blank");
+  const memo = settlement.paymentRequest?.description || "Instant Payout";
+  const amountStr = `${Number(settlement.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${settlement.currency}`;
+  const dateStr = new Date(settlement.createdAt).toLocaleString();
+  
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Settlement Receipt - ${settlement.id}</title>
+        <style>
+          body {
+            font-family: 'Inter', system-ui, sans-serif;
+            color: #1a1c1e;
+            padding: 40px;
+            max-width: 600px;
+            margin: auto;
+            border: 1px solid #e1e2e5;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+          }
+          .logo {
+            font-size: 24px;
+            font-weight: 800;
+            color: #3b82f6;
+            margin-bottom: 8px;
+          }
+          .title {
+            font-size: 16px;
+            color: #74777f;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          .row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 16px;
+            font-size: 14px;
+          }
+          .label {
+            color: #74777f;
+            font-weight: 500;
+          }
+          .value {
+            font-weight: bold;
+            text-align: right;
+            word-break: break-all;
+            max-width: 350px;
+          }
+          .amount-row {
+            margin-top: 30px;
+            border-top: 1px solid #e1e2e5;
+            padding-top: 20px;
+            font-size: 20px;
+          }
+          .amount-value {
+            color: #3b82f6;
+            font-weight: 800;
+          }
+          .proof-badge {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+          }
+          .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 11px;
+            color: #74777f;
+            border-top: 1px solid #e1e2e5;
+            padding-top: 20px;
+          }
+          .btn-print {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 30px;
+            text-align: center;
+          }
+          @media print {
+            .btn-print {
+              display: none;
+            }
+            body {
+              border: none;
+              box-shadow: none;
+              padding: 0;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="logo">KorriPay</div>
+          <div class="title">Settlement Receipt</div>
+        </div>
+        
+        <div class="row">
+          <div class="label">Settlement ID</div>
+          <div class="value">${settlement.id}</div>
+        </div>
+        <div class="row">
+          <div class="label">Memo / Description</div>
+          <div class="value">${memo}</div>
+        </div>
+        <div class="row">
+          <div class="label">Date & Time</div>
+          <div class="value">${dateStr}</div>
+        </div>
+        <div class="row">
+          <div class="label">Status</div>
+          <div class="value" style="color: #10b981;">${settlement.status}</div>
+        </div>
+        <div class="row">
+          <div class="label">On-chain Tx Hash</div>
+          <div class="value" style="font-family: monospace;">${settlement.txHash || 'N/A'}</div>
+        </div>
+        
+        <div class="row">
+          <div class="label">ZK Cryptographic Proof</div>
+          <div class="value">
+            ${hasProof ? '<span class="proof-badge">ZK-Verified Proof</span>' : '<span style="color: #74777f;">None</span>'}
+          </div>
+        </div>
+
+        <div class="row amount-row">
+          <div class="label" style="font-weight: 800; color: #1a1c1e;">Settled Amount</div>
+          <div class="value amount-value">${amountStr}</div>
+        </div>
+
+        <button class="btn-print" onclick="window.print()">Print / Save as PDF</button>
+
+        <div class="footer">
+          Thank you for using KorriPay. Cryptographically secured instant settlements.
+        </div>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+window.downloadReceiptPDF = downloadReceiptPDF;
+window.loadMerchantPortalData = loadMerchantPortalData;
 
 // ── Analytics Logic ──────────────────────────────────────────────────
 let analyticsData = null;
@@ -4156,4 +5252,922 @@ function setupAnalytics() {
     refreshBtn.addEventListener("click", loadAnalyticsData);
   }
 }
+
+// ==================== COMPLIANCE ENGINE FRONTEND INTEGRATION ====================
+
+async function loadComplianceData() {
+  try {
+    // 1. Fetch User Compliance Profile
+    const profileRes = await authFetch(`${API_BASE}/compliance/profile`);
+    if (profileRes.ok) {
+      const data = await profileRes.json();
+      renderComplianceProfile(data);
+    } else {
+      console.error("Failed to load compliance profile");
+    }
+
+    // 2. Fetch Compliance Rules
+    const rulesRes = await authFetch(`${API_BASE}/compliance/rules`);
+    if (rulesRes.ok) {
+      const rules = await rulesRes.json();
+      renderComplianceRules(rules);
+    } else {
+      console.error("Failed to load compliance rules");
+    }
+
+    // 3. Fetch Compliance logs
+    await loadComplianceLogs();
+
+    // 4. Fetch Compliance Reports
+    await loadComplianceReports();
+
+  } catch (err) {
+    console.error("Error loading compliance data:", err);
+    showToast("Error loading compliance data");
+  }
+}
+
+function renderComplianceProfile(data) {
+  const profile = data.profile;
+  const kycStatus = data.kycStatus;
+
+  const riskTierEl = document.getElementById("compliance-risk-tier");
+  const riskShieldEl = document.getElementById("compliance-risk-shield");
+  const kycStatusEl = document.getElementById("compliance-kyc-status");
+  const singleLimitEl = document.getElementById("compliance-single-limit");
+  const dailyLimitEl = document.getElementById("compliance-daily-limit");
+  const suspiciousLimitEl = document.getElementById("compliance-suspicious-limit");
+
+  if (profile && riskTierEl) {
+    riskTierEl.textContent = `${profile.riskLevel} Risk`;
+    
+    // Update shield and text colors based on risk tier
+    riskShieldEl.className = "w-16 h-16 rounded-full flex items-center justify-center mb-sm";
+    riskTierEl.className = "font-headline-md font-bold";
+    if (profile.riskLevel === "Low") {
+      riskShieldEl.classList.add("bg-green-500/10", "text-green-500");
+      riskTierEl.classList.add("text-green-500");
+    } else if (profile.riskLevel === "Medium") {
+      riskShieldEl.classList.add("bg-yellow-500/10", "text-yellow-500");
+      riskTierEl.classList.add("text-yellow-500");
+    } else {
+      riskShieldEl.classList.add("bg-red-500/10", "text-red-500");
+      riskTierEl.classList.add("text-red-500");
+    }
+  }
+
+  if (kycStatusEl) {
+    kycStatusEl.textContent = kycStatus || "NotStarted";
+    if (kycStatus === "Verified") {
+      kycStatusEl.className = "font-semibold text-secondary";
+    } else if (kycStatus === "Pending") {
+      kycStatusEl.className = "font-semibold text-yellow-500";
+    } else {
+      kycStatusEl.className = "font-semibold text-error";
+    }
+  }
+  
+  if (profile) {
+    if (singleLimitEl) {
+      singleLimitEl.textContent = `$${Number(profile.singleTxLimitUSD).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    }
+    if (dailyLimitEl) {
+      dailyLimitEl.textContent = `$${Number(profile.dailyLimitUSD).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    }
+    if (suspiciousLimitEl) {
+      suspiciousLimitEl.textContent = `$${Number(profile.suspiciousThresholdUSD).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+    }
+
+    // Pre-fill simulation form values
+    const simRiskLevel = document.getElementById("sim-risk-level");
+    const simKycEnforced = document.getElementById("sim-kyc-enforced");
+    const simSingleLimit = document.getElementById("sim-single-limit");
+    const simDailyLimit = document.getElementById("sim-daily-limit");
+
+    if (simRiskLevel) simRiskLevel.value = profile.riskLevel;
+    if (simKycEnforced) simKycEnforced.checked = profile.kycEnforced;
+    if (simSingleLimit) simSingleLimit.value = profile.singleTxLimitUSD;
+    if (simDailyLimit) simDailyLimit.value = profile.dailyLimitUSD;
+  }
+}
+
+function renderComplianceRules(rules) {
+  const container = document.getElementById("compliance-rules-list");
+  if (!container) return;
+
+  if (rules.length === 0) {
+    container.innerHTML = `<div class="p-4 text-center text-outline text-xs">No rules defined.</div>`;
+    return;
+  }
+
+  container.innerHTML = rules.map(rule => {
+    return `
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-3">
+        <div class="space-y-1 flex-1">
+          <div class="flex items-center gap-2">
+            <span class="font-body-md font-bold text-on-surface dark:text-white">${rule.name}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-surface-container dark:bg-surface-dim text-on-surface-variant dark:text-outline-variant">
+              ${rule.action}
+            </span>
+          </div>
+          <p class="text-xs text-outline dark:text-outline-variant">${rule.description}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center bg-surface-container dark:bg-surface-dim rounded-md px-2 py-1 border border-outline-variant/30">
+            <span class="text-xs text-outline mr-1">Limit:</span>
+            <input type="number" 
+                   class="rule-value-input bg-transparent border-none text-xs w-20 p-0 focus:ring-0 dark:text-white font-semibold" 
+                   data-rule-code="${rule.code}" 
+                   value="${rule.value !== null ? rule.value : ''}"/>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" 
+                   class="rule-toggle sr-only peer" 
+                   data-rule-code="${rule.code}" 
+                   ${rule.isActive ? 'checked' : ''}/>
+            <div class="w-9 h-5 bg-surface-container-highest dark:bg-surface-dim peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+          </label>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Wire up change listeners on rule inputs and toggles
+  document.querySelectorAll('.rule-value-input').forEach(input => {
+    input.addEventListener('change', async (e) => {
+      const ruleCode = e.target.dataset.ruleCode;
+      const value = e.target.value !== '' ? Number(e.target.value) : null;
+      const isActive = document.querySelector(`.rule-toggle[data-rule-code="${ruleCode}"]`).checked;
+      await updateRuleAPI(ruleCode, value, isActive);
+    });
+  });
+
+  document.querySelectorAll('.rule-toggle').forEach(toggle => {
+    toggle.addEventListener('change', async (e) => {
+      const ruleCode = e.target.dataset.ruleCode;
+      const isActive = e.target.checked;
+      const valInput = document.querySelector(`.rule-value-input[data-rule-code="${ruleCode}"]`).value;
+      const value = valInput !== '' ? Number(valInput) : null;
+      await updateRuleAPI(ruleCode, value, isActive);
+    });
+  });
+}
+
+async function updateRuleAPI(code, value, isActive) {
+  try {
+    const res = await authFetch(`${API_BASE}/compliance/rules/toggle`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, value, isActive })
+    });
+    if (res.ok) {
+      showToast("Compliance rule updated successfully");
+      // Reload profile/rules to ensure everything is synced
+      const profileRes = await authFetch(`${API_BASE}/compliance/profile`);
+      if (profileRes.ok) {
+        const data = await profileRes.json();
+        renderComplianceProfile(data);
+      }
+    } else {
+      const errData = await res.json();
+      showToast(errData.error || "Failed to update compliance rule");
+    }
+  } catch (err) {
+    console.error("Error updating rule:", err);
+    showToast("Error updating compliance rule");
+  }
+}
+
+async function loadComplianceLogs() {
+  try {
+    const res = await authFetch(`${API_BASE}/compliance/logs?all=true`);
+    if (!res.ok) throw new Error("Failed to load logs");
+    const logs = await res.json();
+
+    const tbody = document.getElementById("compliance-logs-tbody");
+    if (!tbody) return;
+
+    if (logs.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="py-6 text-center text-outline dark:text-outline-variant text-xs">No compliance screening events recorded yet.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = logs.map(log => {
+      const date = new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      let statusBadge = '';
+      if (log.actionTaken === 'Approved' || log.actionTaken === 'Passed') {
+        statusBadge = `<span class="bg-green-500/10 text-green-500 border border-green-500/20 px-2.5 py-0.5 rounded-full font-bold text-[10px]">Passed</span>`;
+      } else if (log.actionTaken === 'Flagged') {
+        statusBadge = `<span class="bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 px-2.5 py-0.5 rounded-full font-bold text-[10px]">Flagged</span>`;
+      } else {
+        statusBadge = `<span class="bg-red-500/10 text-red-500 border border-red-500/20 px-2.5 py-0.5 rounded-full font-bold text-[10px]">Blocked</span>`;
+      }
+
+      let triggeredBadge = '';
+      if (log.rulesTriggered && log.rulesTriggered.length > 0) {
+        triggeredBadge = `<div class="text-[10px] text-error mt-0.5 font-semibold">Rules: ${log.rulesTriggered.join(', ')}</div>`;
+      }
+
+      return `
+        <tr class="border-b border-outline-variant/10 hover:bg-surface-container-low dark:hover:bg-inverse-surface/10 transition-colors">
+          <td class="py-3 pr-4 text-xs font-mono text-outline dark:text-outline-variant">${date}</td>
+          <td class="py-3 pr-4 text-xs font-bold text-on-surface dark:text-white">${log.userName || 'Unknown'}</td>
+          <td class="py-3 pr-4 text-xs">
+            <span class="font-semibold text-primary dark:text-primary-fixed-dim">$${log.amount} ${log.currency}</span>
+            <span class="text-outline">(${log.transactionType})</span>
+            ${triggeredBadge}
+          </td>
+          <td class="py-3 pr-4 text-xs font-mono font-bold ${log.riskScore > 60 ? 'text-error' : log.riskScore > 30 ? 'text-yellow-500' : 'text-green-500'}">
+            ${log.riskScore}%
+          </td>
+          <td class="py-3 pr-4 text-xs">${statusBadge}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error("Error loading logs:", err);
+  }
+}
+
+async function loadComplianceReports() {
+  try {
+    const res = await authFetch(`${API_BASE}/compliance/reports`);
+    if (!res.ok) throw new Error("Failed to load reports");
+    const reports = await res.json();
+
+    const container = document.getElementById("compliance-reports-grid");
+    if (!container) return;
+
+    if (reports.length === 0) {
+      container.innerHTML = `
+        <div class="col-span-2 py-4 text-center text-outline dark:text-outline-variant text-xs">No reports compiled yet. Click "Generate Report" above.</div>
+      `;
+      return;
+    }
+
+    container.innerHTML = reports.map(report => {
+      const date = new Date(report.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+      return `
+        <div class="bg-surface-container-low dark:bg-surface-dim border border-outline-variant/30 rounded-xl p-sm space-y-sm flex flex-col justify-between hover:scale-[1.01] transition-transform">
+          <div>
+            <div class="flex justify-between items-start">
+              <h4 class="font-label-md font-bold text-primary dark:text-primary-fixed">${report.title}</h4>
+              <span class="text-[10px] text-outline font-mono">${date}</span>
+            </div>
+            <p class="text-xs text-on-surface-variant dark:text-outline-variant line-clamp-3 mt-1">
+              ${report.content}
+            </p>
+          </div>
+          <button class="btn-view-report-details text-xs font-bold text-secondary dark:text-secondary-fixed-dim hover:underline text-left mt-2 flex items-center gap-1"
+                  data-report-id="${report.id}">
+            <span class="material-symbols-outlined text-sm">visibility</span> View Detailed Analysis
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    // Wire up view buttons
+    document.querySelectorAll('.btn-view-report-details').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const reportId = e.currentTarget.dataset.reportId;
+        const report = reports.find(r => r.id === reportId);
+        if (report) {
+          showReportDetailModal(report);
+        }
+      });
+    });
+
+  } catch (err) {
+    console.error("Error loading reports:", err);
+  }
+}
+
+function showReportDetailModal(report) {
+  const modalId = "modal-report";
+  const titleEl = document.getElementById("modal-report-title");
+  const idEl = document.getElementById("modal-report-id");
+  const dateEl = document.getElementById("modal-report-date");
+  const contentEl = document.getElementById("modal-report-content");
+
+  if (titleEl) titleEl.textContent = report.title;
+  if (idEl) idEl.textContent = report.id;
+  if (dateEl) dateEl.textContent = new Date(report.createdAt).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  if (contentEl) contentEl.textContent = report.content;
+
+  openModal(modalId);
+}
+
+function setupCompliance() {
+  // 1. Simulation Form Submission
+  const simForm = document.getElementById("form-simulation-profile");
+  if (simForm) {
+    simForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const riskLevel = document.getElementById("sim-risk-level").value;
+      const kycEnforced = document.getElementById("sim-kyc-enforced").checked;
+      const singleTxLimit = Number(document.getElementById("sim-single-limit").value);
+      const dailyLimit = Number(document.getElementById("sim-daily-limit").value);
+
+      try {
+        const res = await authFetch(`${API_BASE}/compliance/profile/update`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ 
+            riskLevel, 
+            kycEnforced, 
+            singleTxLimitUSD: singleTxLimit, 
+            dailyLimitUSD: dailyLimit,
+            suspiciousThresholdUSD: 1000.0
+          })
+        });
+
+        if (res.ok) {
+          showToast("Simulation profile updated successfully!");
+          await loadComplianceData();
+        } else {
+          const errData = await res.json();
+          showToast(errData.error || "Failed to update profile");
+        }
+      } catch (err) {
+        console.error("Error updating profile:", err);
+        showToast("Error updating profile");
+      }
+    });
+  }
+
+  // 2. Refresh Logs Button
+  const refreshLogsBtn = document.getElementById("btn-refresh-compliance-logs");
+  if (refreshLogsBtn) {
+    refreshLogsBtn.addEventListener("click", async () => {
+      await loadComplianceLogs();
+      showToast("Logs refreshed");
+    });
+  }
+
+  // 3. Generate Report Button
+  const genReportBtn = document.getElementById("btn-generate-report");
+  if (genReportBtn) {
+    genReportBtn.addEventListener("click", async () => {
+      const days = Number(document.getElementById("report-days-select").value);
+      try {
+        const res = await authFetch(`${API_BASE}/compliance/reports/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ days })
+        });
+
+        if (res.ok) {
+          showToast("New compliance report compiled!");
+          await loadComplianceReports();
+        } else {
+          const errData = await res.json();
+          showToast(errData.error || "Failed to generate report");
+        }
+      } catch (err) {
+        console.error("Error generating report:", err);
+        showToast("Error generating report");
+      }
+    });
+  }
+}
+
+// ==================== GIWA LAYER 2 INTEGRATION ====================
+let lastKnownBlockHeight = 0;
+let giwaHealthLatencyChart = null;
+let giwaGasTimeChart = null;
+
+function setupGiwa() {
+  loadGiwaData();
+  if (!window.giwaTimerInterval) {
+    window.giwaTimerInterval = setInterval(loadGiwaData, 30000);
+  }
+}
+
+async function loadGiwaData() {
+  try {
+    // 1. Fetch GIWA status (existing endpoint)
+    const statusRes = await fetch(`${API_BASE}/giwa/status`);
+    let statusData = null;
+    if (statusRes.ok) {
+      statusData = await statusRes.json();
+    }
+
+    // 2. Fetch Network Intelligence status and history (new endpoint)
+    const networkRes = await authFetch(`${API_BASE}/v1/network`);
+    let networkIntelligenceData = null;
+    if (networkRes.ok) {
+      networkIntelligenceData = await networkRes.json();
+    }
+
+    // Combine them or fallback if either fails
+    if (!statusData && !networkIntelligenceData) {
+      throw new Error("Both GIWA status and network intelligence endpoints failed");
+    }
+
+    // Prepare unified variables
+    const current = networkIntelligenceData?.current || {};
+    const history = networkIntelligenceData?.history || [];
+    
+    const name = current.chainName || statusData?.network?.name || "GIWA L2 Mainnet";
+    const chainId = current.chainId || statusData?.network?.chainId || 92837;
+    const peerCount = statusData?.network?.peerCount || 148;
+    const sequencerAddress = statusData?.network?.sequencerAddress || current.rpcUrl || "0x17F53eE27DaDbe44CE8928ddbe44ce8824c3bC86";
+    const bridgeAddress = statusData?.network?.bridgeAddress || "0x88F53eE27DaDbe44CE8928ddbe44ce8824c3bC87";
+    const explorerStatusVal = current.explorerStatus || statusData?.network?.explorerStatus || "Healthy";
+    const bridgeStatusVal = current.bridgeStatus || "Healthy";
+
+    const sequencerHealthVal = current.sequencerStatus || statusData?.sequencer?.status || "Healthy";
+    const uptimePercentage = statusData?.sequencer?.uptimePercentage || 99.98;
+    const gasPrice = current.gasPrice || statusData?.sequencer?.gasPriceGwei || 18.4;
+    const tps = statusData?.sequencer?.tps || 14.2;
+    const blockHeight = current.blockNumber || statusData?.sequencer?.blockHeight || 2450810;
+    const finalizedBlock = current.finalizedBlock || (blockHeight - 12);
+    const avgBlockTime = current.avgBlockTime || 3.0;
+    const rpcLatency = current.rpcLatency !== undefined ? current.rpcLatency : (statusData?.sequencer?.rpcLatencyMs || 0);
+    const healthScore = current.healthScore !== undefined ? current.healthScore : 100;
+    const healthRating = current.rating || "Excellent";
+
+    // 1. Update tab-giwa status header
+    const statusDot = document.getElementById("giwa-status-dot");
+    const statusText = document.getElementById("giwa-status-text");
+    const isOnline = sequencerHealthVal === "Healthy" || sequencerHealthVal === "Operational";
+
+    if (statusDot) {
+      statusDot.className = `w-3.5 h-3.5 rounded-full animate-pulse ${isOnline ? 'bg-green-500' : 'bg-red-500'}`;
+    }
+    if (statusText) {
+      statusText.textContent = isOnline ? "Sequencer Operational" : "Sequencer Offline";
+      statusText.className = `text-xs font-bold uppercase tracking-wider ${isOnline ? 'text-green-500' : 'text-red-500'}`;
+    }
+
+    // 2. Update L2 Network Info
+    const netName = document.getElementById("giwa-net-name");
+    const netChain = document.getElementById("giwa-net-chain");
+    const netPeers = document.getElementById("giwa-net-peers");
+    const netSeq = document.getElementById("giwa-net-seq-addr");
+    const netBridge = document.getElementById("giwa-net-bridge-addr");
+    const explorerStatus = document.getElementById("giwa-net-explorer-status");
+    
+    if (netName) netName.textContent = name;
+    if (netChain) netChain.textContent = chainId;
+    if (netPeers) netPeers.textContent = `${peerCount} nodes`;
+    if (netSeq) netSeq.textContent = sequencerAddress;
+    if (netBridge) netBridge.textContent = bridgeAddress;
+    if (explorerStatus) {
+      explorerStatus.textContent = explorerStatusVal;
+      explorerStatus.className = `font-semibold ${explorerStatusVal === "Healthy" || explorerStatusVal === "Online" ? 'text-green-500' : 'text-amber-500'}`;
+    }
+
+    // 3. Update Sequencer Performance Card
+    const seqUptime = document.getElementById("giwa-seq-uptime");
+    const seqGas = document.getElementById("giwa-seq-gas");
+    const seqTps = document.getElementById("giwa-seq-tps");
+    const seqBlock = document.getElementById("giwa-seq-block");
+    const seqLatency = document.getElementById("giwa-seq-latency");
+    
+    if (seqUptime) seqUptime.textContent = `${uptimePercentage}%`;
+    if (seqGas) seqGas.textContent = `${gasPrice} Gwei`;
+    if (seqTps) seqTps.textContent = `${tps} TPS`;
+    if (seqBlock) seqBlock.textContent = `#${blockHeight.toLocaleString()}`;
+    if (seqLatency) {
+      seqLatency.textContent = rpcLatency !== null ? `${rpcLatency} ms` : "Offline";
+      seqLatency.className = `font-semibold ${rpcLatency !== null ? 'text-secondary' : 'text-red-500'}`;
+    }
+
+    // 4. Update Analytics Widget
+    const analNet = document.getElementById("analytics-giwa-network");
+    const analBlock = document.getElementById("analytics-giwa-block");
+    const analTps = document.getElementById("analytics-giwa-tps");
+    const analConf = document.getElementById("analytics-giwa-confirmations");
+    const giwaAvgTime = document.getElementById("giwa-avg-time");
+    
+    if (analNet) analNet.textContent = name;
+    if (analBlock) analBlock.textContent = `#${blockHeight.toLocaleString()}`;
+    if (analTps) analTps.textContent = `${tps} TPS`;
+    if (analConf) {
+      analConf.textContent = statusData?.settlements?.totalConfirmations?.toString() || "0";
+    }
+    if (giwaAvgTime) {
+      giwaAvgTime.textContent = `${statusData?.settlements?.avgSettlementTimeSeconds || avgBlockTime}s`;
+    }
+
+    // 5. Update Home Dashboard Widget
+    const widgetHealthBadge = document.getElementById("widget-giwa-health-badge");
+    const widgetBlock = document.getElementById("widget-giwa-block");
+    const widgetLatency = document.getElementById("widget-giwa-latency");
+    const widgetSequencer = document.getElementById("widget-giwa-sequencer");
+    const widgetGas = document.getElementById("widget-giwa-gas");
+    const widgetRating = document.getElementById("widget-giwa-rating");
+
+    if (widgetHealthBadge) {
+      widgetHealthBadge.textContent = `${healthScore}/100`;
+      widgetHealthBadge.className = `text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 ${
+        healthScore >= 90 ? 'bg-green-500/10 text-green-500' :
+        healthScore >= 70 ? 'bg-yellow-500/10 text-yellow-500' :
+        'bg-red-500/10 text-red-500'
+      }`;
+    }
+    if (widgetBlock) widgetBlock.textContent = `#${blockHeight.toLocaleString()}`;
+    if (widgetLatency) {
+      widgetLatency.textContent = `${rpcLatency} ms`;
+      widgetLatency.className = `font-bold ${rpcLatency > 1500 ? 'text-red-500' : 'text-secondary'}`;
+    }
+    if (widgetSequencer) {
+      widgetSequencer.textContent = sequencerHealthVal;
+      widgetSequencer.className = `font-bold ${sequencerHealthVal === "Healthy" || sequencerHealthVal === "Operational" ? 'text-green-500' : 'text-red-500'}`;
+    }
+    if (widgetGas) widgetGas.textContent = `${gasPrice} Gwei`;
+    if (widgetRating) {
+      widgetRating.textContent = `${healthRating} Health`;
+      widgetRating.className = `text-xs font-semibold ${
+        healthRating === 'Excellent' || healthRating === 'Good' ? 'text-green-500' :
+        healthRating === 'Warning' ? 'text-yellow-500' : 'text-red-500'
+      }`;
+    }
+
+    // 6. Update Heartbeat Block Feed
+    const heartbeatFeed = document.getElementById("giwa-block-heartbeat-feed");
+    if (heartbeatFeed) {
+      if (lastKnownBlockHeight === 0) {
+        // Hydrate initial blocks
+        for (let i = 4; i >= 0; i--) {
+          const h = blockHeight - i;
+          appendBlockToFeed(heartbeatFeed, h, false);
+        }
+        lastKnownBlockHeight = blockHeight;
+      } else if (blockHeight > lastKnownBlockHeight) {
+        // Append missing blocks
+        for (let h = lastKnownBlockHeight + 1; h <= blockHeight; h++) {
+          appendBlockToFeed(heartbeatFeed, h, true);
+        }
+        lastKnownBlockHeight = blockHeight;
+      }
+    }
+
+    // 7. Update Settlements Confirmation Log Table
+    const tbody = document.getElementById("giwa-settlements-tbody");
+    if (tbody && statusData) {
+      if (statusData.settlements.recent.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-outline dark:text-outline-variant text-xs">No settlements recorded yet.</td></tr>`;
+      } else {
+        tbody.innerHTML = statusData.settlements.recent.map(s => {
+          const pair = `${s.fromToken} ➔ ${s.toToken}`;
+          const amountStr = `$${Number(s.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+          const txHash = s.txHash || ('0x' + Math.random().toString(16).substring(2, 10) + '...');
+          const isPending = s.status === 'Pending';
+          
+          const confirmations = isPending 
+            ? `${Math.floor(Math.random() * 6) + 3}/12` 
+            : `12/12`;
+            
+          const statusClass = isPending 
+            ? 'bg-amber-500/10 text-amber-500' 
+            : 'bg-green-500/10 text-green-500';
+          const statusText = isPending ? 'Pending' : 'Success';
+
+          return `
+            <tr class="hover:bg-surface-container/30 dark:hover:bg-inverse-surface/10 transition-colors">
+              <td class="py-3 font-semibold dark:text-white">${pair}</td>
+              <td class="py-3 dark:text-white font-mono">${amountStr}</td>
+              <td class="py-3 text-xs font-mono text-zinc-500 dark:text-zinc-400 select-all">${txHash}</td>
+              <td class="py-3 text-xs font-semibold text-secondary">${confirmations}</td>
+              <td class="py-3 text-xs">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${statusClass}">
+                  ${statusText}
+                </span>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      }
+    }
+
+    // 8. Render Historical Performance Charts
+    renderGiwaIntelligenceCharts(history);
+
+  } catch (err) {
+    console.error("[GIWA Status] Error loading details:", err);
+    // Gracefully handle network failures
+    const statusDot = document.getElementById("giwa-status-dot");
+    const statusText = document.getElementById("giwa-status-text");
+    const explorerStatus = document.getElementById("giwa-net-explorer-status");
+    const seqLatency = document.getElementById("giwa-seq-latency");
+    const seqTps = document.getElementById("giwa-seq-tps");
+    const seqGas = document.getElementById("giwa-seq-gas");
+
+    if (statusDot) statusDot.className = "w-3.5 h-3.5 rounded-full animate-pulse bg-red-500";
+    if (statusText) {
+      statusText.textContent = "Sequencer Offline";
+      statusText.className = "text-xs font-bold uppercase tracking-wider text-red-500";
+    }
+    if (explorerStatus) {
+      explorerStatus.textContent = "Degraded";
+      explorerStatus.className = "font-semibold text-amber-500";
+    }
+    if (seqLatency) {
+      seqLatency.textContent = "Offline";
+      seqLatency.className = "font-semibold text-red-500";
+    }
+    if (seqTps) seqTps.textContent = "0 TPS";
+    if (seqGas) seqGas.textContent = "0 Gwei";
+
+    // Handle home widget offline states
+    const widgetHealthBadge = document.getElementById("widget-giwa-health-badge");
+    const widgetLatency = document.getElementById("widget-giwa-latency");
+    const widgetSequencer = document.getElementById("widget-giwa-sequencer");
+    const widgetRating = document.getElementById("widget-giwa-rating");
+
+    if (widgetHealthBadge) {
+      widgetHealthBadge.textContent = "0/100";
+      widgetHealthBadge.className = "bg-red-500/10 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider";
+    }
+    if (widgetLatency) {
+      widgetLatency.textContent = "Offline";
+      widgetLatency.className = "font-bold text-red-500";
+    }
+    if (widgetSequencer) {
+      widgetSequencer.textContent = "Offline";
+      widgetSequencer.className = "font-bold text-red-500";
+    }
+    if (widgetRating) {
+      widgetRating.textContent = "Critical Health";
+      widgetRating.className = "text-xs font-semibold text-red-500";
+    }
+  }
+}
+
+function renderGiwaIntelligenceCharts(history) {
+  if (!history || history.length === 0) return;
+
+  const sorted = [...history].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const labels = sorted.map(d => {
+    return new Date(d.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  });
+
+  const healthScores = sorted.map(d => d.healthScore);
+  const latencies = sorted.map(d => d.rpcLatency);
+  const gasPrices = sorted.map(d => d.gasPrice);
+  const blockTimes = sorted.map(d => d.avgBlockTime);
+
+  const isDark = document.documentElement.classList.contains("dark");
+  const textColor = isDark ? "#94a3b8" : "#64748b";
+  const gridColor = isDark ? "rgba(148, 163, 184, 0.1)" : "rgba(100, 116, 139, 0.1)";
+  const fontConfig = { family: "Outfit, Inter, sans-serif", size: 10 };
+
+  const ctxHealth = document.getElementById("chart-giwa-health-latency")?.getContext("2d");
+  if (ctxHealth) {
+    if (giwaHealthLatencyChart) {
+      giwaHealthLatencyChart.destroy();
+    }
+    giwaHealthLatencyChart = new Chart(ctxHealth, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Health Score",
+            data: healthScores,
+            borderColor: "#10b981",
+            backgroundColor: "rgba(16, 185, 129, 0.05)",
+            borderWidth: 2,
+            tension: 0.3,
+            yAxisID: "y",
+            fill: true
+          },
+          {
+            label: "RPC Latency (ms)",
+            data: latencies,
+            borderColor: "#f59e0b",
+            backgroundColor: "rgba(245, 158, 11, 0.05)",
+            borderWidth: 2,
+            tension: 0.3,
+            yAxisID: "y1",
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index",
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: "top",
+            labels: { color: textColor, font: fontConfig }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: textColor, font: fontConfig }
+          },
+          y: {
+            type: "linear",
+            display: true,
+            position: "left",
+            min: 0,
+            max: 100,
+            grid: { color: gridColor },
+            ticks: { color: textColor, font: fontConfig }
+          },
+          y1: {
+            type: "linear",
+            display: true,
+            position: "right",
+            grid: { drawOnChartArea: false },
+            ticks: { color: textColor, font: fontConfig }
+          }
+        }
+      }
+    });
+  }
+
+  const ctxGasTime = document.getElementById("chart-giwa-gas-time")?.getContext("2d");
+  if (ctxGasTime) {
+    if (giwaGasTimeChart) {
+      giwaGasTimeChart.destroy();
+    }
+    giwaGasTimeChart = new Chart(ctxGasTime, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Gas Price (Gwei)",
+            data: gasPrices,
+            borderColor: "#3b82f6",
+            backgroundColor: "rgba(59, 130, 246, 0.05)",
+            borderWidth: 2,
+            tension: 0.3,
+            yAxisID: "y",
+            fill: true
+          },
+          {
+            label: "Block Time (s)",
+            data: blockTimes,
+            borderColor: "#ec4899",
+            backgroundColor: "rgba(236, 72, 153, 0.05)",
+            borderWidth: 2,
+            tension: 0.3,
+            yAxisID: "y1",
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "index",
+          intersect: false
+        },
+        plugins: {
+          legend: {
+            position: "top",
+            labels: { color: textColor, font: fontConfig }
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: textColor, font: fontConfig }
+          },
+          y: {
+            type: "linear",
+            display: true,
+            position: "left",
+            grid: { color: gridColor },
+            ticks: { color: textColor, font: fontConfig }
+          },
+          y1: {
+            type: "linear",
+            display: true,
+            position: "right",
+            grid: { drawOnChartArea: false },
+            ticks: { color: textColor, font: fontConfig }
+          }
+        }
+      }
+    });
+  }
+}
+
+function appendBlockToFeed(container, height, animate) {
+  const txCount = Math.floor(Math.random() * 15) + 3;
+  const gasUsed = (120000 + Math.floor(Math.random() * 45000)).toLocaleString();
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  const blockDiv = document.createElement("div");
+  blockDiv.className = `flex items-center justify-between p-2 rounded bg-surface-container dark:bg-surface-dim border border-outline-variant/10 text-xs ${animate ? 'animate-fade-in' : ''}`;
+  blockDiv.innerHTML = `
+    <div class="flex items-center gap-2">
+      <span class="material-symbols-outlined text-green-500 text-sm">check_circle</span>
+      <span class="font-mono font-semibold dark:text-white">Block #${height.toLocaleString()}</span>
+    </div>
+    <div class="text-[10px] text-on-surface-variant dark:text-outline-variant">
+      ${txCount} txs • Gas: ${gasUsed} gas • Confirmed at ${timeStr}
+    </div>
+  `;
+
+  container.appendChild(blockDiv);
+
+  while (container.children.length > 15) {
+    container.removeChild(container.firstChild);
+  }
+}
+
+async function loadOperationsData() {
+  const rpcStatus = document.getElementById("ops-rpc-status");
+  const rpcLatency = document.getElementById("ops-rpc-latency");
+  const indexerStatus = document.getElementById("ops-indexer-status");
+  const indexerBlock = document.getElementById("ops-indexer-block");
+  const apiStatus = document.getElementById("ops-api-status");
+  const apiMemory = document.getElementById("ops-api-memory");
+  const dbStatus = document.getElementById("ops-db-status");
+  const dbLatency = document.getElementById("ops-db-latency");
+
+  const queuePending = document.getElementById("ops-queue-pending");
+  const queueAmount = document.getElementById("ops-queue-amount");
+  const queueConfirm = document.getElementById("ops-queue-confirm");
+  const queueFailed = document.getElementById("ops-queue-failed");
+  const queueRetry = document.getElementById("ops-queue-retry");
+  const logConsole = document.getElementById("ops-log-console");
+
+  try {
+    const res = await authFetch(`${API_BASE}/operations/status`);
+    if (!res.ok) throw new Error("Failed to fetch operations status");
+    const data = await res.json();
+
+    // 1. Health Status
+    if (rpcStatus) {
+      rpcStatus.textContent = data.rpc.status;
+      rpcStatus.className = `text-lg font-extrabold ${data.rpc.status === 'Healthy' ? 'text-green-500' : 'text-amber-500'}`;
+    }
+    if (rpcLatency) rpcLatency.textContent = `${data.rpc.latencyMs}ms`;
+
+    if (indexerStatus) {
+      indexerStatus.textContent = data.indexer.status;
+      indexerStatus.className = `text-lg font-extrabold ${data.indexer.status === 'Healthy' ? 'text-green-500' : 'text-amber-500'}`;
+    }
+    if (indexerBlock) indexerBlock.textContent = `#${data.indexer.lastIndexedBlock.toLocaleString()}`;
+
+    if (apiStatus) {
+      apiStatus.textContent = data.api.status;
+      apiStatus.className = `text-lg font-extrabold ${data.api.status === 'Healthy' ? 'text-green-500' : 'text-red-500'}`;
+    }
+    if (apiMemory) apiMemory.textContent = `${data.api.memoryMB} MB`;
+
+    if (dbStatus) {
+      dbStatus.textContent = data.database.status;
+      dbStatus.className = `text-lg font-extrabold ${data.database.status === 'Healthy' ? 'text-green-500' : 'text-red-500'}`;
+    }
+    if (dbLatency) dbLatency.textContent = `${data.database.latencyMs}ms`;
+
+    // 2. Queue Metrics
+    if (queuePending) queuePending.textContent = data.queue.pendingCount.toString();
+    if (queueAmount) queueAmount.textContent = `$${Number(data.queue.pendingAmount).toLocaleString('en-US', { minimumFractionDigits: 2 })} pending`;
+    if (queueConfirm) queueConfirm.textContent = `${data.queue.averageConfirmSeconds}s`;
+    if (queueFailed) queueFailed.textContent = data.queue.failedCount.toString();
+    if (queueRetry) queueRetry.textContent = data.queue.retryCount.toString();
+
+    // 3. Log Message
+    if (logConsole) {
+      const timeStr = new Date().toISOString();
+      const newLog = document.createElement("div");
+      newLog.className = "animate-fade-in";
+      newLog.innerHTML = `<span class="text-zinc-500">[${timeStr}]</span> <span class="text-green-500">[OK]</span> Operations metrics polled successfully. DB Latency: ${data.database.latencyMs}ms. RPC: ${data.rpc.status}`;
+      logConsole.appendChild(newLog);
+      logConsole.scrollTop = logConsole.scrollHeight;
+
+      while (logConsole.children.length > 25) {
+        logConsole.removeChild(logConsole.firstChild);
+      }
+    }
+
+  } catch (err) {
+    console.error("[Operations Portal] Error loading data:", err);
+    if (rpcStatus) { rpcStatus.textContent = "Offline"; rpcStatus.className = "text-lg font-extrabold text-red-500"; }
+    if (indexerStatus) { indexerStatus.textContent = "Offline"; indexerStatus.className = "text-lg font-extrabold text-red-500"; }
+    if (apiStatus) { apiStatus.textContent = "Offline"; apiStatus.className = "text-lg font-extrabold text-red-500"; }
+    if (dbStatus) { dbStatus.textContent = "Offline"; dbStatus.className = "text-lg font-extrabold text-red-500"; }
+
+    if (logConsole) {
+      const timeStr = new Date().toISOString();
+      const newLog = document.createElement("div");
+      newLog.className = "text-red-500 animate-fade-in";
+      newLog.innerHTML = `<span class="text-zinc-500">[${timeStr}]</span> [ERROR] Poll failed: ${err.message}`;
+      logConsole.appendChild(newLog);
+      logConsole.scrollTop = logConsole.scrollHeight;
+    }
+  }
+}
+window.loadOperationsData = loadOperationsData;
+
 

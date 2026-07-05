@@ -85,3 +85,13 @@ frontend/kyc-failed.html
 # ========================
 artifacts/
 cache/
+
+# ========================
+# Coverage, Scratch and Test Scripts
+# ========================
+coverage/
+backend/coverage/
+coverage.json
+scratch/
+backend/scratch/
+backend/test_*.js

@@ -13,6 +13,8 @@
  * ─────────────────────────────────────────────────────────────────
  */
 
+import { giwa } from './src/infrastructure/giwa/index.js';
+
 // ── Configuration ──────────────────────────────────────────────────
 const WALLETCONNECT_PROJECT_ID = "YOUR_WALLETCONNECT_PROJECT_ID"; // ← Replace this
 
@@ -31,6 +33,12 @@ const SUPPORTED_CHAINS = {
   optimism:  { id: 10,    name: "Optimism",          symbol: "ETH",   explorer: "https://optimistic.etherscan.io" },
   base:      { id: 8453,  name: "Base",             symbol: "ETH",   explorer: "https://basescan.org" },
   sepolia:   { id: 11155111, name: "Sepolia Testnet", symbol: "ETH", explorer: "https://sepolia.etherscan.io" },
+  giwa:      { 
+    id: giwa.getChainMetadata().chainId, 
+    name: giwa.getChainMetadata().name, 
+    symbol: "ETH", 
+    explorer: giwa.getExplorer() 
+  }
 };
 
 // ── Internal state ──────────────────────────────────────────────────
@@ -97,9 +105,23 @@ async function init() {
     ? WALLETCONNECT_PROJECT_ID
     : "b56e18d47c72ab683b10814fe9495694"; // Fallback demo ID (safe for localhost)
 
+  const meta = giwa.getChainMetadata();
+  const giwaChain = {
+    id: meta.chainId,
+    name: meta.name,
+    nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+    rpcUrls: {
+      default: { http: [giwa.getRPC()] },
+      public: { http: [giwa.getRPC()] }
+    },
+    blockExplorers: {
+      default: { name: 'GIWA Explorer', url: giwa.getExplorer() }
+    }
+  };
+
   // Build wagmi config
   _config = createConfig({
-    chains: [mainnet, polygon, arbitrum, optimism, base, sepolia],
+    chains: [mainnet, polygon, arbitrum, optimism, base, sepolia, giwaChain],
     connectors: [
       injected({ target: "metaMask" }),
       injected({ target: "coinbaseWallet" }),
@@ -122,6 +144,7 @@ async function init() {
       [optimism.id]: http(),
       [base.id]:     http(),
       [sepolia.id]:  http(),
+      [giwaChain.id]: http(),
     },
     storage: {
       // Persist session to localStorage under korripay namespace

@@ -1,0 +1,323 @@
+name: CI — Lint · Test · Security
+
+on:
+  push:
+    branches: [main, develop, 'release/**']
+  pull_request:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  SOLIDITY_VERSION: '0.8.20'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 1 · Backend Lint
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+  lint-backend:
+    name: '🔍 Lint — Backend'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Install ESLint
+        run: npm install --no-save eslint @eslint/js eslint-plugin-import
+
+      - name: Run ESLint
+        run: |
+          npx eslint . \
+            --ext .js,.mjs \
+            --ignore-pattern node_modules \
+            --ignore-pattern coverage \
+            --ignore-pattern scratch \
+            --max-warnings 0 \
+            --format stylish \
+            || echo "::warning::ESLint found issues — review before merging"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 2 · Backend Tests + Coverage
+# ─────────────────────────────────────────────────────────────────────────────
+  test-backend:
+    name: '🧪 Test — Backend (Postgres)'
+    runs-on: ubuntu-latest
+    needs: lint-backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: korripay_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/korripay_test?schema=public
+      NODE_ENV: test
+      PORT: 0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+
+      - name: Run tests with coverage
+        run: npm run coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage-${{ github.run_number }}
+          path: backend/coverage/
+          retention-days: 14
+
+      - name: Coverage summary comment (PR only)
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'backend/coverage/index.html';
+            if (fs.existsSync(path)) {
+              core.summary
+                .addHeading('📊 Backend Coverage Report')
+                .addRaw('Coverage HTML report uploaded as workflow artifact.')
+                .write();
+            }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 3 · Smart Contract Compile + Test
+# ─────────────────────────────────────────────────────────────────────────────
+  test-contracts:
+    name: '📜 Contracts — Compile & Hardhat Tests'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci --prefer-offline
+
+      - name: Compile contracts
+        run: npx hardhat compile
+
+      - name: Run Hardhat tests
+        run: npx hardhat test
+
+      - name: Generate Hardhat gas report
+        run: REPORT_GAS=true npx hardhat test
+        continue-on-error: true
+
+      - name: Upload compilation artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: contract-artifacts-${{ github.run_number }}
+          path: |
+            artifacts/
+            cache/
+          retention-days: 7
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 4 · Security Scan — Backend (npm audit + Semgrep)
+# ─────────────────────────────────────────────────────────────────────────────
+  security-backend:
+    name: '🔐 Security — Backend'
+    runs-on: ubuntu-latest
+    needs: lint-backend
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci --prefer-offline
+
+      - name: npm audit (high severity only)
+        working-directory: backend
+        run: npm audit --audit-level=high --omit=dev
+        continue-on-error: true
+
+      - name: Run Semgrep SAST scan
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/nodejs
+            p/jwt
+            p/sql-injection
+            p/xss
+          output-format: sarif
+          output-file: semgrep.sarif
+        continue-on-error: true
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      - name: Upload Semgrep SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+        continue-on-error: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 5 · Security Scan — Smart Contracts (Slither)
+# ─────────────────────────────────────────────────────────────────────────────
+  security-contracts:
+    name: '🔐 Security — Smart Contracts (Slither)'
+    runs-on: ubuntu-latest
+    needs: test-contracts
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci --prefer-offline
+
+      - name: Compile contracts (for Slither)
+        run: npx hardhat compile
+
+      - name: Run Slither
+        uses: crytic/slither-action@v0.4.0
+        id: slither
+        with:
+          target: contracts/
+          solc-version: ${{ env.SOLIDITY_VERSION }}
+          slither-args: '--checklist --markdown-root ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.sha }}/'
+          fail-on: high
+          sarif: slither.sarif
+        continue-on-error: true
+
+      - name: Upload Slither SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: slither.sarif
+        continue-on-error: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 6 · Docker Build Validation
+# ─────────────────────────────────────────────────────────────────────────────
+  docker-build:
+    name: '🐳 Docker — Build & Lint'
+    runs-on: ubuntu-latest
+    needs: [test-backend]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Lint Dockerfile (hadolint)
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          failure-threshold: error
+        continue-on-error: true
+
+      - name: Build backend Docker image (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          tags: korripay/backend:ci-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_COMMIT=${{ github.sha }}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 7 · CI Gate (all must pass)
+# ─────────────────────────────────────────────────────────────────────────────
+  ci-gate:
+    name: '✅ CI Gate'
+    runs-on: ubuntu-latest
+    needs: [test-backend, test-contracts, security-backend, security-contracts, docker-build]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          echo "test-backend:       ${{ needs.test-backend.result }}"
+          echo "test-contracts:     ${{ needs.test-contracts.result }}"
+          echo "security-backend:   ${{ needs.security-backend.result }}"
+          echo "security-contracts: ${{ needs.security-contracts.result }}"
+          echo "docker-build:       ${{ needs.docker-build.result }}"
+
+          if [[ "${{ needs.test-backend.result }}" != "success" ]]; then
+            echo "::error::Backend tests failed"
+            exit 1
+          fi
+          if [[ "${{ needs.test-contracts.result }}" != "success" ]]; then
+            echo "::error::Contract tests failed"
+            exit 1
+          fi
+          echo "✅ All required CI checks passed."

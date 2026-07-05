@@ -15,14 +15,24 @@ import {
   calculateFee,
 } from './fxService.js';
 
+export const fxOverrides = {
+  fetchLiveRates: null,
+  convertFX: null,
+  getFXHistory: null,
+  getFXAnalytics: null,
+  calculateFee: null,
+  recordFXConversion: null
+};
+
 const router = Router();
 
 // ── GET /api/fx/rates ──────────────────────────────────────────────────────
 // Returns live exchange rates vs USD base.
 // Public endpoint — no auth required (used in Send Money preview).
+// Mount with: app.use('/api/fx', fxRouter)
 router.get('/rates', async (req, res) => {
   try {
-    const rates = await fetchLiveRates();
+    const rates = await (fxOverrides.fetchLiveRates || fetchLiveRates)();
     res.json({
       base:      'USD',
       rates:     { KRW: rates.KRW, NGN: rates.NGN, USD: 1 },
@@ -52,12 +62,12 @@ router.post('/convert', async (req, res) => {
       return res.status(400).json({ error: 'amount must be a positive number.' });
     }
 
-    const result = await convertFX(numericAmount, fromCurrency.toUpperCase(), toAsset);
+    const result = await (fxOverrides.convertFX || convertFX)(numericAmount, fromCurrency.toUpperCase(), toAsset);
 
     // If a userId is present in the request (set by requireAuth), save history
     if (req.userId) {
       const txHash = req.body.txHash ?? null;
-      await recordFXConversion(req.userId, result, txHash).catch((e) =>
+      await (fxOverrides.recordFXConversion || recordFXConversion)(req.userId, result, txHash).catch((e) =>
         console.warn('[FX] History record failed (non-fatal):', e.message)
       );
     }
@@ -77,7 +87,7 @@ router.post('/quote', async (req, res) => {
     const { amount, fromCurrency, toAsset } = req.body;
 
     const numericAmount = parseFloat(amount ?? 0);
-    const result = await convertFX(
+    const result = await (fxOverrides.convertFX || convertFX)(
       numericAmount || 1,
       (fromCurrency ?? 'USD').toUpperCase(),
       toAsset ?? 'USDC'
@@ -98,7 +108,7 @@ router.get('/history', requireAuthMiddleware, async (req, res) => {
     const limit  = Math.min(parseInt(req.query.limit  ?? '50'), 200);
     const offset = parseInt(req.query.offset ?? '0');
 
-    const result = await getFXHistory(req.userId, limit, offset);
+    const result = await (fxOverrides.getFXHistory || getFXHistory)(req.userId, limit, offset);
     res.json(result);
   } catch (err) {
     console.error('[FX Controller] /history error:', err);
@@ -112,7 +122,7 @@ router.get('/history', requireAuthMiddleware, async (req, res) => {
 router.get('/analytics', requireAuthMiddleware, async (req, res) => {
   try {
     const days = Math.min(parseInt(req.query.days ?? '30'), 365);
-    const result = await getFXAnalytics(req.userId, days);
+    const result = await (fxOverrides.getFXAnalytics || getFXAnalytics)(req.userId, days);
     res.json(result);
   } catch (err) {
     console.error('[FX Controller] /analytics error:', err);
@@ -131,12 +141,12 @@ router.get('/fee', async (req, res) => {
     const feeRate = 0.005; // 0.5%
 
     // To express fee in source currency, first get rates
-    const rates = await fetchLiveRates();
+    const rates = await (fxOverrides.fetchLiveRates || fetchLiveRates)();
     const usdEquivalent = !currency || currency === 'USD'
       ? numericAmount
       : numericAmount / (rates[currency.toUpperCase()] ?? 1);
 
-    const fee = calculateFee(usdEquivalent, feeRate);
+    const fee = (fxOverrides.calculateFee || calculateFee)(usdEquivalent, feeRate);
 
     res.json({
       inputAmount:    numericAmount,

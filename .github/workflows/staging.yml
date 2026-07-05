@@ -1,0 +1,244 @@
+name: CD — Staging Deployment
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual staging deploy'
+        required: false
+        default: 'Manual trigger'
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false   # never cancel in-flight deploys
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository_owner }}/korripay-backend
+  ENVIRONMENT: staging
+
+jobs:
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 1 · Build & Push Docker image to GHCR
+# ─────────────────────────────────────────────────────────────────────────────
+  build-and-push:
+    name: '🐳 Build & Push — staging image'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=staging-,format=short
+            type=raw,value=staging-latest
+
+      - name: Build and push
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            GIT_COMMIT=${{ github.sha }}
+            NODE_ENV=staging
+
+      - name: Sign container image
+        uses: sigstore/cosign-installer@v3
+        continue-on-error: true
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build.outputs.digest }}
+          artifact-name: sbom-staging-${{ github.sha }}.spdx
+        continue-on-error: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 2 · Container Vulnerability Scan (Trivy)
+# ─────────────────────────────────────────────────────────────────────────────
+  trivy-scan:
+    name: '🔐 Container Scan — Trivy'
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    permissions:
+      security-events: write
+      contents: read
+
+    steps:
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:staging-latest
+          format: sarif
+          output: trivy.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '0'      # don't block staging; report only
+
+      - name: Upload Trivy scan results to Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy.sarif
+        continue-on-error: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 3 · Deploy to Staging
+# ─────────────────────────────────────────────────────────────────────────────
+  deploy-staging:
+    name: '🚀 Deploy — Staging'
+    runs-on: ubuntu-latest
+    needs: [build-and-push, trivy-scan]
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.STAGING_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.STAGING_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+
+      - name: Deploy to Staging server
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          JWT_SECRET: ${{ secrets.STAGING_JWT_SECRET }}
+          GIT_SHA: ${{ github.sha }}
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            $STAGING_USER@$STAGING_HOST bash -s << 'ENDSSH'
+
+          set -euo pipefail
+
+          echo "🔐 Logging into GHCR..."
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+          echo "📦 Pulling new image..."
+          docker pull $REGISTRY/$IMAGE_NAME:staging-latest
+
+          echo "🔄 Running database migrations..."
+          docker run --rm \
+            -e DATABASE_URL="$DATABASE_URL" \
+            $REGISTRY/$IMAGE_NAME:staging-latest \
+            sh -c "cd /app/backend && npx prisma migrate deploy"
+
+          echo "♻️  Restarting korripay-staging service..."
+          docker compose -f /opt/korripay/docker-compose.staging.yml \
+            up -d --no-deps --force-recreate backend
+
+          echo "⏳ Waiting for health check..."
+          sleep 10
+          docker compose -f /opt/korripay/docker-compose.staging.yml ps backend
+          curl -sf "http://localhost:3001/api/v1/giwa/services" > /dev/null \
+            && echo "✅ Staging health check passed" \
+            || (echo "❌ Health check failed" && exit 1)
+
+          echo "🏷  Tagging deployed image..."
+          docker tag $REGISTRY/$IMAGE_NAME:staging-latest \
+            $REGISTRY/$IMAGE_NAME:deployed-staging-$(date +%Y%m%d-%H%M%S)
+
+          ENDSSH
+
+      - name: Notify Slack — Staging deployed
+        if: always()
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "${{ job.status == 'success' && '✅' || '❌' }} *Staging Deploy* — `${{ github.ref_name }}` @ `${{ github.sha }}` — ${{ job.status }}\n<${{ vars.STAGING_URL }}|Open Staging>",
+              "username": "KorriPay CD",
+              "icon_emoji": ":rocket:"
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+# JOB 4 · Smoke test against live Staging
+# ─────────────────────────────────────────────────────────────────────────────
+  smoke-test-staging:
+    name: '💨 Smoke Test — Staging'
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: success()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run smoke tests
+        env:
+          STAGING_URL: ${{ vars.STAGING_URL }}
+        run: |
+          BASE="${STAGING_URL:-https://staging.korripay.com}"
+
+          echo "Testing $BASE ..."
+
+          check() {
+            local url="$1"
+            local expected_status="${2:-200}"
+            local http_status
+            http_status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+            if [[ "$http_status" == "$expected_status" ]]; then
+              echo "  ✅ $url → $http_status"
+            else
+              echo "  ❌ $url → $http_status (expected $expected_status)"
+              return 1
+            fi
+          }
+
+          # Core API smoke tests
+          check "$BASE/api/v1/giwa/services"
+          check "$BASE/api/fx/rates"
+          check "$BASE/api/auth/nonce"
+          check "$BASE/api/compliance/rules"    # public endpoint
+          check "$BASE/api/wallet"    "401"     # should require auth
+          check "$BASE/api/admin/users" "401"   # should require auth
+
+          echo "✅ All smoke tests passed."

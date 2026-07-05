@@ -350,7 +350,7 @@
   <div id="modal-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] hidden opacity-0 transition-opacity duration-300"></div>
 
   <!-- Wallet Connection Modal -->
-  <div id="modal-wallet" class="fixed bottom-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-white dark:bg-inverse-surface rounded-t-2xl sm:rounded-2xl z-[100] hidden transform translate-y-full sm:translate-y-4 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30">
+  <div id="modal-wallet" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-md bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
       <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
         <span class="material-symbols-outlined text-primary">account_balance_wallet</span>
@@ -366,14 +366,6 @@
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-full bg-surface-container-high dark:bg-surface-container-highest flex items-center justify-center text-primary font-bold text-sm">B</div>
           <span class="font-semibold text-on-surface dark:text-white">Browser Wallet (Rabby, Zerion, etc.)</span>
-        </div>
-        <span class="material-symbols-outlined text-outline">chevron_right</span>
-      </button>
-
-      <button class="w-full flex items-center justify-between p-3 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl hover:bg-surface-container-low transition-all active:scale-[0.98] wallet-opt-btn" data-name="MetaMask">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 font-bold text-sm">M</div>
-          <span class="font-semibold text-on-surface dark:text-white">MetaMask Wallet</span>
         </div>
         <span class="material-symbols-outlined text-outline">chevron_right</span>
       </button>
@@ -394,14 +386,6 @@
         <span class="material-symbols-outlined text-outline">chevron_right</span>
       </button>
 
-      <button class="w-full flex items-center justify-between p-3 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl hover:bg-surface-container-low transition-all active:scale-[0.98] wallet-opt-btn" data-name="Plaid Bank Link">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600 font-bold text-sm">P</div>
-          <span class="font-semibold text-on-surface dark:text-white">Plaid Bank Link</span>
-        </div>
-        <span class="material-symbols-outlined text-outline">chevron_right</span>
-      </button>
-
       <!-- Divider -->
       <div class="flex items-center my-sm">
         <hr class="flex-grow border-outline-variant/30 dark:border-on-surface-variant/20">
@@ -409,8 +393,16 @@
         <hr class="flex-grow border-outline-variant/30 dark:border-on-surface-variant/20">
       </div>
 
-      <!-- Demo Email Login Form -->
+      <!-- Demo Email Login & Signup Form -->
       <div id="demo-login-form" class="space-y-xs pt-xs">
+        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-2 mb-2">
+          <button type="button" id="tab-signin" class="w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-primary text-primary cursor-pointer">Sign In</button>
+          <button type="button" id="tab-signup" class="w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-transparent text-outline hover:text-primary cursor-pointer">Sign Up</button>
+        </div>
+        <div class="flex flex-col gap-1 hidden" id="signup-name-group">
+          <label for="demo-name" class="text-xs font-bold text-on-surface-variant dark:text-outline-variant">Full Name</label>
+          <input type="text" id="demo-name" placeholder="John Doe" class="w-full p-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl bg-transparent text-on-surface dark:text-white text-sm focus:outline-none focus:border-primary">
+        </div>
         <div class="flex flex-col gap-1">
           <label for="demo-email" class="text-xs font-bold text-on-surface-variant dark:text-outline-variant">Email Address</label>
           <input type="email" id="demo-email" placeholder="judge@korri.pay" class="w-full p-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl bg-transparent text-on-surface dark:text-white text-sm focus:outline-none focus:border-primary">
@@ -460,14 +452,14 @@
       void overlay.offsetWidth; // force reflow
       
       overlay.classList.add("opacity-100");
-      walletModal.classList.add("opacity-100", "translate-y-0", "sm:translate-y-0");
-      walletModal.classList.remove("translate-y-full", "sm:translate-y-4");
+      walletModal.classList.add("opacity-100", "scale-100");
+      walletModal.classList.remove("scale-95", "opacity-0");
     }
 
     function closeWalletModal() {
       overlay.classList.remove("opacity-100");
-      walletModal.classList.remove("opacity-100", "translate-y-0", "sm:translate-y-0");
-      walletModal.classList.add("translate-y-full", "sm:translate-y-4");
+      walletModal.classList.remove("opacity-100", "scale-100");
+      walletModal.classList.add("scale-95", "opacity-0");
 
       setTimeout(() => {
         overlay.classList.add("hidden");
@@ -492,31 +484,66 @@
       });
     });
 
-    // Email login handler for demo mode
+    // Email login/signup handler for demo mode
+    let currentAuthMode = 'signin';
+    const tabSignIn = document.getElementById("tab-signin");
+    const tabSignUp = document.getElementById("tab-signup");
+    const nameGroup = document.getElementById("signup-name-group");
     const btnDemoLogin = document.getElementById("btn-demo-login");
+
+    function setAuthTab(mode) {
+      currentAuthMode = mode;
+      if (mode === 'signin') {
+        tabSignIn.className = "w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-primary text-primary cursor-pointer";
+        tabSignUp.className = "w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-transparent text-outline hover:text-primary cursor-pointer";
+        nameGroup.classList.add("hidden");
+        btnDemoLogin.innerText = "Sign In with Email";
+      } else {
+        tabSignIn.className = "w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-transparent text-outline hover:text-primary cursor-pointer";
+        tabSignUp.className = "w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-primary text-primary cursor-pointer";
+        nameGroup.classList.remove("hidden");
+        btnDemoLogin.innerText = "Sign Up with Email";
+      }
+    }
+
+    if (tabSignIn && tabSignUp) {
+      tabSignIn.addEventListener("click", () => setAuthTab('signin'));
+      tabSignUp.addEventListener("click", () => setAuthTab('signup'));
+    }
+
     if (btnDemoLogin) {
       btnDemoLogin.addEventListener("click", async () => {
         const email = document.getElementById("demo-email").value;
         const password = document.getElementById("demo-password").value;
+        const name = document.getElementById("demo-name") ? document.getElementById("demo-name").value : "";
 
         if (!email || !password) {
           alert("Please enter both email and password.");
           return;
         }
 
+        if (currentAuthMode === 'signup' && !name) {
+          alert("Please enter your name.");
+          return;
+        }
+
         btnDemoLogin.disabled = true;
-        btnDemoLogin.innerText = "Signing in...";
+        btnDemoLogin.innerText = currentAuthMode === 'signin' ? "Signing in..." : "Signing up...";
+
+        const endpoint = currentAuthMode === 'signin' 
+          ? "http://localhost:5000/api/auth/signin" 
+          : "http://localhost:5000/api/auth/signup";
 
         try {
-          const res = await fetch("http://localhost:5000/api/auth/demo", {
+          const res = await fetch(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, name })
           });
 
           if (!res.ok) {
             const data = await res.json();
-            throw new Error(data.error || "Login failed");
+            throw new Error(data.error || "Authentication failed");
           }
 
           const authData = await res.json();
@@ -527,7 +554,7 @@
           alert(err.message);
         } finally {
           btnDemoLogin.disabled = false;
-          btnDemoLogin.innerText = "Sign In with Email";
+          btnDemoLogin.innerText = currentAuthMode === 'signin' ? "Sign In with Email" : "Sign Up with Email";
         }
       });
     }

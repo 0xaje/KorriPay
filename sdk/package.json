@@ -1,0 +1,33 @@
+ {
+  "name": "@korripay/sdk",
+  "version": "1.0.0",
+  "description": "Official KorriPay platform JavaScript/TypeScript SDK for versioned L2 settlements, wallets, compliance attestations, and proofs.",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "korripay",
+    "sdk",
+    "fintech",
+    "l2",
+    "settlements",
+    "kyc",
+    "web3"
+  ],
+  "author": "KorriPay Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

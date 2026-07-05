@@ -1,0 +1,34 @@
+# KorriPay Monitoring — Prometheus config
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    app: korripay
+    env: production
+
+# ── Alerting (optional: connect to Alertmanager) ──────────────────────────
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# ── Scrape Configs ─────────────────────────────────────────────────────────
+scrape_configs:
+  - job_name: korripay-backend
+    static_configs:
+      - targets: ['backend:3000']
+    metrics_path: /metrics
+    scrape_interval: 15s
+
+  - job_name: postgres
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+
+  - job_name: nginx
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
