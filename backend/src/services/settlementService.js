@@ -4,6 +4,7 @@ import { ethers } from 'ethers';
 import net from 'net';
 import { giwa } from '../infrastructure/giwa/index.js';
 import { webhookService } from './webhookService.js';
+import { lockService } from './lockService.js';
 
 const prisma = new PrismaClient();
 const isTest = typeof global.it === 'function' || process.env.NODE_ENV === 'test' || process.env.PORT === '0';
@@ -66,7 +67,11 @@ class SettlementService extends EventEmitter {
         console.warn("[SettlementService] Failed to initialize provider:", err.message);
       }
     } else {
-      console.log("[SettlementService] GIWA RPC node is offline. Using local simulation fallback.");
+      if (process.env.NODE_ENV === 'production') {
+        console.error("[SettlementService] CRITICAL: GIWA RPC node is offline in production.");
+      } else {
+        console.log("[SettlementService] GIWA RPC node is offline. Using local simulation fallback.");
+      }
     }
   }
 
@@ -82,8 +87,14 @@ class SettlementService extends EventEmitter {
       throw new Error("Validation Failed: Transfer amount must be greater than zero");
     }
 
-    // Fetch user wallet
-    const wallet = await prisma.wallet.findFirst({ where: { userId } });
+    // Fetch user wallet with a raw pessimistic FOR UPDATE lock (fallback to findFirst if raw fails on non-Postgres engines)
+    let wallet;
+    try {
+      const wallets = await prisma.$queryRawUnsafe(`SELECT * FROM "wallets" WHERE "userId" = $1 LIMIT 1 FOR UPDATE`, userId);
+      wallet = wallets && wallets[0];
+    } catch (e) {
+      wallet = await prisma.wallet.findFirst({ where: { userId } });
+    }
     if (!wallet) {
       throw new Error("Validation Failed: Wallet not found for user");
     }
@@ -146,92 +157,78 @@ class SettlementService extends EventEmitter {
    * Helper to process a settlement transaction strictly on-chain.
    */
   async processOnChainSettlement(settlementId, txHash, numAmount, recipientDetails) {
-    return new Promise((resolve, reject) => {
-      this.txQueue = this.txQueue.then(async () => {
-        try {
-          if (!this.provider) {
-            this.provider = new ethers.JsonRpcProvider(giwa.getRPC());
+    return new Promise(async (resolve, reject) => {
+      // Obtain distributed / multi-instance lock for the L2 sequencer signer address
+      const lock = await lockService.acquire('lock:settlement:sequencer', 60000);
+      try {
+        const reachable = await this.isRpcReachable(giwa.getRPC());
+        if (!reachable) {
+          if (process.env.NODE_ENV === 'production') {
+            reject(new Error("GIWA RPC node is unreachable. Cannot process settlement in production."));
+            return;
+          }
+          console.log("[SettlementService] RPC offline during on-chain execution. Falling back to local simulation receipt.");
+          const hex = "0123456789abcdef";
+          let generatedHash = txHash || "0x";
+          if (generatedHash.length < 66) {
+            for (let i = 0; i < 64; i++) generatedHash += hex[Math.floor(Math.random() * 16)];
+            generatedHash = generatedHash.substring(0, 66);
+          }
+          resolve({
+            hash: generatedHash,
+            status: 1,
+            blockNumber: 1234567,
+            gasUsed: 21000n
+          });
+          return;
+        }
+
+        if (!this.provider) {
+          this.provider = new ethers.JsonRpcProvider(giwa.getRPC());
+        }
+
+        let txExists = false;
+        if (txHash && txHash.startsWith("0x") && txHash.length === 66) {
+          try {
+            const tx = await this.provider.getTransaction(txHash);
+            if (tx) {
+              txExists = true;
+            }
+          } catch (e) {}
+        }
+
+        const signer = this.getSigner();
+        const contractAddress = giwa.getSettlementAddress();
+        const contract = new ethers.Contract(contractAddress, KORRI_SETTLEMENT_ABI, signer);
+
+        let finalReceipt = null;
+
+        if (txExists) {
+          const initReceipt = await this.provider.waitForTransaction(txHash);
+          if (!initReceipt || initReceipt.status !== 1) {
+            throw new Error("Initiated settlement transaction failed on-chain");
           }
 
-          let txExists = false;
-          if (txHash && txHash.startsWith("0x") && txHash.length === 66) {
+          const contractInterface = new ethers.Interface(KORRI_SETTLEMENT_ABI);
+          let onChainId = null;
+          for (const log of initReceipt.logs) {
             try {
-              const tx = await this.provider.getTransaction(txHash);
-              if (tx) {
-                txExists = true;
+              const parsedLog = contractInterface.parseLog(log);
+              if (parsedLog && parsedLog.name === 'TransferCreated') {
+                onChainId = parsedLog.args.id;
+                break;
               }
             } catch (e) {}
           }
 
-          const signer = this.getSigner();
-          const contractAddress = giwa.getSettlementAddress();
-          const contract = new ethers.Contract(contractAddress, KORRI_SETTLEMENT_ABI, signer);
-
-          let finalReceipt = null;
-
-          if (txExists) {
-            const initReceipt = await this.provider.waitForTransaction(txHash);
-            if (!initReceipt || initReceipt.status !== 1) {
-              throw new Error("Initiated settlement transaction failed on-chain");
-            }
-
-            const contractInterface = new ethers.Interface(KORRI_SETTLEMENT_ABI);
-            let onChainId = null;
-            for (const log of initReceipt.logs) {
-              try {
-                const parsedLog = contractInterface.parseLog(log);
-                if (parsedLog && parsedLog.name === 'TransferCreated') {
-                  onChainId = parsedLog.args.id;
-                  break;
-                }
-              } catch (e) {}
-            }
-
-            if (onChainId !== null && onChainId !== undefined) {
-              const externalTxHash = txHash;
-              let completeTx = null;
-              let attempt = 0;
-              while (attempt < 5) {
-                try {
-                  const nonce = await this.provider.getTransactionCount(signer.address, 'pending');
-                  completeTx = await contract.completeSettlement(onChainId, externalTxHash, { nonce });
-                  break;
-                } catch (e) {
-                  if (e.message.includes("nonce") || e.code === "NONCE_EXPIRED" || e.message.includes("Nonce too low")) {
-                    attempt++;
-                    await new Promise(r => setTimeout(r, 600));
-                  } else {
-                    throw e;
-                  }
-                }
-              }
-              if (!completeTx) {
-                throw new Error("Failed to submit completeSettlement transaction due to nonce/RPC issues");
-              }
-              finalReceipt = await this.provider.waitForTransaction(completeTx.hash);
-              if (!finalReceipt || finalReceipt.status !== 1) {
-                throw new Error("Complete settlement transaction failed on-chain");
-              }
-            } else {
-              finalReceipt = initReceipt;
-            }
-          } else {
-            const fromToken = "0x0000000000000000000000000000000000000000";
-            const toToken = "0x0000000000000000000000000000000000000000";
-            const parsedAmount = ethers.parseEther(numAmount.toString());
-
-            let initTx = null;
+          if (onChainId !== null && onChainId !== undefined) {
+            const externalTxHash = txHash;
+            let completeTx = null;
             let attempt = 0;
             while (attempt < 5) {
               try {
-                const nonce = await this.provider.getTransactionCount(signer.address, 'pending');
-                initTx = await contract.initiateSettlement(
-                  fromToken,
-                  toToken,
-                  parsedAmount,
-                  recipientDetails || "API Request",
-                  { value: parsedAmount, nonce }
-                );
+                const completeNonce = await this.provider.getTransactionCount(signer.address, 'pending');
+                completeTx = await contract.completeSettlement(onChainId, externalTxHash, { nonce: completeNonce });
                 break;
               } catch (e) {
                 if (e.message.includes("nonce") || e.code === "NONCE_EXPIRED" || e.message.includes("Nonce too low")) {
@@ -242,66 +239,101 @@ class SettlementService extends EventEmitter {
                 }
               }
             }
-
-            if (!initTx) {
-              throw new Error("Failed to submit initiateSettlement transaction due to nonce/RPC issues");
+            if (!completeTx) {
+              throw new Error("Failed to submit completeSettlement transaction due to nonce/RPC issues");
             }
-
-            const initReceipt = await this.provider.waitForTransaction(initTx.hash);
-            if (!initReceipt || initReceipt.status !== 1) {
-              throw new Error("Operator initiate settlement transaction failed on-chain");
+            finalReceipt = await this.provider.waitForTransaction(completeTx.hash);
+            if (!finalReceipt || finalReceipt.status !== 1) {
+              throw new Error("Complete settlement transaction failed on-chain");
             }
+          } else {
+            finalReceipt = initReceipt;
+          }
+        } else {
+          const fromToken = "0x0000000000000000000000000000000000000000";
+          const toToken = "0x0000000000000000000000000000000000000000";
+          const parsedAmount = ethers.parseEther(numAmount.toString());
 
-            const contractInterface = new ethers.Interface(KORRI_SETTLEMENT_ABI);
-            let onChainId = null;
-            for (const log of initReceipt.logs) {
-              try {
-                const parsedLog = contractInterface.parseLog(log);
-                if (parsedLog && parsedLog.name === 'TransferCreated') {
-                  onChainId = parsedLog.args.id;
-                  break;
-                }
-              } catch (e) {}
-            }
-
-            if (onChainId !== null && onChainId !== undefined) {
-              const externalTxHash = initTx.hash;
-              let completeTx = null;
-              let completeAttempt = 0;
-              while (completeAttempt < 5) {
-                try {
-                  const completeNonce = await this.provider.getTransactionCount(signer.address, 'pending');
-                  completeTx = await contract.completeSettlement(onChainId, externalTxHash, { nonce: completeNonce });
-                  break;
-                } catch (e) {
-                  if (e.message.includes("nonce") || e.code === "NONCE_EXPIRED" || e.message.includes("Nonce too low")) {
-                    completeAttempt++;
-                    await new Promise(r => setTimeout(r, 600));
-                  } else {
-                    throw e;
-                  }
-                }
+          let initTx = null;
+          let attempt = 0;
+          while (attempt < 5) {
+            try {
+              const nonce = await this.provider.getTransactionCount(signer.address, 'pending');
+              initTx = await contract.initiateSettlement(
+                fromToken,
+                toToken,
+                parsedAmount,
+                recipientDetails || "API Request",
+                { value: parsedAmount, nonce }
+              );
+              break;
+            } catch (e) {
+              if (e.message.includes("nonce") || e.code === "NONCE_EXPIRED" || e.message.includes("Nonce too low")) {
+                attempt++;
+                await new Promise(r => setTimeout(r, 600));
+              } else {
+                throw e;
               }
-              if (!completeTx) {
-                throw new Error("Failed to submit completeSettlement transaction due to nonce/RPC issues");
-              }
-              finalReceipt = await this.provider.waitForTransaction(completeTx.hash);
-              if (!finalReceipt || finalReceipt.status !== 1) {
-                throw new Error("Complete settlement transaction failed on-chain");
-              }
-            } else {
-              finalReceipt = initReceipt;
             }
           }
 
-          resolve(finalReceipt);
-        } catch (err) {
-          reject(err);
+          if (!initTx) {
+            throw new Error("Failed to submit initiateSettlement transaction due to nonce/RPC issues");
+          }
+
+          const initReceipt = await this.provider.waitForTransaction(initTx.hash);
+          if (!initReceipt || initReceipt.status !== 1) {
+            throw new Error("Operator initiate settlement transaction failed on-chain");
+          }
+
+          const contractInterface = new ethers.Interface(KORRI_SETTLEMENT_ABI);
+          let onChainId = null;
+          for (const log of initReceipt.logs) {
+            try {
+              const parsedLog = contractInterface.parseLog(log);
+              if (parsedLog && parsedLog.name === 'TransferCreated') {
+                onChainId = parsedLog.args.id;
+                break;
+              }
+            } catch (e) {}
+          }
+
+          if (onChainId !== null && onChainId !== undefined) {
+            const externalTxHash = initTx.hash;
+            let completeTx = null;
+            let completeAttempt = 0;
+            while (completeAttempt < 5) {
+              try {
+                const completeNonce = await this.provider.getTransactionCount(signer.address, 'pending');
+                completeTx = await contract.completeSettlement(onChainId, externalTxHash, { nonce: completeNonce });
+                break;
+              } catch (e) {
+                if (e.message.includes("nonce") || e.code === "NONCE_EXPIRED" || e.message.includes("Nonce too low")) {
+                  completeAttempt++;
+                  await new Promise(r => setTimeout(r, 600));
+                } else {
+                  throw e;
+                }
+              }
+            }
+            if (!completeTx) {
+              throw new Error("Failed to submit completeSettlement transaction due to nonce/RPC issues");
+            }
+            finalReceipt = await this.provider.waitForTransaction(completeTx.hash);
+            if (!finalReceipt || finalReceipt.status !== 1) {
+              throw new Error("Complete settlement transaction failed on-chain");
+            }
+          } else {
+            finalReceipt = initReceipt;
+          }
         }
-      }).catch(err => {
-        // Do not propagate rejection to the next item in the queue.
-        // The current caller already received the error via reject(err) in the try-catch block.
-      });
+
+        resolve(finalReceipt);
+      } catch (err) {
+        reject(err);
+      } finally {
+        await lock.release();
+      }
     });
   }
 
@@ -522,6 +554,60 @@ class SettlementService extends EventEmitter {
     try {
       console.log(`[SettlementService] Generating settlement proof for: ${settlement.id}`);
       
+      const reachable = await this.isRpcReachable(giwa.getRPC());
+      if (!reachable) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error("GIWA RPC node is unreachable. Cannot generate proof in production.");
+        }
+        console.log(`[SettlementService] RPC offline during proof generation. Falling back to local simulation proof.`);
+        const hex = "0123456789abcdef";
+        let mockTxHash = settlement.confirmedTxHash || settlement.txHash || "0x";
+        if (mockTxHash.length < 66) {
+          for (let i = 0; i < 64; i++) mockTxHash += hex[Math.floor(Math.random() * 16)];
+          mockTxHash = mockTxHash.substring(0, 66);
+        }
+        const blockNumber = 1234567;
+        const gasUsed = "21000";
+        const timestamp = new Date();
+        const durationSeconds = 1;
+
+        const proof = await prisma.settlementProof.upsert({
+          where: { settlementId: settlement.id },
+          update: {
+            txHash: mockTxHash,
+            blockNumber,
+            timestamp,
+            gasUsed,
+            settlementDuration: durationSeconds,
+            proofStatus: "Valid"
+          },
+          create: {
+            settlementId: settlement.id,
+            txHash: mockTxHash,
+            blockNumber,
+            timestamp,
+            gasUsed,
+            settlementDuration: durationSeconds,
+            proofStatus: "Valid"
+          }
+        });
+
+        console.log(`[SettlementService] Settlement Proof stored successfully for ID: ${settlement.id}`);
+        this.emit('proof_generated', proof);
+        
+        webhookService.dispatchEvent('proof.generated', {
+          settlementId: settlement.id,
+          txHash: mockTxHash,
+          blockNumber,
+          gasUsed,
+          settlementDuration: durationSeconds,
+          proofStatus: "Valid",
+          timestamp: timestamp.toISOString()
+        });
+
+        return proof;
+      }
+
       let txHash = settlement.confirmedTxHash || settlement.txHash;
       if (!this.provider) {
         this.provider = new ethers.JsonRpcProvider(giwa.getRPC());

@@ -1,4 +1,5 @@
-import { GiwaInfrastructure, EnvironmentGiwaConfigProvider } from './GiwaInfrastructure.js';
+import { GiwaInfrastructure, EnvironmentGiwaConfigProvider, NetworkRegistry } from './GiwaInfrastructure.js';
 
 export const giwa = new GiwaInfrastructure(new EnvironmentGiwaConfigProvider());
-export { GiwaInfrastructure, EnvironmentGiwaConfigProvider };
+export const networkRegistry = new NetworkRegistry(giwa);
+export { GiwaInfrastructure, EnvironmentGiwaConfigProvider, NetworkRegistry };

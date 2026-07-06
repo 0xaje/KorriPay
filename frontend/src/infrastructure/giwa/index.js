@@ -1,3 +1,3 @@
-import { giwa, GIWA_NETWORK_CONFIG, GIWA_SEQUENCER_CONFIG, GiwaFrontendInfrastructure } from './GiwaInfrastructure.js';
+import { giwa, networkRegistry, GIWA_NETWORK_CONFIG, GIWA_SEQUENCER_CONFIG, GiwaFrontendInfrastructure, NetworkRegistry } from './GiwaInfrastructure.js';
 
-export { giwa, GIWA_NETWORK_CONFIG, GIWA_SEQUENCER_CONFIG, GiwaFrontendInfrastructure };
+export { giwa, networkRegistry, GIWA_NETWORK_CONFIG, GIWA_SEQUENCER_CONFIG, GiwaFrontendInfrastructure, NetworkRegistry };

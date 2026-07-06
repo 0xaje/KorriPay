@@ -79,4 +79,4 @@ CMD ["node", "server.js"]
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD curl -sf http://localhost:3000/api/v1/giwa/services || exit 1
+  CMD curl -sf http://localhost:3000/health || exit 1

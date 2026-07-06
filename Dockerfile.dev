@@ -1,0 +1,22 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install native compilation toolchain
+RUN apk add --no-cache openssl python3 make g++
+
+# Layer caching for NPM dependencies
+COPY backend/package*.json ./backend/
+COPY backend/prisma ./backend/prisma/
+
+WORKDIR /app/backend
+RUN npm install && npx prisma generate
+
+# Copy source assets
+COPY backend/ ./
+COPY frontend/ ../frontend/
+
+EXPOSE 5000
+
+# Run in hot-reload nodemon mode
+CMD ["npm", "run", "dev"]

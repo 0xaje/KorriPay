@@ -1139,7 +1139,7 @@
               ${Number(s.amount).toLocaleString('en-US')}
             </td>
             <td class="py-4 px-5 font-mono text-xs text-zinc-400">
-              ${s.txHash ? `<a href="https://etherscan.io/tx/${s.txHash}" target="_blank" class="hover:underline text-blue-500">${s.txHash.slice(0, 10)}...</a>` : 'Offline / Local'}
+              ${s.txHash ? `<a href="https://explorer.giwa.network/tx/${s.txHash}" target="_blank" class="hover:underline text-blue-500">${s.txHash.slice(0, 10)}...</a>` : 'Offline / Local'}
             </td>
             <td class="py-4 px-5 text-xs">
               <span class="${statusBadge} text-[10px] px-2 py-0.5 rounded-full font-bold">${s.status}</span>

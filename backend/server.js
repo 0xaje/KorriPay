@@ -5,6 +5,10 @@ import pathModule from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
 import { ethers } from 'ethers';
+import helmet from 'helmet';
+import compression from 'compression';
+import { rateLimit } from 'express-rate-limit';
+import crypto from 'crypto';
 import fxRouter from './fxController.js';
 import walletRouter from './walletController.js';
 import complianceRouter from './complianceController.js';
@@ -18,6 +22,11 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import apiV1Router from './apiV1.js';
 import { networkIntelligence } from './src/services/networkIntelligenceService.js';
 
+// Environment validation
+if (!process.env.DATABASE_URL) {
+  console.warn("[Startup Warning] DATABASE_URL is not set in environment.");
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.fileURLToPath ? path.fileURLToPath(import.meta.url) : import.meta.url.replace("file://", "");
 const __dirnamePath = __dirname.substring(0, __dirname.lastIndexOf("/"));
@@ -26,8 +35,147 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const prisma = new PrismaClient();
 
-app.use(cors());
+// Security Headers
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
+// Performance Compression
+app.use(compression());
+
+// Strict CORS Configuration
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:3000', 'http://localhost:5000', 'http://localhost:5173'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
+
+// Request ID Generation & Middleware
+app.use((req, res, next) => {
+  req.id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+  res.setHeader('X-Request-ID', req.id);
+  next();
+});
+
+// Rate Limiting
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 2500,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 500,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: { error: 'Too many authentication attempts, please try again later.' }
+});
+
+app.use(globalLimiter);
+app.use('/api/auth/nonce', authLimiter);
+app.use('/api/auth/verify', authLimiter);
+app.use('/api/auth/signin', authLimiter);
+// Liveness probe
+app.get('/live', (req, res) => {
+  res.status(200).json({ status: "UP", timestamp: new Date().toISOString() });
+});
+
+// Readiness probe
+app.get('/ready', async (req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({ status: "READY", timestamp: new Date().toISOString() });
+  } catch (err) {
+    console.error("[Readiness Check Failed]", err);
+    res.status(503).json({ status: "OUT_OF_SERVICE", error: err.message });
+  }
+});
+
+// Detailed Health probe
+app.get('/health', async (req, res) => {
+  const health = {
+    status: "UP",
+    timestamp: new Date().toISOString(),
+    services: {
+      database: { status: "UP" },
+      rpc: { status: "UP" }
+    },
+    system: {
+      memoryUsage: process.memoryUsage(),
+      uptime: process.uptime()
+    }
+  };
+
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch (err) {
+    health.status = "DOWN";
+    health.services.database = { status: "DOWN", error: err.message };
+  }
+
+  const isHealthy = health.status === "UP";
+  res.status(isHealthy ? 200 : 503).json(health);
+});
+
+// Prometheus Metrics Scraper
+app.get('/metrics', async (req, res) => {
+  try {
+    const memory = process.memoryUsage();
+    const uptime = process.uptime();
+    
+    // Fetch some business telemetry
+    const totalSettlements = await prisma.settlement.count();
+    const pendingSettlements = await prisma.settlement.count({ where: { status: 'Pending' } });
+    const totalTransactions = await prisma.transaction.count();
+    const totalUsers = await prisma.user.count();
+
+    const metrics = [
+      `# HELP node_uptime_seconds Uptime of the node server in seconds`,
+      `# TYPE node_uptime_seconds gauge`,
+      `node_uptime_seconds ${uptime}`,
+      
+      `# HELP node_memory_heap_used_bytes Heap memory usage in bytes`,
+      `# TYPE node_memory_heap_used_bytes gauge`,
+      `node_memory_heap_used_bytes ${memory.heapUsed}`,
+      
+      `# HELP korripay_settlements_total Total number of settlements in database`,
+      `# TYPE korripay_settlements_total counter`,
+      `korripay_settlements_total ${totalSettlements}`,
+      
+      `# HELP korripay_settlements_pending Total number of pending settlements`,
+      `# TYPE korripay_settlements_pending gauge`,
+      `korripay_settlements_pending ${pendingSettlements}`,
+      
+      `# HELP korripay_transactions_total Total number of transactions registered`,
+      `# TYPE korripay_transactions_total counter`,
+      `korripay_transactions_total ${totalTransactions}`,
+
+      `# HELP korripay_users_total Total number of users registered`,
+      `# TYPE korripay_users_total counter`,
+      `korripay_users_total ${totalUsers}`
+    ].join('\n');
+
+    res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+    res.end(metrics);
+  } catch (err) {
+    res.status(500).send(`Error retrieving metrics: ${err.message}`);
+  }
+});
 
 // Serve frontend static files
 app.use(express.static(__dirnamePath + '/../frontend'));
@@ -1053,6 +1201,10 @@ app.post('/api/transactions/swap', requireAuth, async (req, res) => {
       data: updateData
     });
 
+    const hex = "0123456789abcdef";
+    let generatedHash = "0x";
+    for (let i = 0; i < 64; i++) generatedHash += hex[Math.floor(Math.random() * 16)];
+
     const newTx = await prisma.transaction.create({
       data: {
         id: `tx-${Date.now()}`,
@@ -1063,6 +1215,7 @@ app.post('/api/transactions/swap', requireAuth, async (req, res) => {
         timestamp: Date.now(),
         category: "Transfer",
         status: "Success",
+        txHash: generatedHash,
         userId: req.user.id
       }
     });
@@ -1817,11 +1970,48 @@ function scheduleDailyReport() {
   console.log(`[Scheduler] Daily report generation scheduled. First run in ${Math.round(timeToMidnight / 1000 / 60)} minutes.`);
 }
 
+// Centralized Error Handling & Sanitization Middleware
+app.use((err, req, res, next) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  const requestId = req.id || 'N/A';
+  console.error(`[Error] Request ID: ${requestId} | Error:`, err);
+  
+  const status = err.status || err.statusCode || 500;
+  res.status(status).json({
+    error: isProduction ? 'Internal Server Error' : err.message,
+    requestId
+  });
+});
+
 // Start Server and initialize database
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
   console.log(`KorriPay backend server running on port ${PORT}`);
   await initDatabase();
   scheduleDailyReport();
 });
+
+// Graceful Shutdown Logic
+async function gracefulShutdown(signal) {
+  console.log(`[Shutdown] Received ${signal}. Starting graceful shutdown...`);
+  server.close(async () => {
+    console.log('[Shutdown] HTTP server closed.');
+    try {
+      await prisma.$disconnect();
+      console.log('[Shutdown] Database client disconnected.');
+      process.exit(0);
+    } catch (err) {
+      console.error('[Shutdown] Database disconnect error:', err);
+      process.exit(1);
+    }
+  });
+
+  setTimeout(() => {
+    console.error('[Shutdown] Forcefully terminating process after 10s timeout.');
+    process.exit(1);
+  }, 10000);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 export { app };

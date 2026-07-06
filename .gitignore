@@ -95,3 +95,10 @@ coverage.json
 scratch/
 backend/scratch/
 backend/test_*.js
+
+# ========================
+# Backups and SQL dumps
+# ========================
+backups/
+*.sql
+*.sql.gz

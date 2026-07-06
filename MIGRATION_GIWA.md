@@ -74,3 +74,31 @@ The new layer isolates and exposes accessors/placeholders for the following comp
 *   **Wagmi Chain Integration:** Registered `giwaChain` dynamically in the Wagmi chain registry within `frontend/walletService.js`.
 *   **Frontend UI Cleanup:** Refactored `frontend/app.js` timeline explorer links to dynamically resolve block explorer URLs from the `WalletService` layer.
 
+---
+
+## 5. System Architecture Diagram
+
+```mermaid
+graph TD
+    subgraph Frontend [KorriPay Client Applications]
+        A[Dashboard UI / Explorer Tab] -->|Reads Telemetry| B[NetworkRegistry]
+        B -->|Queries Configuration| C[GiwaFrontendInfrastructure]
+        A -->|Interactive Proof modal| D[ZK Proof Verifier]
+    end
+
+    subgraph Backend [KorriPay Backend Node Services]
+        E[API Controllers / v1] -->|Resolves chain coords| F[GiwaInfrastructure Layer]
+        G[SettlementService] -->|Dispatches txs| F
+        H[Indexer Service] -->|Indexes block logs| F
+        I[AttestationService] -->|Manages provider registry| J[TrustProviderRegistry]
+        J -->|Switchable| K[Dojang/Enterprise/Mock Providers]
+    end
+
+    subgraph GIWAL2 [GIWA Network Infrastructure Layer]
+        F -->|JSON-RPC calls| L[GIWA Sequencer Node]
+        F -->|Attests data| M[EAS Registry Contract]
+        F -->|Validates Bridge status| N[L1 Bridge Contract]
+        F -->|Interacts with Precompiles| O[Osaka EVM precompiles]
+    end
+```
+

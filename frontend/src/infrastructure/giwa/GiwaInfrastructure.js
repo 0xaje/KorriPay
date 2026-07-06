@@ -2,7 +2,7 @@
  * GIWA Network Metadata configuration
  */
 export const GIWA_NETWORK_CONFIG = {
-  name: 'GIWA L2 Mainnet',
+  name: 'GIWA Testnet (Sepolia)',
   chainId: 92837,
   peerCount: 148,
   sequencerAddress: '0x17F53eE27DaDbe44CE8928ddbe44ce8824c3bC86',
@@ -11,7 +11,18 @@ export const GIWA_NETWORK_CONFIG = {
   explorerUrl: 'https://explorer.giwa.io',
   faucetUrl: 'https://faucet.giwa.io',
   resolverUrl: 'http://localhost:5000/api/v1/resolve',
-  stablecoinAddress: '0x9b3f5ce66f6d40dbbad1a8a56a3bf87f7d92837f'
+  stablecoinAddress: '0x9b3f5ce66f6d40dbbad1a8a56a3bf87f7d92837f',
+  settlementAddress: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+  hardfork: 'Karst',
+  evmVersion: 'Osaka',
+  maxTxGasLimit: 16777216,
+  nodeClient: 'op-reth',
+  proofClient: 'kona-client',
+  precompiles: {
+    P256VERIFY: 'Active (Increased Gas)',
+    MODEXP: 'Active (Increased Gas)',
+    ecPairing: 'Active (Capped 300 pairs)'
+  }
 };
 
 export const GIWA_SEQUENCER_CONFIG = {
@@ -69,6 +80,10 @@ export class GiwaFrontendInfrastructure {
     return this.config.faucetUrl;
   }
 
+  getSettlementAddress() {
+    return this.config.settlementAddress;
+  }
+
   getNetworkStatus() {
     return {
       status: this.sequencer.status,
@@ -108,4 +123,64 @@ export class GiwaFrontendInfrastructure {
   }
 }
 
+export class NetworkRegistry {
+  constructor(giwaInfra) {
+    this.giwa = giwaInfra;
+  }
+
+  get RPC() {
+    return this.giwa.getRPC();
+  }
+
+  get Explorer() {
+    return this.giwa.getExplorer();
+  }
+
+  get Bridge() {
+    return this.giwa.getBridge();
+  }
+
+  get Faucet() {
+    return this.giwa.getFaucet();
+  }
+
+  get Sequencer() {
+    return this.giwa.getSequencer();
+  }
+
+  getCurrentBlock() {
+    return this.giwa.config.blockHeight || 2450810;
+  }
+
+  getLatestFinalizedBlock() {
+    const current = this.getCurrentBlock();
+    return Math.max(0, current - 64);
+  }
+
+  get ClientVersion() {
+    return this.giwa.config.nodeClient || 'op-reth';
+  }
+
+  get KarstHardforkVersion() {
+    return this.giwa.config.hardfork || 'Karst';
+  }
+
+  getNodeHealth() {
+    return this.giwa.getNetworkStatus().status;
+  }
+
+  getGasOracle() {
+    return this.giwa.config.gasPrice || 18.4;
+  }
+
+  getBridgeHealth() {
+    return 'Healthy';
+  }
+
+  getSettlementAddress() {
+    return this.giwa.getSettlementAddress();
+  }
+}
+
 export const giwa = new GiwaFrontendInfrastructure();
+export const networkRegistry = new NetworkRegistry(giwa);

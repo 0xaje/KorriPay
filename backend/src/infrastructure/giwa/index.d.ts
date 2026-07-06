@@ -8,6 +8,12 @@ export interface GiwaNetworkMetadata {
   explorerUrl: string;
   faucetUrl: string;
   settlementAddress: string;
+  hardfork?: string;
+  evmVersion?: string;
+  maxTxGasLimit?: number;
+  nodeClient?: string;
+  proofClient?: string;
+  precompiles?: Record<string, string>;
 }
 
 export interface GiwaSequencerStatus {
@@ -38,6 +44,12 @@ export interface GiwaConfig {
   resolverUrl: string;
   stablecoinAddress: string;
   settlementAddress: string;
+  hardfork?: string;
+  evmVersion?: string;
+  maxTxGasLimit?: number;
+  nodeClient?: string;
+  proofClient?: string;
+  precompiles?: Record<string, string>;
 }
 
 export interface GiwaConfigProvider {
@@ -87,4 +99,21 @@ export class GiwaInfrastructure {
   }>>;
 }
 
+export class NetworkRegistry {
+  constructor(giwaInfra: GiwaInfrastructure);
+  get RPC(): string;
+  get Explorer(): string;
+  get Bridge(): string;
+  get Faucet(): string;
+  get Sequencer(): string;
+  getCurrentBlock(): Promise<number>;
+  getLatestFinalizedBlock(): Promise<number>;
+  get ClientVersion(): string;
+  get KarstHardforkVersion(): string;
+  getNodeHealth(): Promise<string>;
+  getGasOracle(): Promise<number>;
+  getBridgeHealth(): Promise<string>;
+}
+
 export const giwa: GiwaInfrastructure;
+export const networkRegistry: NetworkRegistry;

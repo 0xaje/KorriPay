@@ -1,5 +1,6 @@
 import { readContract, writeContract, waitForTransactionReceipt } from "https://esm.sh/@wagmi/core@2.13.5";
 import { formatUnits, parseUnits } from "https://esm.sh/viem@2.21.49";
+import { networkRegistry } from "./src/infrastructure/giwa/index.js";
 
 // ── ERC20 Minimal ABI ──────────────────────────────────────────────
 const ERC20_ABI = [
@@ -93,6 +94,17 @@ const SETTLEMENT_ADDRESSES = {
   10:       "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
   1:        "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0"
 };
+
+// Dynamically register GIWA addresses from the NetworkRegistry
+const giwaChainId = networkRegistry ? networkRegistry.giwa.config.chainId : 92837;
+const giwaUSDC = networkRegistry ? networkRegistry.giwa.config.stablecoinAddress : "0x9b3f5ce66f6d40dbbad1a8a56a3bf87f7d92837f";
+const giwaSettlementAddress = networkRegistry ? networkRegistry.getSettlementAddress() : "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0";
+
+TOKEN_ADDRESSES[giwaChainId] = {
+  USDC:    giwaUSDC,
+  MockKRW: "0xdB281c7e997fE762888DDC80509653152778A699", // MockKRW on GIWA
+};
+SETTLEMENT_ADDRESSES[giwaChainId] = giwaSettlementAddress;
 
 /**
  * Fetch the contract address of a token on a specific chain.

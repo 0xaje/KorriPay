@@ -1,4 +1,4 @@
-import { giwa } from '../infrastructure/giwa/index.js';
+import { giwa, networkRegistry } from '../infrastructure/giwa/index.js';
 import { settlementService } from './settlementService.js';
 import { ethers } from 'ethers';
 import { PrismaClient } from '@prisma/client';
@@ -54,61 +54,44 @@ export class NetworkIntelligenceService {
       // 0. Ping all GIWA ecosystem providers to update status/latency
       await giwa.registry.checkAllHealth();
 
-      // 1. Fetch RPC health from service registry
+      // 1. Fetch RPC metrics via NetworkRegistry
+      const latestBlock = await networkRegistry.getCurrentBlock();
+      const liveGasPrice = await networkRegistry.getGasOracle();
+      const finalizedBlock = await networkRegistry.getLatestFinalizedBlock();
+      const sequencerStatus = await networkRegistry.getNodeHealth();
+      const bridgeStatus = await networkRegistry.getBridgeHealth();
+
       const rpcProvider = giwa.registry.getActiveProvider('RPC');
       let latency = 45;
-      let latestBlock = this.currentMetrics.latestBlock + Math.floor(Math.random() * 15) + 1; // mock progress
-      let liveGasPrice = 30 + Math.random() * 15;
-
-      const provider = settlementService.provider;
-      if (provider) {
-        try {
-          const [blockNum, feeData] = await Promise.all([
-            provider.getBlockNumber(),
-            provider.getFeeData()
-          ]);
-          if (blockNum) {
-            latestBlock = blockNum;
-          }
-          if (feeData && feeData.gasPrice) {
-            liveGasPrice = Number(ethers.formatUnits(feeData.gasPrice, 'gwei'));
-          }
-        } catch (e) {
-          // fallback
-        }
-      }
-
       if (rpcProvider) {
         latency = rpcProvider.status === 'Offline' ? 9999 : rpcProvider.latencyMs;
-        if (rpcProvider.metadata && rpcProvider.metadata.blockNumber && !provider) {
-          latestBlock = rpcProvider.metadata.blockNumber;
-        }
-      }
-
-      // 2. Fetch Sequencer health
-      const seqProvider = giwa.registry.getActiveProvider('Sequencer');
-      let sequencerStatus = 'Operational';
-      if (seqProvider) {
-        sequencerStatus = seqProvider.status === 'Offline' ? 'Down' : seqProvider.status === 'Degraded' ? 'Degraded' : 'Operational';
       }
 
       // 3. Fetch Explorer status
       const expProvider = giwa.registry.getActiveProvider('Explorer');
       const explorerStatus = expProvider ? expProvider.status : 'Offline';
 
-      // 4. Fetch Bridge status
-      const bridgeProvider = giwa.registry.getActiveProvider('Bridge');
-      const bridgeStatus = bridgeProvider ? bridgeProvider.status : 'Offline';
+      // 4. Calculate TPS / throughput from actual block if provider is online
+      let throughput = 12.8;
+      const provider = settlementService.provider;
+      if (provider) {
+        try {
+          const block = await provider.getBlock(latestBlock);
+          if (block && block.transactions) {
+            throughput = parseFloat((block.transactions.length / 2.0).toFixed(1));
+          }
+        } catch (e) {}
+      }
 
       // 5. Update active state
       this.currentMetrics = {
         latestBlock: latestBlock,
-        finalizedBlock: Math.max(0, latestBlock - 64), // Standard 64 block finalization window
-        averageBlockTime: parseFloat((2.0 + Math.random() * 0.4).toFixed(2)),
+        finalizedBlock: finalizedBlock,
+        averageBlockTime: 2.0, // Fixed 2.0s block time for OP Stack Sepolia (Karst)
         gasTrend: parseFloat(liveGasPrice.toFixed(1)),
-        sequencerHealth: sequencerStatus,
+        sequencerHealth: sequencerStatus === 'Offline' ? 'Down' : sequencerStatus === 'Degraded' ? 'Degraded' : 'Operational',
         rpcLatency: latency,
-        throughput: parseFloat((8.0 + Math.random() * 10.0).toFixed(1))
+        throughput: throughput
       };
 
       // 6. Calculate Health Score
@@ -123,7 +106,7 @@ export class NetworkIntelligenceService {
         finalizedBlock: this.currentMetrics.finalizedBlock,
         avgBlockTime: this.currentMetrics.averageBlockTime,
         gasPrice: this.currentMetrics.gasTrend,
-        sequencerStatus: seqProvider ? seqProvider.status : 'Offline',
+        sequencerStatus: sequencerStatus,
         rpcLatency: latency === 9999 ? -1 : latency,
         explorerStatus: explorerStatus,
         bridgeStatus: bridgeStatus,

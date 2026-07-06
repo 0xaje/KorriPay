@@ -1347,7 +1347,7 @@
                 </span>
                 <div class="text-right">
                   <p id="swap-network-fee" class="font-bold text-on-surface dark:text-white">$4.20 USD</p>
-                  <span class="text-[10px] bg-tertiary-fixed dark:bg-tertiary-container text-on-tertiary-fixed-variant dark:text-tertiary-fixed-dim px-2 py-[2px] rounded-full uppercase font-bold tracking-tighter">via Polygon</span>
+                  <span id="swap-network-fee-label" class="text-[10px] bg-tertiary-fixed dark:bg-tertiary-container text-on-tertiary-fixed-variant dark:text-tertiary-fixed-dim px-2 py-[2px] rounded-full uppercase font-bold tracking-tighter">via Polygon</span>
                 </div>
               </div>
               <div class="flex justify-between items-center text-body-sm">
@@ -1972,19 +1972,19 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-sm text-center md:text-left">
           <div class="px-4 border-r border-outline-variant/20">
             <span class="block text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">GIWA Network</span>
-            <span id="analytics-giwa-network" class="text-sm font-bold dark:text-white">GIWA L2 Mainnet</span>
+            <span id="analytics-giwa-network" class="text-sm font-bold dark:text-white">--</span>
           </div>
           <div class="px-4 border-r border-outline-variant/20">
             <span class="block text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">L2 Block Height</span>
-            <span id="analytics-giwa-block" class="text-sm font-mono font-bold dark:text-white">#2,450,810</span>
+            <span id="analytics-giwa-block" class="text-sm font-mono font-bold dark:text-white">#--</span>
           </div>
           <div class="px-4 border-r border-outline-variant/20">
             <span class="block text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">L2 Throughput</span>
-            <span id="analytics-giwa-tps" class="text-sm font-bold text-secondary">14.2 TPS</span>
+            <span id="analytics-giwa-tps" class="text-sm font-bold text-secondary">-- TPS</span>
           </div>
           <div class="px-4">
             <span class="block text-[10px] text-on-surface-variant dark:text-outline-variant uppercase font-bold tracking-wider">Confirmations</span>
-            <span id="analytics-giwa-confirmations" class="text-sm font-bold text-primary dark:text-primary-fixed-dim">0</span>
+            <span id="analytics-giwa-confirmations" class="text-sm font-bold text-primary dark:text-primary-fixed-dim">--</span>
           </div>
         </div>
 
@@ -2206,21 +2206,45 @@
             <div class="space-y-sm text-sm">
               <div class="flex justify-between py-1 border-b border-outline-variant/10">
                 <span class="text-on-surface-variant dark:text-outline-variant font-medium">Network Name</span>
-                <span id="giwa-net-name" class="font-semibold dark:text-white">GIWA L2 Mainnet</span>
+                <span id="giwa-net-name" class="font-semibold dark:text-white">--</span>
               </div>
               <div class="flex justify-between py-1 border-b border-outline-variant/10">
                 <span class="text-on-surface-variant dark:text-outline-variant font-medium">Chain ID</span>
-                <span id="giwa-net-chain" class="font-semibold dark:text-white">92837</span>
+                <span id="giwa-net-chain" class="font-semibold dark:text-white">--</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Current RPC</span>
+                <span id="giwa-net-rpc" class="font-mono text-xs dark:text-white text-right break-all max-w-[60%]">--</span>
               </div>
               <div class="flex justify-between py-1 border-b border-outline-variant/10">
                 <span class="text-on-surface-variant dark:text-outline-variant font-medium">Connected Peers</span>
-                <span id="giwa-net-peers" class="font-semibold text-secondary">148 nodes</span>
+                <span id="giwa-net-peers" class="font-semibold text-secondary">-- nodes</span>
               </div>
               <div class="flex justify-between py-1 border-b border-outline-variant/10">
                 <span class="text-on-surface-variant dark:text-outline-variant font-medium">Explorer Status</span>
-                <span id="giwa-net-explorer-status" class="font-semibold text-green-500">Online</span>
+                <span id="giwa-net-explorer-status" class="font-semibold text-green-500">--</span>
               </div>
-              <div class="py-1">
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Hardfork Version</span>
+                <span id="giwa-net-hardfork" class="font-semibold text-primary dark:text-primary-fixed-dim">--</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">EVM Version</span>
+                <span id="giwa-net-evm" class="font-semibold dark:text-white">--</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Gas Limit Cap</span>
+                <span id="giwa-net-gas-limit" class="font-mono text-xs dark:text-white">--</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Execution Client</span>
+                <span id="giwa-net-node-client" class="font-semibold dark:text-white">op-reth</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Proof Client</span>
+                <span id="giwa-net-proof-client" class="font-semibold dark:text-white">kona-client</span>
+              </div>
+              <div class="py-1 border-b border-outline-variant/10">
                 <span class="text-on-surface-variant dark:text-outline-variant font-medium block text-xs mb-1">Sequencer Address</span>
                 <span id="giwa-net-seq-addr" class="font-mono text-[10px] break-all bg-surface-container dark:bg-surface-dim p-1.5 rounded block text-zinc-500 dark:text-zinc-400 select-all">0x17F53eE27DaDbe44CE8928ddbe44ce8824c3bC86</span>
               </div>
@@ -2251,9 +2275,36 @@
                 <span class="text-on-surface-variant dark:text-outline-variant font-medium">Network Throughput</span>
                 <span id="giwa-seq-tps" class="font-semibold text-primary dark:text-primary-fixed-dim">14.2 TPS</span>
               </div>
-              <div class="flex justify-between py-1">
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
                 <span class="text-on-surface-variant dark:text-outline-variant font-medium">Block Height</span>
                 <span id="giwa-seq-block" class="font-mono font-bold dark:text-white">#2,450,810</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Settlement Volume</span>
+                <span id="giwa-net-volume" class="font-semibold text-primary dark:text-primary-fixed-dim">$14,820.00</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- Ecosystem Capabilities & Roadmap -->
+          <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md border border-outline-variant/20 shadow-sm space-y-sm">
+            <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider">Ecosystem Capabilities & Roadmap</h3>
+            <div class="space-y-sm text-sm">
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Supported Wallets</span>
+                <span id="giwa-supported-wallets" class="font-semibold text-right dark:text-white text-xs">MetaMask, Coinbase Wallet, KorriPay</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Future KRW Stablecoin</span>
+                <span id="giwa-future-krw" class="font-semibold text-right text-primary dark:text-primary-fixed-dim text-[10px] break-all max-w-[60%]">Pending (0x9b3f5c...)</span>
+              </div>
+              <div class="flex justify-between py-1 border-b border-outline-variant/10">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Future Dojang</span>
+                <span id="giwa-future-dojang" class="font-semibold text-right text-green-500 text-xs">Scaffolded (Active)</span>
+              </div>
+              <div class="flex justify-between py-1">
+                <span class="text-on-surface-variant dark:text-outline-variant font-medium">Future up.id</span>
+                <span id="giwa-future-upid" class="font-semibold text-right text-secondary text-[10px] break-all max-w-[60%]">Active (Fallback Resolver)</span>
               </div>
             </div>
           </section>
@@ -3032,6 +3083,25 @@
         <div class="flex justify-between py-1">
           <span class="text-outline dark:text-outline-variant">Timestamp</span>
           <span class="text-on-surface dark:text-white font-semibold text-xs" id="proof-timestamp">June 26, 2026, 11:00 AM</span>
+        </div>
+      </div>
+
+      <!-- GIWA Transaction Actions -->
+      <div class="border-t border-outline-variant/20 pt-sm space-y-sm">
+        <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold">GIWA Network Actions</p>
+        <div class="grid grid-cols-3 gap-xs">
+          <button id="btn-proof-view-explorer" class="flex flex-col items-center justify-center p-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-fixed border border-primary/20 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-lg">open_in_new</span>
+            <span class="scale-90">View Explorer</span>
+          </button>
+          <button id="btn-proof-copy-url" class="flex flex-col items-center justify-center p-2 rounded-xl bg-secondary-container/20 hover:bg-secondary-container/30 text-secondary dark:text-secondary-fixed border border-secondary/20 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-lg">content_copy</span>
+            <span class="scale-90">Copy URL</span>
+          </button>
+          <button id="btn-proof-verify" class="flex flex-col items-center justify-center p-2 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/25 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-lg">verified_user</span>
+            <span class="scale-90">Verify Proof</span>
+          </button>
         </div>
       </div>
 
