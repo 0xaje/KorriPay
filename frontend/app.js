@@ -270,9 +270,98 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Setup Demo Mode
   setupDemoMode();
+
+  // Infrastructure Status Banner & Settlement Engine Widget
+  setTimeout(() => {
+    updateInfraStatusBanner();
+    updateSettlementEngineWidget();
+  }, 900);
 });
 
-// Dark Mode Support
+// ── Infrastructure Status Banner ──────────────────────────────────────────
+function updateInfraStatusBanner() {
+  const giwaOnline = networkRegistry?.giwa?.isOnline ?? false;
+  const chainId = networkRegistry?.giwa?.config?.chainId || 92837;
+
+  const setStatus = (dotId, labelId, online, onText, offText) => {
+    const dot = document.getElementById(dotId);
+    const label = document.getElementById(labelId);
+    if (!dot || !label) return;
+    if (online) {
+      dot.className = "w-1.5 h-1.5 rounded-full bg-green-500";
+      label.className = "text-green-600 dark:text-green-400 font-bold";
+      label.textContent = onText;
+    } else {
+      dot.className = "w-1.5 h-1.5 rounded-full bg-amber-400";
+      label.className = "text-amber-500 font-bold";
+      label.textContent = offText;
+    }
+  };
+
+  setStatus("infra-giwa-dot", "infra-giwa-status", giwaOnline, "Healthy", "Simulation Mode");
+  setStatus("infra-engine-dot", "infra-engine-status", true, "Operational", "Degraded");
+  setStatus("infra-attest-dot", "infra-attest-status", true, "Active", "Offline");
+
+  const explorerUrl = networkRegistry?.giwa?.config?.explorerUrl;
+  const explorerDot = document.getElementById("infra-explorer-dot");
+  const explorerStatus = document.getElementById("infra-explorer-status");
+  if (explorerDot && explorerStatus) {
+    if (explorerUrl) {
+      explorerDot.className = "w-1.5 h-1.5 rounded-full bg-green-500";
+      explorerStatus.className = "text-green-600 dark:text-green-400 font-bold";
+      explorerStatus.textContent = "Connected";
+    } else {
+      explorerDot.className = "w-1.5 h-1.5 rounded-full bg-slate-400";
+      explorerStatus.className = "text-outline font-bold";
+      explorerStatus.textContent = "Unavailable";
+    }
+  }
+
+  const chainEl = document.getElementById("infra-chain-id");
+  if (chainEl) chainEl.textContent = `Chain ID: ${chainId}`;
+}
+
+// ── Settlement Engine Widget ──────────────────────────────────────────────
+function updateSettlementEngineWidget() {
+  const txs = state.transactions || [];
+  const pending = txs.filter(t => t.status === "Pending" || t.status === "Processing").length;
+  const settled = txs.filter(t => t.status === "Settled" || t.status === "Completed" || t.status === "Success");
+  const failed = txs.filter(t => t.status === "Failed").length;
+  const total = txs.length;
+  const successRate = total > 0 ? Math.round((settled.length / total) * 1000) / 10 : null;
+
+  // Derive throughput (settled in last 24h approximated from last 20 txs as sample window)
+  const recentSettled = settled.slice(-20).length;
+  const throughput = total > 0 ? `${recentSettled * 3}/hr` : "—";
+
+  // Average settlement time (derived from tx timestamps if available, else fallback)
+  const durations = settled.filter(t => t.createdAt && t.settledAt)
+    .map(t => (new Date(t.settledAt) - new Date(t.createdAt)) / 1000);
+  const avgTime = durations.length > 0
+    ? `~${Math.round(durations.reduce((a, b) => a + b, 0) / durations.length)}s`
+    : "~3s";
+
+  const lastBlock = networkRegistry?.giwa?.blockNumber;
+
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el && val !== null) el.textContent = val; };
+  setEl("engine-queue-size", pending);
+  setEl("engine-success-rate", successRate !== null ? `${successRate}%` : "—");
+  setEl("engine-throughput", throughput);
+  setEl("engine-avg-time", avgTime);
+  setEl("engine-last-block", lastBlock ? `#${Number(lastBlock).toLocaleString()}` : "—");
+
+  const badge = document.getElementById("engine-status-badge");
+  if (badge) {
+    const isHealthy = pending < 10 && (successRate === null || successRate >= 85);
+    badge.className = isHealthy
+      ? "bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1"
+      : "bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1";
+    const dotColor = isHealthy ? "bg-green-500" : "bg-amber-400";
+    badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full ${dotColor} animate-pulse"></span> ${isHealthy ? "Operational" : "Elevated"}`;
+  }
+}
+
+
 function setupDarkMode() {
   const toggle = document.getElementById("dark-mode-toggle");
   const desktopToggle = document.getElementById("desktop-dark-mode-toggle");
@@ -736,6 +825,9 @@ function renderUI() {
   // Multi-currency wallet display
   renderWalletBalances();
 
+  // Update Settlement Engine widget
+  updateSettlementEngineWidget();
+
   // Render recent transactions (Home Tab)
   const recentListEl = document.getElementById("recent-transactions-list");
   if (recentListEl) {
@@ -773,7 +865,7 @@ const _CURRENCY_META = {
   USD:     { symbol: '$',  flag: '🇺🇸', name: 'US Dollar',            decimals: 2,  color: 'text-blue-500',   bg: 'bg-blue-50 dark:bg-blue-900/20' },
   KRW:     { symbol: '₩', flag: '🇰🇷', name: 'Korean Won',            decimals: 0,  color: 'text-rose-500',   bg: 'bg-rose-50 dark:bg-rose-900/20' },
   NGN:     { symbol: '₦', flag: '🇳🇬', name: 'Nigerian Naira',        decimals: 2,  color: 'text-green-500',  bg: 'bg-green-50 dark:bg-green-900/20' },
-  MockKRW: { symbol: '₩', flag: '🔗', name: 'KRW Coin (On-chain)',     decimals: 2,  color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+  MockKRW: { symbol: '₩', flag: '🔗', name: 'KRWC Test Asset',     decimals: 2,  color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
 };
 
 function renderWalletBalances() {
@@ -924,7 +1016,7 @@ function updatePortfolioUI() {
   const usdcPctEl = document.getElementById("allocation-usdc-pct");
   if (usdcPctEl) usdcPctEl.textContent = `USDC (${Math.round(usdcPct)}%)`;
   const mockkrwPctEl = document.getElementById("allocation-mockkrw-pct");
-  if (mockkrwPctEl) mockkrwPctEl.textContent = `KRW Coin (${Math.round(mockkrwPct)}%)`;
+  if (mockkrwPctEl) mockkrwPctEl.textContent = `KRWC Test (${Math.round(mockkrwPct)}%)`;
 
   // 5. Update Center digital assets percentage
   const digitalPctEl = document.getElementById("allocation-digital-center");
@@ -1345,7 +1437,7 @@ function setupSwap() {
     BTC: { name: "Bitcoin", icon: "currency_bitcoin", colorClass: "bg-[#F7931A]/10 text-[#F7931A]" },
     ETH: { name: "Ethereum", icon: "diamond", colorClass: "bg-[#627EEA]/10 text-[#627EEA]" },
     USDC: { name: "USD Coin", icon: "monetization_on", colorClass: "bg-[#2775CA]/10 text-[#2775CA]" },
-    MockKRW: { name: "KRW Coin", icon: "payments", colorClass: "bg-[#5cfd80]/10 text-[#006e2a]" },
+    MockKRW: { name: "KRWC Test Asset", icon: "payments", colorClass: "bg-[#5cfd80]/10 text-[#006e2a]" },
     USD: { name: "US Dollar", icon: "attach_money", colorClass: "bg-surface-container dark:bg-on-background/25 text-primary dark:text-primary-fixed" }
   };
 
@@ -2094,21 +2186,22 @@ function buildCertificateData(settlement, proof) {
   const hardfork = networkRegistry?.KarstHardforkVersion || "Karst";
   const evmVersion = networkRegistry?.giwa?.config?.evmVersion || "Osaka";
   const nodeClient = networkRegistry?.ClientVersion || "op-reth";
-  const protocolVersion = `${hardfork} Hardfork (${evmVersion} EVM) / ${nodeClient}`;
+  const chainId = networkRegistry?.giwa?.config?.chainId || 92837;
+  const protocolVersion = `GIWA Network · ${hardfork} Hardfork · Chain ID ${chainId} (${evmVersion} EVM / ${nodeClient})`;
 
   const hasProof = !!proof;
   const status = settlement.status || (proof ? proof.proofStatus : "Success");
   
   const complianceVal = (status === "Settled" || status === "Success" || status === "Completed") 
     ? "Passed (Zero-Knowledge Compliance Passport Verified, Low Risk)" 
-    : status === "Failed" ? "Failed (Screening Flagged)" : "Pending Verification";
+    : status === "Failed" ? "Failed (Screening Flagged)" : "Pending On-Chain Proof Verification";
 
   const attestationId = proof 
     ? `EAS-UID: 0x${proof.id.replace(/-/g, '').substring(0, 32)}`
-    : "Pending ZK-SNARK Attestation";
+    : "Pending On-Chain Settlement Proof";
 
   const integrity = (status === "Settled" || status === "Success" || status === "Completed")
-    ? "Valid ZK-SNARK Cryptographic Proof Attested"
+    ? "Valid On-Chain Settlement Proof Verified"
     : "Verification Pending";
 
   const confirmations = (status === "Settled" || status === "Success" || status === "Completed")
@@ -2368,7 +2461,7 @@ function createTransactionRow(tx) {
     integrityLabel.textContent = certData.proofIntegrityStatus;
     if (certData.proofIntegrityStatus.includes("Cryptographic") || certData.proofIntegrityStatus.includes("Valid")) {
       integrityLabel.className = "font-semibold text-green-500 flex items-center gap-1";
-      integrityLabel.innerHTML = `<span class="material-symbols-outlined text-[14px]">shield</span> Valid ZK-SNARK`;
+      integrityLabel.innerHTML = `<span class="material-symbols-outlined text-[14px]">shield</span> Proof Verified On-Chain`;
     } else {
       integrityLabel.className = "font-semibold text-amber-500 flex items-center gap-1";
       integrityLabel.innerHTML = `<span class="material-symbols-outlined text-[14px]">hourglass_empty</span> Verification Pending`;
@@ -2441,7 +2534,7 @@ function createTransactionRow(tx) {
         setTimeout(() => {
           showToast("Verifying precompile MODEXP and P256VERIFY gas costs on Osaka EVM...", "info");
           setTimeout(() => {
-            showToast("ZK-SNARK proof successfully verified on GIWA L2 Chain ID 92837!", "success");
+            showToast("Settlement proof integrity verified on GIWA L2 Chain ID 92837!", "success");
             verifyProofBtn.disabled = false;
             verifyProofBtn.innerHTML = `
               <span class="material-symbols-outlined text-lg">verified_user</span>

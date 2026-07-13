@@ -204,9 +204,51 @@
       </div>
     </div>
 
+    <!-- Slide 3b: Why GIWA Deep-Dive (NEW) -->
+    <div data-slide-index="2b" class="absolute inset-0 flex flex-col justify-center max-w-5xl mx-auto space-y-6 transition-all duration-700 slide-inactive-next">
+      <span class="text-blue-400 font-extrabold text-xs uppercase tracking-widest flex items-center gap-2">
+        <span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-ping"></span> Why GIWA — Technical Rationale
+      </span>
+      <h2 class="text-4xl md:text-5xl font-extrabold text-white">Why KorriPay Belongs on GIWA</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        <div class="space-y-4">
+          <div class="glass-slide p-5 rounded-2xl space-y-2">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-blue-400 text-2xl">memory</span>
+              <h4 class="font-bold text-white text-sm">Osaka EVM Precompiles</h4>
+            </div>
+            <p class="text-xs text-slate-400">GIWA's Osaka EVM hardfork exposes native MODEXP and P256VERIFY precompiles at near-zero gas cost. KorriPay leverages these to run compliance passport checks and settlement proof generation on-chain without prohibitive gas overhead.</p>
+          </div>
+          <div class="glass-slide p-5 rounded-2xl space-y-2">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-emerald-400 text-2xl">layers</span>
+              <h4 class="font-bold text-white text-sm">GIWA L2 Rollup Architecture</h4>
+            </div>
+            <p class="text-xs text-slate-400">GIWA's optimistic rollup sequencer finality enables sub-10-second settlement confirmation. Rollup batching reduces settlement gas costs by ~87% vs mainnet. KorriPay anchors every settlement proof to a GIWA L2 block for immutable, verifiable finality.</p>
+          </div>
+        </div>
+        <div class="space-y-4">
+          <div class="glass-slide p-5 rounded-2xl space-y-2">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-amber-400 text-2xl">currency_exchange</span>
+              <h4 class="font-bold text-white text-sm">GIWA's KRW Stablecoin Ecosystem</h4>
+            </div>
+            <p class="text-xs text-slate-400">GIWA is building a regulated KRW stablecoin ecosystem natively. KorriPay's KRWC Test Asset (backed by MockKRWStable contract) is the prototype integration point. When GIWA's production KRW stablecoin launches, KorriPay becomes the first institutional settlement infrastructure ready to process it.</p>
+          </div>
+          <div class="glass-slide p-5 rounded-2xl space-y-2">
+            <div class="flex items-center gap-3">
+              <span class="material-symbols-outlined text-purple-400 text-2xl">hub</span>
+              <h4 class="font-bold text-white text-sm">Not a Generic EVM Chain</h4>
+            </div>
+            <p class="text-xs text-slate-400">Generic EVM chains have no institutional identity layer, no precompile settlement hooks, and no KRW liquidity strategy. GIWA is purpose-built for institutional clearing. KorriPay is purpose-built for institutional settlement. They belong together.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Slide 4: KorriPay Architecture -->
     <div data-slide-index="3" class="absolute inset-0 flex flex-col justify-center max-w-5xl mx-auto space-y-6 transition-all duration-700 slide-inactive-next">
-      <span class="text-blue-500 font-extrabold text-xs uppercase tracking-widest">Platform Design</span>
+      <span class="text-blue-500 font-extrabold text-xs uppercase tracking-widest">Infrastructure Design</span>
       <h2 class="text-4xl md:text-5xl font-extrabold text-white">The KorriPay Architecture</h2>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">

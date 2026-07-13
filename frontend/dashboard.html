@@ -259,6 +259,35 @@
 
       <!-- Scrollable Main Wrapper -->
       <main class="flex-grow pt-20 md:pt-6 px-container-margin md:px-8 lg:px-10 max-w-7xl w-full mx-auto space-y-md pb-32 md:pb-12">
+
+      <!-- Infrastructure Status Banner (Desktop) -->
+      <div id="infra-status-banner" class="hidden md:flex items-center gap-3 px-4 py-2 mb-2 bg-surface-container-lowest dark:bg-inverse-surface/40 border border-outline-variant/20 rounded-xl text-xs font-semibold overflow-x-auto">
+        <span class="text-outline dark:text-outline-variant uppercase tracking-wider text-[10px] font-bold shrink-0">Infrastructure</span>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500" id="infra-giwa-dot"></span>
+          <span class="text-on-surface-variant dark:text-outline-variant">GIWA Layer</span>
+          <span id="infra-giwa-status" class="text-green-600 dark:text-green-400 font-bold">Healthy</span>
+        </div>
+        <span class="text-outline-variant/40 dark:text-outline-variant/30">·</span>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500" id="infra-engine-dot"></span>
+          <span class="text-on-surface-variant dark:text-outline-variant">Settlement Engine</span>
+          <span id="infra-engine-status" class="text-green-600 dark:text-green-400 font-bold">Operational</span>
+        </div>
+        <span class="text-outline-variant/40 dark:text-outline-variant/30">·</span>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-500" id="infra-attest-dot"></span>
+          <span class="text-on-surface-variant dark:text-outline-variant">Attestation Registry</span>
+          <span id="infra-attest-status" class="text-green-600 dark:text-green-400 font-bold">Active</span>
+        </div>
+        <span class="text-outline-variant/40 dark:text-outline-variant/30">·</span>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="w-1.5 h-1.5 rounded-full" id="infra-explorer-dot"></span>
+          <span class="text-on-surface-variant dark:text-outline-variant">Explorer</span>
+          <span id="infra-explorer-status" class="font-bold">—</span>
+        </div>
+        <span class="ml-auto text-[10px] text-outline dark:text-outline-variant/60 font-mono shrink-0" id="infra-chain-id">Chain ID: 92837</span>
+      </div>
     
     <!-- ================== TAB: HOME ================== -->
     <div id="tab-home" class="tab-content active space-y-md animate-fade-in">
@@ -342,6 +371,43 @@
                 <h3 class="font-label-md text-label-md text-on-secondary-container font-semibold">Smart Savings</h3>
                 <p class="font-body-sm text-body-sm text-on-surface-variant">You saved $<span id="savings-val">45.00</span> this month in fees</p>
               </div>
+            </div>
+          </section>
+
+          <!-- Settlement Engine Widget (NEW) -->
+          <section id="settlement-engine-widget" class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md shadow-sm border border-outline-variant/20 space-y-sm">
+            <div class="flex items-center justify-between">
+              <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">settings_ethernet</span>
+                Settlement Engine
+              </h3>
+              <span id="engine-status-badge" class="bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Operational
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-sm text-xs">
+              <div class="p-2 bg-surface-container dark:bg-surface-dim rounded-lg">
+                <span class="block text-outline text-[10px] uppercase font-bold tracking-wider">Avg Settlement Time</span>
+                <span id="engine-avg-time" class="font-bold text-secondary dark:text-secondary-fixed">~3s</span>
+              </div>
+              <div class="p-2 bg-surface-container dark:bg-surface-dim rounded-lg">
+                <span class="block text-outline text-[10px] uppercase font-bold tracking-wider">Pending Queue</span>
+                <span id="engine-queue-size" class="font-mono font-bold dark:text-white">0</span>
+              </div>
+              <div class="p-2 bg-surface-container dark:bg-surface-dim rounded-lg">
+                <span class="block text-outline text-[10px] uppercase font-bold tracking-wider">Success Rate</span>
+                <span id="engine-success-rate" class="font-bold text-green-600 dark:text-green-400">—</span>
+              </div>
+              <div class="p-2 bg-surface-container dark:bg-surface-dim rounded-lg">
+                <span class="block text-outline text-[10px] uppercase font-bold tracking-wider">Throughput</span>
+                <span id="engine-throughput" class="font-bold dark:text-white">— /hr</span>
+              </div>
+            </div>
+            <div class="pt-1 flex justify-between items-center">
+              <span class="text-[10px] text-outline dark:text-outline-variant">Last Finalized: <span id="engine-last-block" class="font-mono">—</span></span>
+              <button type="button" onclick="window.location.hash = 'history';" class="text-xs font-bold text-primary hover:underline flex items-center gap-0.5 cursor-pointer">
+                View Ledger <span class="material-symbols-outlined text-sm">chevron_right</span>
+              </button>
             </div>
           </section>
 
@@ -1050,8 +1116,8 @@
                     <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">payments</span>
                   </div>
                   <div>
-                    <p class="font-headline-md text-headline-md text-on-surface dark:text-inverse-on-surface">KRW Coin</p>
-                    <p class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant">KRWC</p>
+                    <p class="font-headline-md text-headline-md text-on-surface dark:text-inverse-on-surface">KRWC Test Asset</p>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant">KRWC · Development Asset</p>
                   </div>
                 </div>
                 <div class="text-right">
@@ -1118,7 +1184,7 @@
                 </div>
                 <div class="flex items-center gap-xs">
                   <div class="w-2 h-2 rounded-full bg-[#5cfd80] dark:bg-secondary-fixed-dim"></div>
-                  <span id="allocation-mockkrw-pct" class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant">KRW Coin (0%)</span>
+                  <span id="allocation-mockkrw-pct" class="font-body-sm text-body-sm text-on-surface-variant dark:text-outline-variant">KRWC Test (0%)</span>
                 </div>
               </div>
             </div>
@@ -1691,7 +1757,7 @@
                   <option value="USDC">USDC (Stablecoin)</option>
                   <option value="ETH">ETH (Ethereum)</option>
                   <option value="BTC">BTC (Bitcoin)</option>
-                  <option value="KRW">KRW Coin (KRWC)</option>
+                  <option value="KRW">KRWC Test Asset (Development)</option>
                   <option value="USD">USD (KorriPay USD)</option>
                 </select>
               </div>
@@ -1832,7 +1898,7 @@
               <option value="USDC">USDC</option>
               <option value="ETH">ETH</option>
               <option value="BTC">BTC</option>
-              <option value="KRW">KRW Coin</option>
+              <option value="KRW">KRWC Test Asset</option>
               <option value="USD">USD</option>
             </select>
           </div>
@@ -2782,8 +2848,8 @@
             <span class="material-symbols-outlined text-[20px]">payments</span>
           </div>
           <div>
-            <p class="font-headline-md text-label-md text-on-surface dark:text-inverse-on-surface font-bold">KRW Coin</p>
-            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant font-bold">KRWC</p>
+            <p class="font-headline-md text-label-md text-on-surface dark:text-inverse-on-surface font-bold">KRWC Test Asset</p>
+            <p class="text-[11px] text-on-surface-variant dark:text-outline-variant font-bold">KRWC · Development</p>
           </div>
         </div>
         <div class="text-right">
@@ -3083,7 +3149,7 @@
           <div class="flex justify-between py-0.5">
             <span class="text-outline dark:text-outline-variant">Proof Integrity Status</span>
             <span class="font-semibold text-green-500 flex items-center gap-1" id="cert-integrity-status">
-              <span class="material-symbols-outlined text-[14px]">shield</span> Valid ZK-SNARK
+              <span class="material-symbols-outlined text-[14px]">shield</span> Proof Verified On-Chain
             </span>
           </div>
         </div>
@@ -3125,7 +3191,7 @@
           </button>
           <button id="btn-proof-verify" class="flex flex-col items-center justify-center p-2 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/25 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
             <span class="material-symbols-outlined text-lg">verified_user</span>
-            <span class="scale-90">Verify ZK Proof</span>
+            <span class="scale-90">Verify Settlement Integrity</span>
           </button>
         </div>
       </div>
