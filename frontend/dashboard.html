@@ -3105,6 +3105,22 @@
         </div>
       </div>
 
+      <!-- Settlement Certificate (KPS-1) -->
+      <div class="border-t border-outline-variant/20 pt-sm space-y-sm">
+        <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold">Settlement Certificate (KPS-1)</p>
+        <div class="grid grid-cols-2 gap-xs">
+          <button id="btn-certificate-pdf" class="flex flex-col items-center justify-center p-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-fixed border border-primary/20 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+            <span class="scale-90">Certificate (PDF)</span>
+          </button>
+          <button id="btn-certificate-json" class="flex flex-col items-center justify-center p-2 rounded-xl bg-secondary-container/20 hover:bg-secondary-container/30 text-secondary dark:text-secondary-fixed border border-secondary/20 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-lg">data_object</span>
+            <span class="scale-90">Certificate (JSON)</span>
+          </button>
+        </div>
+        <p id="certificate-hint" class="text-[9px] text-outline hidden">Certificates are issued for completed settlements with a persisted proof record.</p>
+      </div>
+
       <!-- Replay Section -->
       <div class="border-t border-outline-variant/20 pt-sm space-y-sm">
         <div class="flex items-center justify-between">

@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 
 import { PrismaClient } from '@prisma/client';
 import { settlementService } from './src/services/settlementService.js';
+import { settlementCertificateService } from './src/services/settlementCertificateService.js';
 import { attestationService, trustProviderRegistry } from './src/services/attestationService.js';
 import { screenTransaction, logComplianceCheck } from './complianceService.js';
 import { recipientResolver } from './src/services/recipientResolver.js';
@@ -590,6 +591,100 @@ router.get('/settlements/:id', async (req, res) => {
     res.json({ success: true, settlement });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * @openapi
+ * /api/v1/settlements/{id}/certificate:
+ *   get:
+ *     summary: Retrieve the standardized settlement certificate (KPS-1)
+ *     description: >
+ *       Assembles a production-grade settlement certificate for a completed settlement,
+ *       including on-chain execution data, compliance result, attestation references,
+ *       GIWA network metadata, proof integrity verification, and a SHA-256 integrity digest.
+ *       Fields that do not exist and cannot be derived are omitted and enumerated in omittedFields.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Settlement ID or transaction hash
+ *       - in: query
+ *         name: download
+ *         schema:
+ *           type: boolean
+ *         description: When true, returns the certificate JSON as a file attachment
+ *     responses:
+ *       200:
+ *         description: Settlement certificate document
+ *       404:
+ *         description: Settlement not found
+ *       409:
+ *         description: Settlement is not completed; certificate unavailable
+ *       500:
+ *         description: Internal Server Error
+ */
+router.get('/settlements/:id/certificate', async (req, res) => {
+  try {
+    const { certificate, error, statusCode } = await settlementCertificateService.buildCertificate(req.params.id);
+    if (error) {
+      return res.status(statusCode || 500).json({ error });
+    }
+
+    if (req.query.download === 'true') {
+      res.setHeader('Content-Disposition', `attachment; filename="settlement-certificate-${certificate.settlement.settlementId}.json"`);
+    }
+    res.json({ success: true, certificate });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * @openapi
+ * /api/v1/settlements/{id}/certificate.pdf:
+ *   get:
+ *     summary: Download the settlement certificate as a PDF document
+ *     description: Renders the standardized KPS-1 settlement certificate as a downloadable PDF.
+ *     security:
+ *       - cookieAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Settlement ID or transaction hash
+ *     responses:
+ *       200:
+ *         description: PDF settlement certificate
+ *         content:
+ *           application/pdf: {}
+ *       404:
+ *         description: Settlement not found
+ *       409:
+ *         description: Settlement is not completed; certificate unavailable
+ *       500:
+ *         description: Internal Server Error
+ */
+router.get('/settlements/:id/certificate.pdf', async (req, res) => {
+  try {
+    const { certificate, error, statusCode } = await settlementCertificateService.buildCertificate(req.params.id);
+    if (error) {
+      return res.status(statusCode || 500).json({ error });
+    }
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="settlement-certificate-${certificate.settlement.settlementId}.pdf"`);
+    settlementCertificateService.renderPdf(certificate, res);
+  } catch (err) {
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message });
+    }
   }
 });
 

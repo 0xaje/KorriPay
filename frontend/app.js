@@ -2156,6 +2156,69 @@ function createTransactionRow(tx) {
       };
     }
 
+    // Set up Settlement Certificate (KPS-1) downloads
+    const triggerBlobDownload = (blob, filename) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    };
+
+    const downloadCertificate = async (format, btn) => {
+      const originalHtml = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `
+        <span class="material-symbols-outlined text-lg animate-spin">autorenew</span>
+        <span class="scale-90">Generating...</span>
+      `;
+      try {
+        const endpoint = format === "pdf"
+          ? `${API_BASE}/v1/settlements/${encodeURIComponent(settlement.id)}/certificate.pdf`
+          : `${API_BASE}/v1/settlements/${encodeURIComponent(settlement.id)}/certificate?download=true`;
+
+        const response = await authFetch(endpoint);
+        if (!response.ok) {
+          let message = "Certificate unavailable for this settlement.";
+          try {
+            const errData = await response.json();
+            if (errData.error) message = errData.error;
+          } catch (e) {}
+          showToast(message, "error");
+          return;
+        }
+
+        const blob = await response.blob();
+        triggerBlobDownload(blob, `settlement-certificate-${settlement.id}.${format}`);
+        showToast(`Settlement certificate (${format.toUpperCase()}) downloaded.`, "success");
+      } catch (err) {
+        console.error("[App] Certificate download failed:", err);
+        showToast("Failed to download settlement certificate.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    };
+
+    const certPdfBtn = document.getElementById("btn-certificate-pdf");
+    if (certPdfBtn) {
+      certPdfBtn.onclick = (e) => {
+        e.stopPropagation();
+        downloadCertificate("pdf", certPdfBtn);
+      };
+    }
+
+    const certJsonBtn = document.getElementById("btn-certificate-json");
+    if (certJsonBtn) {
+      certJsonBtn.onclick = (e) => {
+        e.stopPropagation();
+        downloadCertificate("json", certJsonBtn);
+      };
+    }
+
     // Set up Settlement Replay
     const replayBtn = document.getElementById("btn-replay-lifecycle");
     const downloadBtn = document.getElementById("btn-download-timeline");
