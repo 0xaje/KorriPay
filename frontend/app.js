@@ -5514,29 +5514,6 @@ function exportPortalCSV() {
   showToast("CSV exported successfully", "success");
 }
 
-function buildCertificateData(settlement, matchingProof) {
-  const isSettled = settlement.status === "Settled" || settlement.status === "Success";
-  const start = new Date(settlement.createdAt).getTime();
-  const end = settlement.confirmedAt ? new Date(settlement.confirmedAt).getTime() : Date.now();
-  
-  return {
-    settlementId: settlement.id,
-    settlementStatus: settlement.status,
-    settlementTimestamp: settlement.createdAt,
-    settlementDurationSeconds: Math.floor((end - start) / 1000),
-    transactionHash: settlement.txHash || "Pending",
-    blockNumber: matchingProof ? matchingProof.blockNumber : null,
-    gasUsed: matchingProof ? matchingProof.gasUsed : null,
-    confirmationCount: isSettled ? "640+ (Deep Finalized)" : "0 (Pending)",
-    complianceResult: isSettled ? "Passed (ZK-Verified)" : "Screening...",
-    attestationReferences: matchingProof ? `EAS-0x${matchingProof.id.substring(0, 16)}` : "None",
-    proofIntegrityStatus: matchingProof ? "Verified (Cryptographic)" : "Not Generated",
-    giwaNetwork: networkRegistry?.giwa?.name || "GIWA-Mainnet",
-    explorerLink: settlement.txHash ? `${networkRegistry?.giwa?.config?.explorerUrl || "https://explorer.giwa.network"}/tx/${settlement.txHash}` : "#",
-    protocolVersion: `v2.4.1 (Karst Hardfork)`
-  };
-}
-
 function downloadReceiptPDF(settlementId) {
   const settlement = portalSettlements.find(s => s.id === settlementId);
   if (!settlement) {
