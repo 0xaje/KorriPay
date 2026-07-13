@@ -4,7 +4,7 @@
 
 # KorriPay
 
-**Institutional-grade cross-border payment infrastructure built natively on the GIWA Layer-2 network.**
+**Institutional-grade cross-border programmable settlement infrastructure built natively on the GIWA Layer-2 network.**
 
 [![CI Status](https://img.shields.io/github/actions/workflow/status/0xaje/KorriPay/ci.yml?branch=main&style=flat-square&label=CI&logo=github)](https://github.com/0xaje/KorriPay/actions)
 [![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?style=flat-square&logo=nodedotjs)](https://nodejs.org/)
@@ -21,13 +21,13 @@
 
 ## 🌐 Overview
 
-KorriPay is an **institutional-grade fintech platform** that enables real-time, traceable cross-border settlements anchored to the **GIWA Layer-2 blockchain**. Every payment produces a cryptographic proof that can be independently verified — bringing bank-grade compliance to decentralized infrastructure.
+KorriPay is an **institutional-grade fintech platform** that enables real-time, traceable cross-border settlements anchored to the **GIWA Layer-2 blockchain**. Every settlement produces a cryptographic proof that can be independently verified — bringing bank-grade compliance to decentralized infrastructure.
 
 ### Problem Statement
 
-Cross-border payments in emerging markets suffer from three critical failures:
+Cross-border settlements in emerging markets suffer from three critical failures:
 
-1. **Opacity** — payments disappear into correspondent banking rails with no real-time traceability.
+1. **Opacity** — settlements disappear into correspondent banking rails with no real-time traceability.
 2. **Compliance theatre** — KYC checks are recorded in private databases with no public audit trail.
 3. **Settlement risk** — funds can sit in escrow for days with no provable finality signal.
 
@@ -47,7 +47,7 @@ KorriPay is built **specifically** for the GIWA L2 network (`Chain ID: 92837`) b
 
 ## ✨ Features
 
-### Core Payment Infrastructure
+### Core Settlement Infrastructure
 - **L2 Settlement Pipeline** — 5-stage state machine: Compliance → Route → Execute → Confirm → Archive
 - **ZK Proof Generation** — Every settlement produces a cryptographic proof object with block number, gas used, and proof status
 - **Multi-Currency Ledger** — Available / Locked / Pending balances for USD, KRW, NGN, and MockKRW

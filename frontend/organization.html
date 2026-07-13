@@ -82,7 +82,7 @@
 
       <div class="flex items-center gap-6">
         <a href="/" class="text-xs font-semibold text-outline hover:text-primary dark:hover:text-white transition-colors">User Dashboard</a>
-        <a href="/trust" class="text-xs font-semibold text-outline hover:text-primary dark:hover:text-white transition-colors">Trust Center</a>
+        <a href="/trust" class="text-xs font-semibold text-outline hover:text-primary dark:hover:text-white transition-colors">Attestation Registry</a>
         <a href="/developers" class="text-xs font-semibold text-outline hover:text-primary dark:hover:text-white transition-colors">Developer Portal</a>
         <a href="/treasury" class="text-xs font-semibold text-outline hover:text-primary dark:hover:text-white transition-colors">Treasury</a>
         <button id="theme-toggle" class="material-symbols-outlined text-outline hover:text-primary dark:hover:text-white p-2 rounded-full hover:bg-surface-container transition-colors">
@@ -213,7 +213,7 @@
             <span class="material-symbols-outlined text-amber-500 text-lg">fact_check</span>
             <span>Approval Queue Workflows</span>
           </h3>
-          <p class="text-xs text-outline dark:text-zinc-400">Transactions exceeding member limits require Owner, Admin, or Finance consent.</p>
+          <p class="text-xs text-outline dark:text-zinc-400">Settlements exceeding member limits require Owner, Admin, or Finance consent.</p>
 
           <div id="approvals-queue-container" class="space-y-3">
             <!-- Approvals -->
@@ -520,7 +520,7 @@
       const recipientDetails = document.getElementById("tx-recipient").value.trim();
 
       if (!amount || !recipientDetails) {
-        showToast("All transaction fields are required", true);
+        showToast("All settlement fields are required", true);
         return;
       }
 
@@ -533,7 +533,7 @@
         const data = await res.json();
         if (data.success) {
           if (data.status === 'PENDING_APPROVAL') {
-            showToast("Transaction exceeds limit. Sent to approvals queue.");
+            showToast("Settlement exceeds limit. Sent to approvals queue.");
           } else {
             showToast("Settlement dispatched successfully!");
           }

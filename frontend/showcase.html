@@ -236,10 +236,10 @@
 
     <!-- Slide 5: Settlement Engine -->
     <div data-slide-index="4" class="absolute inset-0 flex flex-col justify-center max-w-5xl mx-auto space-y-6 transition-all duration-700 slide-inactive-next">
-      <span class="text-emerald-500 font-extrabold text-xs uppercase tracking-widest">Transaction Pipeline</span>
+      <span class="text-emerald-500 font-extrabold text-xs uppercase tracking-widest">Settlement Pipeline</span>
       <h2 class="text-4xl md:text-5xl font-extrabold text-white">The Settlement Engine</h2>
       <p class="text-slate-400 text-sm max-w-3xl">
-        KorriPay settles payments through a automated three-step transaction state transition flow.
+        KorriPay executes settlements through an automated three-step state transition flow.
       </p>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
@@ -251,12 +251,12 @@
         <div class="p-6 bg-slate-900/40 border border-slate-800 rounded-2xl relative">
           <div class="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">2</div>
           <h3 class="text-sm font-bold text-white mt-2">On-Chain Settlement</h3>
-          <p class="text-xs text-slate-400 mt-2">Smart contracts verify compliance keys and trigger a cryptographic transfer of assets in the settlement queue.</p>
+          <p class="text-xs text-slate-400 mt-2">Smart contracts verify compliance keys and trigger a cryptographic settlement of assets in the settlement queue.</p>
         </div>
         <div class="p-6 bg-slate-900/40 border border-slate-800 rounded-2xl relative">
           <div class="absolute -top-3 -left-3 w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">3</div>
           <h3 class="text-sm font-bold text-white mt-2">Disburse & Audit</h3>
-          <p class="text-xs text-slate-400 mt-2">Recipient balance is credited immediately, and immutable ledger receipts and PDF proofs are archived.</p>
+          <p class="text-xs text-slate-400 mt-2">Recipient balance is credited immediately, and immutable settlement proofs and PDF records are archived.</p>
         </div>
       </div>
     </div>
@@ -306,7 +306,7 @@
       <span class="text-amber-500 font-extrabold text-xs uppercase tracking-widest">Zero-Trust KYC</span>
       <h2 class="text-4xl md:text-5xl font-extrabold text-white">Compliance Passport</h2>
       <p class="text-slate-400 text-sm max-w-3xl">
-        Real-time compliance validation checking risk metrics, merchant status, and transaction limits on every transfer.
+        Real-time compliance validation checking risk metrics, merchant status, and transaction limits on every settlement.
       </p>
 
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4">
@@ -342,11 +342,11 @@
           <ul class="space-y-3 text-sm">
             <li class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-500 text-sm">check</span>
-              <span><strong>Payment Portal:</strong> Real-time tracking of daily sales and settlement receipts.</span>
+              <span><strong>Settlement Portal:</strong> Real-time tracking of daily sales and settlement proofs.</span>
             </li>
             <li class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-500 text-sm">check</span>
-              <span><strong>Instant Webhooks:</strong> REST payment callback hooks for automated processing.</span>
+              <span><strong>Instant Webhooks:</strong> REST settlement callback hooks for automated processing.</span>
             </li>
             <li class="flex items-center gap-2">
               <span class="material-symbols-outlined text-blue-500 text-sm">check</span>
@@ -415,6 +415,10 @@
       <p class="text-slate-400 text-sm max-w-3xl">
         This slide communicates directly with the KorriPay core API to query real-time node performance and settlement queue statistics.
       </p>
+      <div class="p-4 bg-white/5 border border-white/10 rounded-xl text-xs space-y-1 font-mono text-slate-300">
+        <div>Connected Network: <span id="showcase-net-name" class="font-bold text-white">GIWA Testnet</span></div>
+        <div>Chain ID: <span id="showcase-chain-id" class="font-bold text-emerald-400">92837</span> | Active RPC: <span id="showcase-rpc-url" class="font-bold text-blue-400">http://localhost:8545</span></div>
+      </div>
 
       <div class="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4">
         <div class="glass-slide p-5 rounded-2xl flex flex-col justify-between">
@@ -445,28 +449,41 @@
       <span class="text-emerald-500 font-extrabold text-xs uppercase tracking-widest">Interactive Playground</span>
       <h2 class="text-4xl md:text-5xl font-extrabold text-white">Live Settlement Simulator</h2>
       <p class="text-slate-400 text-sm max-w-3xl">
-        Execute a simulated payment and watch the atomic queue lock, compliance passport scan, and double-entry receipt ledger update in real-time.
+        Execute a simulated settlement and watch each stage of the protocol lifecycle animate in real-time — from compliance screening through GIWA sequencer acceptance to cryptographic proof generation.
       </p>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-        <!-- Simulator Panel -->
-        <div class="glass-slide p-6 rounded-2xl space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+        <!-- Simulator Inputs -->
+        <div class="glass-slide p-5 rounded-2xl space-y-4">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Settlement Parameters</p>
           <div class="space-y-2">
-            <label class="block text-xs font-bold text-slate-300">Transfer Amount (USD)</label>
-            <input type="number" id="sim-amount" value="500" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-emerald-500" />
+            <label class="block text-xs font-bold text-slate-300">Amount (USD)</label>
+            <input type="number" id="sim-amount" value="500" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-emerald-500 text-sm" />
           </div>
           <div class="space-y-2">
-            <label class="block text-xs font-bold text-slate-300">Recipient Username or Address</label>
-            <input type="text" id="sim-recipient" value="up.id:janesmith" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-emerald-500" />
+            <label class="block text-xs font-bold text-slate-300">Recipient</label>
+            <input type="text" id="sim-recipient" value="up.id:janesmith" class="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-white focus:ring-1 focus:ring-emerald-500 text-sm" />
           </div>
-          <button onclick="runSimulation()" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-blue-600 hover:opacity-90 rounded-xl font-bold text-sm shadow-md transition-all">
-            Simulate Transfer
+          <button onclick="runSimulation()" id="btn-run-sim" class="w-full py-3 bg-gradient-to-r from-emerald-600 to-blue-600 hover:opacity-90 rounded-xl font-bold text-sm shadow-md transition-all">
+            Simulate Settlement
           </button>
         </div>
 
         <!-- Terminal Console -->
-        <div class="bg-slate-950 p-6 rounded-2xl border border-slate-900 font-mono text-xs text-slate-300 h-64 overflow-y-auto space-y-2 flex flex-col" id="sim-terminal">
-          <div class="text-slate-500">> Simulator initialized. Ready for transfer simulation.</div>
+        <div class="bg-slate-950 p-5 rounded-2xl border border-slate-900 font-mono text-xs text-slate-300 overflow-y-auto space-y-1.5 flex flex-col" id="sim-terminal" style="height:260px">
+          <div class="text-slate-500">&gt; Simulator initialized. Ready for settlement simulation.</div>
+        </div>
+
+        <!-- Pipeline Progress -->
+        <div class="glass-slide p-5 rounded-2xl space-y-0 overflow-y-auto" style="height:260px" id="sim-pipeline-panel">
+          <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Protocol Lifecycle</p>
+          <div id="sim-pipeline-display">
+            <!-- Populated during simulation -->
+            <div id="sim-pipeline-idle" class="text-slate-600 text-xs text-center pt-8">
+              <span class="material-symbols-outlined text-3xl block mb-2" style="font-variation-settings:'FILL' 0">pending_actions</span>
+              Run a simulation to see the lifecycle
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -640,58 +657,152 @@
         document.getElementById("showcase-db-latency").textContent = `${data.database.latencyMs}ms query ping`;
         document.getElementById("showcase-queue").textContent = `${data.queue.pendingCount} Pending`;
         document.getElementById("showcase-avg-time").textContent = `${data.queue.averageConfirmSeconds}s avg speed`;
+        
+        if (data.networkIntelligence) {
+          document.getElementById("showcase-net-name").textContent = data.networkIntelligence.chainName || "GIWA Testnet";
+          document.getElementById("showcase-chain-id").textContent = data.networkIntelligence.chainId || "92837";
+          document.getElementById("showcase-rpc-url").textContent = data.networkIntelligence.rpcUrl || "http://localhost:8545";
+        }
       } catch (err) {
         console.error("Failed to fetch operations status:", err);
       }
     }
 
     // Simulation logic
+    const SIM_STAGES = [
+      { label: "Settlement Requested",      icon: "send",             giwa: false, color: "#94a3b8",
+        log: (a, r) => `Gateway received settlement: $${a} USD → ${r}` },
+      { label: "Compliance Screening",       icon: "policy",           giwa: false, color: "#94a3b8",
+        log: (a, r) => `AML/KYC scan complete. Risk score: 12 (Low). Sanctions: Clear.` },
+      { label: "FX Validation",              icon: "currency_exchange", giwa: false, color: "#94a3b8",
+        log: (a, r) => `FX rate locked at 1.0000. Corridor: USD→USDC. Liquidity reserved.` },
+      { label: "Settlement Created",         icon: "receipt_long",     giwa: false, color: "#94a3b8",
+        log: (a, r) => `On-chain object constructed. Double-entry ledger pre-committed.` },
+      { label: "Submitted to GIWA",          icon: "lan",              giwa: true,  color: "#60a5fa",
+        log: (a, r) => `Settlement dispatched to GIWA sequencer endpoint (Chain ID: 92837).` },
+      { label: "Sequencer Accepted",         icon: "verified",         giwa: true,  color: "#60a5fa",
+        log: (a, r) => `GIWA sequencer accepted batch. Sequence #${Math.floor(Math.random()*99999+100000)} assigned.` },
+      { label: "Block Finalized",            icon: "lock",             giwa: true,  color: "#34d399",
+        log: (a, r) => `Block #${(182390+Math.floor(Math.random()*100)).toLocaleString()} finalized. State root committed.` },
+      { label: "Settlement Proof Generated", icon: "fact_check",       giwa: true,  color: "#34d399",
+        log: (a, r) => `ZK proof generated. EAS attestation: 0x${Math.random().toString(16).slice(2,10)}...` },
+      { label: "Completed",                  icon: "task_alt",         giwa: false, color: "#22c55e",
+        log: (a, r) => `✅ Settlement complete. $${a} settled to ${r}. Ledger record confirmed.` }
+    ];
+
+    function renderSimPipeline(completedUpTo, activeIdx) {
+      const panel = document.getElementById("sim-pipeline-display");
+      if (!panel) return;
+      const idle = document.getElementById("sim-pipeline-idle");
+      if (idle) idle.remove();
+
+      let html = "";
+      SIM_STAGES.forEach((s, i) => {
+        const isDone    = i < activeIdx;
+        const isActive  = i === activeIdx;
+        const isPending = i > activeIdx;
+
+        const dotStyle = isDone
+          ? "background:#22c55e;border-color:#16a34a;color:#fff"
+          : isActive
+          ? "background:#3b82f6;border-color:#2563eb;color:#fff;animation:pulse 1.5s infinite"
+          : "background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#475569";
+
+        const dotInner = isDone
+          ? `<span class="material-symbols-outlined" style="font-size:13px;font-variation-settings:'FILL' 1">check</span>`
+          : isActive
+          ? `<span class="material-symbols-outlined" style="font-size:13px;font-variation-settings:'FILL' 1">${s.icon}</span>`
+          : `<span style="font-size:11px;font-weight:700">${i + 1}</span>`;
+
+        const giwaTag = s.giwa
+          ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:rgba(0,163,108,0.2);color:#34d399;font-weight:700;text-transform:uppercase;margin-left:4px">GIWA</span>`
+          : "";
+
+        const labelColor = isDone ? "#f1f5f9" : isActive ? "#93c5fd" : "#475569";
+        const opacity = isPending ? "0.4" : "1";
+        const connector = i < SIM_STAGES.length - 1
+          ? `<div style="margin-left:14px;width:2px;height:12px;background:${isDone ? 'rgba(34,197,94,0.5)' : 'rgba(255,255,255,0.06)'}"></div>`
+          : "";
+
+        html += `
+          <div style="opacity:${opacity};transition:opacity 0.3s">
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <div style="display:flex;flex-direction:column;align-items:center">
+                <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border-width:2px;border-style:solid;flex-shrink:0;${dotStyle}">
+                  ${dotInner}
+                </div>
+              </div>
+              <div style="flex:1;padding-bottom:2px">
+                <div style="font-size:11px;font-weight:${isActive ? '700' : '500'};color:${labelColor}">${s.label}${giwaTag}</div>
+              </div>
+            </div>
+            ${connector}
+          </div>
+        `;
+      });
+
+      // Progress bar
+      const pct = Math.round((activeIdx / (SIM_STAGES.length - 1)) * 100);
+      html += `
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06)">
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:#475569;margin-bottom:3px">
+            <span>${activeIdx} of ${SIM_STAGES.length} complete</span>
+            <span style="font-weight:700;color:${pct === 100 ? '#22c55e' : '#60a5fa'}">${pct}%</span>
+          </div>
+          <div style="width:100%;height:4px;background:rgba(255,255,255,0.06);border-radius:99px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:linear-gradient(to right,#3b82f6,#22c55e);border-radius:99px;transition:width 0.5s"></div>
+          </div>
+        </div>
+      `;
+
+      panel.innerHTML = html;
+    }
+
     async function runSimulation() {
-      const term = document.getElementById("sim-terminal");
+      const term   = document.getElementById("sim-terminal");
       const amount = Number(document.getElementById("sim-amount").value);
       const recipient = document.getElementById("sim-recipient").value;
+      const btn    = document.getElementById("btn-run-sim");
 
       term.innerHTML = "";
+      if (btn) { btn.disabled = true; btn.textContent = "Running..."; }
+
+      // Reset pipeline display
+      const panel = document.getElementById("sim-pipeline-display");
+      if (panel) panel.innerHTML = "";
+      renderSimPipeline(0, 0);
       
       const writeLine = (text, type = "info") => {
-        const color = type === "error" ? "text-rose-450" : type === "success" ? "text-emerald-400" : type === "system" ? "text-blue-400" : "text-slate-300";
-        term.innerHTML += `<div class="${color}">[${new Date().toLocaleTimeString()}] ${text}</div>`;
+        const color = type === "error" ? "#f87171" : type === "success" ? "#34d399" : type === "system" ? "#60a5fa" : "#94a3b8";
+        term.innerHTML += `<div style="color:${color}">[${new Date().toLocaleTimeString()}] ${text}</div>`;
         term.scrollTop = term.scrollHeight;
       };
 
-      writeLine("Starting mock transaction simulation...", "system");
-      
-      await new Promise(r => setTimeout(r, 1000));
-      writeLine(`Validating amount: $${amount.toFixed(2)} USD...`);
-      
-      await new Promise(r => setTimeout(r, 1000));
-      writeLine(`Resolving recipient endpoint: ${recipient}...`);
-      
-      await new Promise(r => setTimeout(r, 800));
-      writeLine(`Executing pre-transfer compliance check...`, "system");
-      
-      await new Promise(r => setTimeout(r, 1200));
-      // Simulate compliance check
-      if (amount > 10000) {
-        writeLine("⚠️ Compliance Alert: High transaction amount! Triggering automatic compliance passports rules...", "error");
-        await new Promise(r => setTimeout(r, 1000));
-        writeLine("❌ Transaction Blocked: Rule FLAG_LARGE_TRANSFER triggered. Risk score exceeds threshold.", "error");
-        writeLine("PostgreSQL Compliance Log successfully recorded for audits.", "system");
-      } else {
-        writeLine("✅ Compliance check PASSED. Risk score: 12 (Low).", "success");
-        await new Promise(r => setTimeout(r, 800));
-        writeLine("Initiating double-entry ledger lock status on sender available balance...", "system");
-        
-        await new Promise(r => setTimeout(r, 1000));
-        writeLine(`Queueing settlement transaction to GIWA network routing...`);
-        
-        await new Promise(r => setTimeout(r, 1200));
-        writeLine("Cryptographic transaction confirmed on-chain successfully.", "success");
-        
-        await new Promise(r => setTimeout(r, 850));
-        writeLine("Debited $500.00 from Available. Credited recipient wallet balance.", "success");
-        writeLine("🎉 Settlement fully complete. Audit logs synced to DB.", "success");
+      writeLine("Starting settlement simulation...", "system");
+
+      const delays = [400, 800, 700, 600, 700, 750, 1000, 900, 500];
+
+      for (let i = 0; i < SIM_STAGES.length; i++) {
+        const stage = SIM_STAGES[i];
+        renderSimPipeline(i, i);
+
+        if (i === 1 && amount > 10000) {
+          // Compliance block
+          writeLine("⚠️ HIGH RISK: Amount exceeds FLAG_LARGE_TRANSFER threshold.", "error");
+          await new Promise(r => setTimeout(r, 800));
+          writeLine("❌ Settlement blocked by Compliance Engine. Audit log recorded.", "error");
+          renderSimPipeline(1, 1);
+          if (btn) { btn.disabled = false; btn.textContent = "Simulate Settlement"; }
+          return;
+        }
+
+        writeLine(stage.log(amount, recipient), i >= 4 ? "system" : "info");
+        await new Promise(r => setTimeout(r, delays[i]));
       }
+
+      // All complete
+      renderSimPipeline(SIM_STAGES.length, SIM_STAGES.length - 1);
+      if (btn) { btn.disabled = false; btn.textContent = "Simulate Settlement"; }
     }
 
     // Initialize

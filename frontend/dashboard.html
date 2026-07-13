@@ -287,7 +287,7 @@
           <section class="grid grid-cols-1 gap-sm">
             <button id="btn-quick-send" class="bg-primary text-white h-12 rounded-xl flex items-center justify-center gap-2 font-headline-md text-headline-md active:scale-95 hover:bg-opacity-95 transition-all shadow-sm">
               <span class="material-symbols-outlined">send</span>
-              Send Money
+              Create Settlement
             </button>
             <div class="grid grid-cols-2 gap-sm">
               <button id="btn-quick-add" class="bg-surface-container-lowest border border-outline-variant h-12 rounded-xl flex items-center justify-center gap-2 font-label-md text-label-md text-primary active:scale-95 hover:bg-surface-container-low transition-all shadow-sm">
@@ -409,8 +409,8 @@
           <section class="pb-8 lg:pb-0">
             <div class="relative h-32 rounded-xl overflow-hidden bg-tertiary-container flex items-center p-md group cursor-pointer">
               <div class="relative z-10 max-w-[65%]">
-                <h3 class="font-headline-md text-headline-md text-white">Global Transfers</h3>
-                <p class="font-body-sm text-body-sm text-tertiary-fixed-dim">Send money to 50+ countries instantly with zero hidden fees.</p>
+                <h3 class="font-headline-md text-white">Global Settlements</h3>
+                <p class="font-body-sm text-body-sm text-tertiary-fixed-dim">Create settlements to 50+ countries instantly with zero hidden fees.</p>
               </div>
               <div class="absolute right-0 top-0 bottom-0 w-1/3 opacity-40 group-hover:scale-110 transition-transform duration-700">
                 <div class="w-full h-full bg-gradient-to-l from-primary-container to-transparent"></div>
@@ -467,7 +467,7 @@
                   <span class="font-label-md text-label-md font-bold text-on-surface-variant dark:text-outline-variant">KRW</span>
                 </button>
                 <button type="button" class="currency-btn flex flex-col items-center justify-center gap-1 p-md rounded-xl border-2 border-transparent bg-surface-container dark:bg-surface-dim hover:border-outline-variant transition-all" data-currency="NGN">
-                  <span class="material-symbols-outlined text-outline">account_balance_wallet</span>
+                  <span class="material-symbols-outlined text-account_balance_wallet">account_balance_wallet</span>
                   <span class="font-label-md text-label-md font-bold text-on-surface-variant dark:text-outline-variant">NGN</span>
                 </button>
               </div>
@@ -567,12 +567,12 @@
 
             <!-- Recent Recipients List -->
             <div>
-              <h3 class="font-headline-md text-primary dark:text-primary-fixed mb-sm px-2">Recent Transfers</h3>
+              <h3 class="font-headline-md text-primary dark:text-primary-fixed mb-sm px-2">Recent Settlements</h3>
               <div class="bg-white dark:bg-inverse-surface rounded-xl border border-outline-variant dark:border-outline/10 overflow-hidden">
                 <div class="divide-y divide-outline-variant/30 dark:divide-outline/15" id="send-recent-transfers-list">
                   <!-- Dynamically loaded recent transfers -->
                   <div class="p-8 text-center text-outline dark:text-outline-variant">
-                    <p class="text-sm">No recent transfers.</p>
+                    <p class="text-sm">No recent settlements.</p>
                   </div>
                 </div>
                 <button type="button" id="btn-view-all-contacts" class="w-full py-4 text-center text-primary dark:text-primary-fixed font-bold hover:bg-surface-container dark:hover:bg-on-background/10 transition-colors border-t border-outline-variant dark:border-outline/10">
@@ -585,12 +585,12 @@
           <!-- Right Column: Summary & Selection State -->
           <div class="lg:col-span-4 space-y-md">
             <div class="bg-primary dark:bg-inverse-surface text-on-primary dark:text-inverse-on-surface p-md rounded-xl shadow-lg border border-outline-variant/10 dark:border-outline/10">
-              <h4 class="text-label-md text-secondary-container dark:text-secondary-fixed-dim mb-4 font-bold">Transfer Summary</h4>
+              <h4 class="text-label-md text-secondary-container dark:text-secondary-fixed-dim mb-4 font-bold">Settlement Summary</h4>
               
               <div class="space-y-4">
                 <div class="flex justify-between items-end border-b border-white/10 dark:border-outline/10 pb-4">
                   <div>
-                    <p class="text-xs text-white/70 dark:text-outline-variant">You are sending</p>
+                    <p class="text-xs text-white/70 dark:text-outline-variant">You are settling</p>
                     <p class="text-2xl font-bold text-white"><span id="summary-send-amount">10.00</span> <span class="text-lg font-medium text-secondary-fixed-dim" id="summary-send-currency">USD</span></p>
                   </div>
                   <button type="button" id="btn-send-edit-amount" class="text-xs text-secondary-fixed-dim font-bold hover:underline">Edit</button>
@@ -671,8 +671,8 @@
               </div>
               <div class="ml-auto">
                 <div class="flex items-center gap-xs bg-surface-container-high dark:bg-surface-dim px-sm py-xs rounded-full">
-                  <img alt="Polygon" class="w-4 h-4" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCk7HIMXQn8AXf43upXPTGWay71CXduBbA4j3VhQREcfQZxPGNPF-bUwzzF4TaDo1CeE2UqLcJESalR5tuVt_-jia_j8-6NvFoGdG9suCrYcNu45hTWx2YDfuxBKrc2LNlpkdN4f39DL3mo6jNpcjucAaLz7GU5jpz4rEN1qgWkwwxKwB7FV_LN8In_MWWeWfKFXnNKukm2GqDpprXTvz-xwZ3FaL6BmpCggvPpElCf75QHg5Kas0cOf9rNRAzNrfjopWqkkvd63oo"/>
-                  <span class="text-label-sm font-bold text-primary dark:text-primary-fixed">Polygon</span>
+                  <span class="material-symbols-outlined text-xs text-secondary animate-pulse">lan</span>
+                  <span class="text-label-sm font-bold text-primary dark:text-primary-fixed" id="review-network-name">GIWA L2</span>
                 </div>
               </div>
             </div>
@@ -706,7 +706,7 @@
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-xs text-on-surface-variant dark:text-outline-variant">
                   <span class="text-body-md">Network Fee</span>
-                  <span class="material-symbols-outlined text-sm cursor-help" title="Transaction cost on the Polygon network">info</span>
+                  <span class="material-symbols-outlined text-sm cursor-help" title="Transaction cost on the GIWA L2 network">info</span>
                 </div>
                 <span id="review-network-fee" class="text-body-md font-medium text-error dark:text-error-container">$0.42</span>
               </div>
@@ -842,7 +842,7 @@
         <div class="w-full space-y-4">
           <button id="btn-send-share" class="w-full h-12 bg-primary-container text-white rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md hover:brightness-110">
             <span class="material-symbols-outlined">receipt_long</span>
-            Share Receipt
+            Share Settlement Proof
           </button>
           <button id="btn-send-save-contact" class="w-full h-12 bg-secondary text-white rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 active:scale-95 transition-all shadow-md hover:brightness-110">
             <span class="material-symbols-outlined">person_add</span>
@@ -858,8 +858,8 @@
         <div class="w-full mt-lg p-md bg-secondary-container/10 border border-secondary/20 rounded-xl flex items-start gap-sm text-left">
           <span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">verified</span>
           <div>
-            <p class="font-label-md text-label-md text-secondary font-bold">Fast Transfer Active</p>
-            <p class="font-body-sm text-body-sm text-on-secondary-fixed-variant dark:text-outline-variant">This transaction was processed using KorriPay's high-speed global liquidity network.</p>
+            <p class="font-label-md text-label-md text-secondary font-bold">Settlement Verified on GIWA</p>
+            <p class="font-body-sm text-body-sm text-on-secondary-fixed-variant dark:text-outline-variant">This settlement is recorded in block #<span class="font-bold font-mono" id="success-block-height">--</span> and anchored to GIWA L2 Chain ID: 92837.</p>
           </div>
         </div>
       </div>
@@ -868,7 +868,7 @@
     <!-- ================== TAB: HISTORY ================== -->
     <div id="tab-history" class="tab-content space-y-md animate-fade-in">
       <div class="flex items-center justify-between md:hidden">
-        <h2 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed">Transaction History</h2>
+        <h2 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed">Settlement Ledger</h2>
       </div>
 
       <!-- Search & Filter Controls -->
@@ -1526,7 +1526,7 @@
           <div class="grid grid-cols-2 gap-sm">
             <button id="btn-swap-success-receipt" class="h-12 border-2 border-primary dark:border-primary-fixed text-primary dark:text-primary-fixed rounded-xl font-bold font-body-md hover:bg-surface-container dark:hover:bg-on-background/10 transition-all flex items-center justify-center gap-2 cursor-pointer">
               <span class="material-symbols-outlined text-xl">download</span>
-              Receipt
+              Settlement Proof
             </button>
             <button id="btn-swap-success-explorer" class="h-12 border-2 border-primary dark:border-primary-fixed text-primary dark:text-primary-fixed rounded-xl font-bold font-body-md hover:bg-surface-container dark:hover:bg-on-background/10 transition-all flex items-center justify-center gap-2 cursor-pointer">
               <span class="material-symbols-outlined text-xl">open_in_new</span>
@@ -1539,7 +1539,7 @@
 
     <!-- ================== TAB: EXPLORER ================== -->
     <div id="tab-explorer" class="tab-content space-y-md animate-fade-in hidden">
-      <h2 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed">Settlement Explorer</h2>
+      <h2 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed flex items-center gap-2">Settlement Explorer <span class="text-xs px-2.5 py-1 font-bold text-secondary-fixed bg-secondary-container rounded-full flex items-center gap-1"><span class="material-symbols-outlined text-xs">verified</span> Verified on GIWA</span></h2>
       <p class="text-body-sm text-on-surface-variant dark:text-outline-variant">
         Audit and trace all on-chain settlements processed via the KorriSettlement smart contract directly from the indexer logs.
       </p>
@@ -2120,9 +2120,9 @@
           <!-- KorriPay Compliance Passport Component -->
           <compliance-passport></compliance-passport>
 
-          <!-- Payments Card -->
+          <!-- Settlement Infrastructure Card -->
           <section class="bg-surface-container-lowest dark:bg-inverse-surface rounded-xl p-md shadow-sm border border-outline-variant/20 space-y-4">
-            <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider mb-2">Payments</h3>
+            <h3 class="font-label-sm text-outline dark:text-outline-variant uppercase tracking-wider mb-2">Settlement Infrastructure</h3>
             <div class="divide-y divide-outline-variant/20 dark:divide-on-surface-variant/20 space-y-3">
               <button class="flex items-center justify-between w-full py-2 group text-left">
                 <div class="flex items-center gap-3">
@@ -2811,12 +2811,12 @@
     </div>
   </div>
 
-  <!-- Send Money Modal -->
+  <!-- Create Settlement Modal -->
   <div id="modal-send" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-md bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
       <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
         <span class="material-symbols-outlined text-primary">send</span>
-        Send Money
+        Create Settlement
       </h3>
       <button class="modal-close-btn material-symbols-outlined text-outline hover:text-primary rounded-full p-1 hover:bg-surface-container-low transition-colors">close</button>
     </div>
@@ -2833,7 +2833,7 @@
         </div>
       </div>
       <button type="submit" class="w-full bg-primary text-white py-3 rounded-xl flex items-center justify-center gap-2 font-headline-md text-headline-md active:scale-95 hover:bg-opacity-95 transition-all shadow-md mt-4">
-        Confirm Transfer
+        Confirm Settlement
       </button>
     </form>
   </div>
@@ -2983,11 +2983,11 @@
   </div>
 
   <!-- Settlement Proof Details Modal -->
-  <div id="modal-proof" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-lg bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
+  <div id="modal-proof" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-xl bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
     <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
       <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
         <span class="material-symbols-outlined text-primary">verified_user</span>
-        <span>Settlement Proof</span>
+        <span>Settlement Certificate</span>
       </h3>
       <button class="modal-close-btn material-symbols-outlined text-outline hover:text-primary rounded-full p-1 hover:bg-surface-container-low transition-colors">close</button>
     </div>
@@ -3002,105 +3002,130 @@
         <span class="font-mono text-xs text-outline dark:text-outline-variant bg-surface-container px-2 py-1 rounded" id="proof-settlement-id">N/A</span>
       </div>
 
-      <!-- Pipeline Visualization -->
+      <!-- Settlement Pipeline Visualization (9-stage vertical timeline) -->
       <div class="p-sm bg-surface-container-low dark:bg-surface-container-high rounded-xl border border-outline-variant/10">
-        <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold mb-sm">Settlement Processing Pipeline</p>
-        <div class="flex items-center justify-between mt-4 mb-2 text-center text-[10px] text-outline font-semibold select-none relative">
-          <!-- Horizontal connector line -->
-          <div class="absolute left-2 right-2 top-3 h-0.5 bg-outline-variant/30 z-0"></div>
-          <div class="absolute left-2 top-3 h-0.5 bg-primary/70 z-0 transition-all duration-500" id="pipeline-progress-bar" style="width: 0%;"></div>
-
-          <!-- Stage 1 -->
-          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-requested">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-requested">1</div>
-            <span class="mt-1 scale-90">Req</span>
-          </div>
-
-          <!-- Stage 2 -->
-          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-compliance">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-compliance">2</div>
-            <span class="mt-1 scale-90">Comp</span>
-          </div>
-
-          <!-- Stage 3 -->
-          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-route">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-route">3</div>
-            <span class="mt-1 scale-90">Route</span>
-          </div>
-
-          <!-- Stage 4 -->
-          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-execution">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-execution">4</div>
-            <span class="mt-1 scale-90">Exec</span>
-          </div>
-
-          <!-- Stage 5 -->
-          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-confirmation">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-confirmation">5</div>
-            <span class="mt-1 scale-90">Conf</span>
-          </div>
-
-          <!-- Stage 6 -->
-          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-proof">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-proof">6</div>
-            <span class="mt-1 scale-90">Proof</span>
-          </div>
-
-          <!-- Stage 7 -->
-          <div class="flex flex-col items-center z-10 w-8" id="pipeline-step-archive">
-            <div class="w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold transition-all duration-300" id="step-icon-archive">7</div>
-            <span class="mt-1 scale-90">Arch</span>
-          </div>
+        <div class="flex items-center justify-between mb-sm">
+          <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold">Settlement Protocol Lifecycle</p>
+          <span class="text-[9px] px-2 py-0.5 rounded-full bg-secondary-container/30 text-secondary dark:text-secondary-fixed font-bold uppercase">9 Stages</span>
         </div>
-        <!-- Active Stage Label -->
-        <p class="text-xs text-center font-bold mt-sm text-primary dark:text-primary-fixed" id="pipeline-active-stage-label">Current Stage: Settlement Requested</p>
-      </div>
-
-      <div class="grid grid-cols-2 gap-sm">
-        <div class="p-sm bg-surface-container-low dark:bg-surface-container-high rounded-xl border border-outline-variant/10">
-          <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold">Settlement Duration</p>
-          <p class="font-bold text-headline-md text-primary dark:text-primary-fixed-dim mt-1" id="proof-duration">3 seconds</p>
-        </div>
-        <div class="p-sm bg-surface-container-low dark:bg-surface-container-high rounded-xl border border-outline-variant/10">
-          <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold">Gas Used (L2)</p>
-          <p class="font-bold text-headline-md text-on-surface dark:text-white mt-1" id="proof-gas-used">154,320</p>
+        <!-- Populated by renderPipelineTimeline() in app.js -->
+        <div id="settlement-pipeline-timeline" class="max-h-80 overflow-y-auto pr-1 space-y-0">
+          <!-- Loading skeleton -->
+          <div class="flex items-center gap-3 py-2 animate-pulse">
+            <div class="w-8 h-8 rounded-full bg-outline-variant/20 flex-shrink-0"></div>
+            <div class="flex-1 space-y-1">
+              <div class="h-3 bg-outline-variant/20 rounded w-32"></div>
+              <div class="h-2 bg-outline-variant/10 rounded w-48"></div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Detail rows -->
-      <div class="space-y-sm text-sm border-t border-outline-variant/20 pt-sm">
-        <div class="flex justify-between py-1">
-          <span class="text-outline dark:text-outline-variant">Transaction Hash</span>
-          <div class="flex items-center gap-1 font-mono text-xs">
-            <span class="text-on-surface dark:text-white font-semibold" id="proof-tx-hash">0xabcdef...</span>
-            <button class="material-symbols-outlined text-outline hover:text-primary text-sm p-0.5" id="btn-copy-proof-hash" title="Copy Hash">content_copy</button>
+      <!-- 14-Field Structured Certificate Body -->
+      <div class="space-y-sm text-xs">
+        
+        <!-- Section 1: Settlement Identity -->
+        <div class="p-sm bg-surface-container-low dark:bg-surface-container-high rounded-xl border border-outline-variant/10 space-y-xs">
+          <p class="text-[10px] text-outline uppercase tracking-wider font-bold">1. Settlement Identity</p>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Settlement ID</span>
+            <span class="font-mono text-on-surface dark:text-white font-semibold" id="cert-settlement-id">N/A</span>
+          </div>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Settlement Status</span>
+            <span class="font-semibold text-green-500" id="cert-settlement-status">N/A</span>
+          </div>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Settlement Timestamp</span>
+            <span class="font-semibold text-on-surface dark:text-white" id="cert-timestamp">N/A</span>
+          </div>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Settlement Duration</span>
+            <span class="font-semibold text-primary dark:text-primary-fixed-dim" id="cert-duration">N/A</span>
           </div>
         </div>
-        <div class="flex justify-between py-1">
-          <span class="text-outline dark:text-outline-variant">L2 Block Number</span>
-          <span class="font-mono text-xs text-on-surface dark:text-white font-semibold" id="proof-block-number">23516695</span>
+
+        <!-- Section 2: On-Chain Record -->
+        <div class="p-sm bg-surface-container-low dark:bg-surface-container-high rounded-xl border border-outline-variant/10 space-y-xs">
+          <p class="text-[10px] text-outline uppercase tracking-wider font-bold">2. On-Chain Ledger Record</p>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Transaction Hash</span>
+            <div class="flex items-center gap-1 font-mono">
+              <span class="text-on-surface dark:text-white font-semibold" id="cert-tx-hash">0x...</span>
+              <button class="material-symbols-outlined text-outline hover:text-primary text-xs p-0.5" id="btn-copy-proof-hash" title="Copy Hash">content_copy</button>
+            </div>
+          </div>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">L2 Block Number</span>
+            <span class="font-mono text-on-surface dark:text-white font-semibold" id="cert-block-number">N/A</span>
+          </div>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Gas Used (L2)</span>
+            <span class="font-mono text-on-surface dark:text-white font-semibold" id="cert-gas-used">N/A</span>
+          </div>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Confirmation Count</span>
+            <span class="font-semibold text-on-surface dark:text-white" id="cert-confirmations">N/A</span>
+          </div>
         </div>
-        <div class="flex justify-between py-1">
-          <span class="text-outline dark:text-outline-variant">Timestamp</span>
-          <span class="text-on-surface dark:text-white font-semibold text-xs" id="proof-timestamp">June 26, 2026, 11:00 AM</span>
+
+        <!-- Section 3: Compliance & Attestation -->
+        <div class="p-sm bg-surface-container-low dark:bg-surface-container-high rounded-xl border border-outline-variant/10 space-y-xs">
+          <p class="text-[10px] text-outline uppercase tracking-wider font-bold">3. Compliance & Attestations</p>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Compliance Screening</span>
+            <span class="font-semibold text-on-surface dark:text-white text-right" id="cert-compliance-result">Passed</span>
+          </div>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Attestation References</span>
+            <span class="font-mono text-on-surface dark:text-white truncate max-w-[200px]" id="cert-attestation-ref">N/A</span>
+          </div>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Proof Integrity Status</span>
+            <span class="font-semibold text-green-500 flex items-center gap-1" id="cert-integrity-status">
+              <span class="material-symbols-outlined text-[14px]">shield</span> Valid ZK-SNARK
+            </span>
+          </div>
         </div>
+
+        <!-- Section 4: Network & Protocol -->
+        <div class="p-sm bg-surface-container-low dark:bg-surface-container-high rounded-xl border border-outline-variant/10 space-y-xs">
+          <p class="text-[10px] text-outline uppercase tracking-wider font-bold">4. Infrastructure & Protocol</p>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">GIWA Network</span>
+            <span class="font-semibold text-on-surface dark:text-white" id="cert-giwa-network">N/A</span>
+          </div>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Explorer Link</span>
+            <span class="font-semibold"><a id="cert-explorer-link" href="#" target="_blank" class="text-primary hover:underline">View Explorer Link</a></span>
+          </div>
+          <div class="flex justify-between py-0.5">
+            <span class="text-outline dark:text-outline-variant">Protocol Version</span>
+            <span class="font-semibold text-on-surface dark:text-white" id="cert-protocol-version">N/A</span>
+          </div>
+        </div>
+
       </div>
 
-      <!-- GIWA Transaction Actions -->
+      <!-- GIWA Network Actions -->
       <div class="border-t border-outline-variant/20 pt-sm space-y-sm">
-        <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold">GIWA Network Actions</p>
-        <div class="grid grid-cols-3 gap-xs">
+        <p class="text-[11px] text-outline dark:text-outline-variant uppercase tracking-wider font-semibold">Certificate & Ledger Actions</p>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-xs">
           <button id="btn-proof-view-explorer" class="flex flex-col items-center justify-center p-2 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary dark:text-primary-fixed border border-primary/20 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
             <span class="material-symbols-outlined text-lg">open_in_new</span>
             <span class="scale-90">View Explorer</span>
           </button>
-          <button id="btn-proof-copy-url" class="flex flex-col items-center justify-center p-2 rounded-xl bg-secondary-container/20 hover:bg-secondary-container/30 text-secondary dark:text-secondary-fixed border border-secondary/20 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
-            <span class="material-symbols-outlined text-lg">content_copy</span>
-            <span class="scale-90">Copy URL</span>
+          <button id="btn-proof-download-pdf" class="flex flex-col items-center justify-center p-2 rounded-xl bg-secondary-container/20 hover:bg-secondary-container/30 text-secondary dark:text-secondary-fixed border border-secondary/20 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+            <span class="scale-90">Download PDF</span>
+          </button>
+          <button id="btn-proof-export-json" class="flex flex-col items-center justify-center p-2 rounded-xl bg-tertiary-container/20 hover:bg-tertiary-container/30 text-on-tertiary-container dark:text-tertiary-fixed border border-tertiary/20 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined text-lg">settings_ethernet</span>
+            <span class="scale-90">Export JSON</span>
           </button>
           <button id="btn-proof-verify" class="flex flex-col items-center justify-center p-2 rounded-xl bg-green-500/10 hover:bg-green-500/20 text-green-600 dark:text-green-400 border border-green-500/25 transition-all text-xs font-semibold gap-1 active:scale-95 cursor-pointer">
             <span class="material-symbols-outlined text-lg">verified_user</span>
-            <span class="scale-90">Verify Proof</span>
+            <span class="scale-90">Verify ZK Proof</span>
           </button>
         </div>
       </div>
@@ -3176,13 +3201,13 @@
             <span class="font-label-sm text-label-sm">Secure Verification Process</span>
           </div>
           <h2 class="font-display-lg text-display-lg text-primary dark:text-primary-fixed max-w-2xl leading-tight md:block hidden">
-            Complete your profile to unlock global transfers.
+            Complete your profile to unlock global settlements.
           </h2>
           <h2 class="font-headline-lg-mobile text-headline-lg-mobile text-primary dark:text-primary-fixed md:hidden">
-            Complete your profile to unlock global transfers.
+            Complete your profile to unlock global settlements.
           </h2>
           <p class="font-body-lg text-body-lg text-on-surface-variant dark:text-outline-variant max-w-xl">
-            To ensure the security of your global transfers and comply with banking regulations, we need to verify your identity.
+            To ensure the security of your global settlements and comply with banking regulations, we need to verify your identity.
           </p>
 
           <!-- Requirements list -->
@@ -3614,7 +3639,7 @@
         </div>
         <div class="space-y-sm">
           <h3 class="font-headline-lg text-headline-lg text-primary dark:text-primary-fixed font-bold">Verification Successful!</h3>
-          <p id="kyc-success-description" class="font-body-md text-body-md text-on-surface-variant dark:text-outline-variant">Your Passport has been verified. You now have full access to global transfers.</p>
+          <p id="kyc-success-description" class="font-body-md text-body-md text-on-surface-variant dark:text-outline-variant">Your Passport has been verified. You now have full access to global settlements.</p>
         </div>
         <button id="btn-kyc-done" class="w-full h-14 bg-primary dark:bg-primary-fixed text-on-primary dark:text-primary font-label-md text-label-md rounded-xl hover:shadow-lg active:scale-95 transition-all">
           Done
@@ -3655,7 +3680,7 @@
 
       <!-- Description -->
       <p id="demo-scenario-description" class="text-body-sm text-on-surface-variant dark:text-outline-variant">
-        Experience the end-to-end KorriPay transaction cycle. This one-click demo simulates a 100,000 KRW transfer, converting it to MockKRW, initiating settlement, waiting for indexer sync, and refreshing the dashboard.
+        Experience the end-to-end KorriPay settlement cycle. This one-click demo simulates a 100,000 KRW settlement, converting it to MockKRW, initiating settlement, waiting for indexer sync, and refreshing the dashboard.
       </p>
 
       <!-- Progress Steps -->
@@ -3684,7 +3709,7 @@
         <div id="demo-step-3" class="flex items-center gap-md opacity-40 transition-all duration-300">
           <div class="demo-step-icon w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">3</div>
           <div class="flex-grow">
-            <p class="text-label-md font-bold dark:text-white demo-step-title">Send via KorriSettlement</p>
+            <p class="text-label-md font-bold dark:text-white demo-step-title">Settle via KorriSettlement</p>
             <p class="text-[11px] text-on-surface-variant dark:text-outline-variant demo-step-desc">Broadcasting initiateSettlement to smart contract</p>
           </div>
           <div class="demo-step-status text-body-sm font-bold text-primary">Pending</div>

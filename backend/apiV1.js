@@ -50,7 +50,7 @@ const getFormattedDate = () => {
  *                 description: Name of the recipient
  *               amount:
  *                 type: number
- *                 description: Transfer amount in USD
+ *                 description: Settlement amount in USD
  *               recipientAddress:
  *                 type: string
  *                 description: Optional recipient EVM L2 address
@@ -389,7 +389,7 @@ router.get('/attestations', async (req, res) => {
  * @openapi
  * /api/v1/trust/attestations:
  *   get:
- *     summary: List aggregated trust center attestations (EAS & Dojang)
+ *     summary: List aggregated attestation registry attestations (EAS & Dojang)
  *     description: Retrieve all active identity, merchant, business, and compliance attestations across providers.
  *     security:
  *       - cookieAuth: []
@@ -413,7 +413,7 @@ router.get('/trust/attestations', async (req, res) => {
  * /api/v1/trust/score:
  *   get:
  *     summary: Retrieve dynamic trust score and history trends
- *     description: Calculates dynamic 0-100 score based on identity, settlement history, merchant performance, compliance, wallet age, and transactions.
+ *     description: Calculates dynamic 0-100 score based on identity, settlement history, merchant performance, compliance, wallet age, and settlements.
  *     security:
  *       - cookieAuth: []
  *     responses:
