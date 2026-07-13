@@ -169,5 +169,5 @@ flowchart LR
 | Compliance attestation present | +25 |
 | Merchant attestation present | +20 |
 | Business attestation present | +15 |
-| Transaction history (positive) | +10 |
+| Settlement history (positive) | +10 |
 | Any Revoked attestations | −20 per |

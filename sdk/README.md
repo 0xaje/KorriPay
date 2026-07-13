@@ -1,6 +1,6 @@
 # KorriPay JavaScript SDK
 
-The official JavaScript/TypeScript SDK for interacting with the KorriPay L2 payment and compliance platform APIs. This SDK makes it simple to integrate cross-border settlements, wallet queries, automated compliance screenings, identity attestations, and cryptographic proofs into your client or server applications.
+The official JavaScript/TypeScript SDK for interacting with the KorriPay L2 settlement and compliance platform APIs. This SDK makes it simple to integrate cross-border settlements, wallet queries, automated compliance screenings, identity attestations, and cryptographic proofs into your client or server applications.
 
 ## Installation
 
@@ -45,7 +45,7 @@ try {
 ```
 
 ### `createSettlement(params)`
-Initiates a new cross-border L2 settlement transfer. The platform screens the transaction automatically for compliance, runs velocity/rule checks, and creates the settlement order.
+Initiates a new cross-border L2 settlement. The platform screens the transaction automatically for compliance, runs velocity/rule checks, and creates the settlement order.
 
 ```javascript
 try {

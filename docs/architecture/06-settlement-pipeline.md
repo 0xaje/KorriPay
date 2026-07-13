@@ -49,7 +49,7 @@ flowchart TD
     REDIS --> TX["Submit L2 transaction\n(nonce safe)"]
     MUTEX --> TX
     TX --> RELEASE["lockService.release(lock)"]
-    RELEASE --> RETURN["Return receipt {hash}"]
+    RELEASE --> RETURN["Return proof {hash}"]
 ```
 
 ### Lock Configuration
@@ -138,7 +138,7 @@ If the GIWA RPC node is unreachable at pipeline startup, `SettlementService` fal
 ```javascript
 // In simulation mode:
 // - txHash is generated as a deterministic hex string
-// - processOnChainSettlement() returns a mock receipt immediately
+// - processOnChainSettlement() returns a mock proof immediately
 // - No real funds move on-chain
 // - Pipeline continues through all stages for UI/testing consistency
 ```

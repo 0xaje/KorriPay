@@ -106,7 +106,7 @@ sequenceDiagram
     participant GIWA_L2
     participant Database
 
-    User->>Frontend: Initiates Send Money
+    User->>Frontend: Initiates Create Settlement
     Frontend->>Backend: POST /api/v1/settlements
     Backend->>ComplianceEngine: screenTransaction(userId, amount, currency)
     ComplianceEngine-->>Backend: { result: "Allowed", riskScore: 12 }

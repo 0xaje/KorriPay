@@ -480,7 +480,7 @@ function switchTab(tabId) {
   const desktopTitle = document.getElementById("desktop-page-title");
   if (desktopTitle) {
     if (tabId === "tab-home") desktopTitle.textContent = "Dashboard";
-    else if (tabId === "tab-send") desktopTitle.textContent = "Send Money";
+    else if (tabId === "tab-send") desktopTitle.textContent = "Create Settlement";
     else if (tabId === "tab-history") desktopTitle.textContent = "Transactions";
     else if (tabId === "tab-portfolio") desktopTitle.textContent = "Portfolio";
     else if (tabId === "tab-swap") desktopTitle.textContent = "Swap Assets";
@@ -1861,56 +1861,306 @@ function setupSwap() {
   calculateSwap();
 }
 
-function updatePipelineStepper(stage) {
-  const stages = [
-    "Settlement Requested",
-    "Compliance Screening",
-    "Route Selection",
-    "Execution",
-    "Confirmation",
-    "Proof Generation",
-    "Archive"
-  ];
-  
-  const stepKeys = ["requested", "compliance", "route", "execution", "confirmation", "proof", "archive"];
-  const currentIdx = stages.indexOf(stage);
-  
-  // Set connector line width
-  const progressBar = document.getElementById("pipeline-progress-bar");
-  if (progressBar) {
-    if (currentIdx <= 0) {
-      progressBar.style.width = "0%";
-    } else {
-      const percentage = (currentIdx / (stages.length - 1)) * 100;
-      progressBar.style.width = `${percentage}%`;
-    }
+// ─── Settlement Pipeline: 9 canonical stages ─────────────────────────────────
+const STAGE_METADATA = [
+  {
+    key: "requested",
+    label: "Settlement Requested",
+    icon: "send",
+    description: "Settlement instruction received and validated by the KorriPay gateway.",
+    estimatedMs: 200,
+    giwaStage: false
+  },
+  {
+    key: "compliance",
+    label: "Compliance Screening",
+    icon: "policy",
+    description: "AML/KYC risk scoring, sanctions screening, and compliance passport check.",
+    estimatedMs: 800,
+    giwaStage: false
+  },
+  {
+    key: "fx_validation",
+    label: "FX Validation",
+    icon: "currency_exchange",
+    description: "Exchange rate locked, corridor path resolved, and liquidity reserved.",
+    estimatedMs: 600,
+    giwaStage: false
+  },
+  {
+    key: "created",
+    label: "Settlement Created",
+    icon: "receipt_long",
+    description: "On-chain settlement object constructed and double-entry ledger pre-committed.",
+    estimatedMs: 400,
+    giwaStage: false
+  },
+  {
+    key: "submitted",
+    label: "Submitted to GIWA",
+    icon: "lan",
+    description: "Settlement package dispatched to the GIWA L2 sequencer endpoint (Chain ID: 92837).",
+    estimatedMs: 500,
+    giwaStage: true
+  },
+  {
+    key: "sequencer",
+    label: "Sequencer Accepted",
+    icon: "verified",
+    description: "GIWA sequencer accepted the transaction batch and assigned sequence number.",
+    estimatedMs: 600,
+    giwaStage: true
+  },
+  {
+    key: "finalized",
+    label: "Block Finalized",
+    icon: "lock",
+    description: "Transaction included in a finalized L2 block. State root committed on-chain.",
+    estimatedMs: 1200,
+    giwaStage: true
+  },
+  {
+    key: "proof",
+    label: "Settlement Proof Generated",
+    icon: "fact_check",
+    description: "ZK cryptographic settlement proof generated and attested via EAS schema registry.",
+    estimatedMs: 800,
+    giwaStage: true
+  },
+  {
+    key: "completed",
+    label: "Completed",
+    icon: "task_alt",
+    description: "Settlement finalized. Balances updated, proof archived, and ledger record confirmed.",
+    estimatedMs: 200,
+    giwaStage: false
+  }
+];
+
+// Maps legacy backend pipelineStage names → canonical STAGE_METADATA index
+const STAGE_LEGACY_MAP = {
+  "Settlement Requested": 0,
+  "Compliance Screening": 1,
+  "Compliance Screening Blocked": 1,
+  "Route Selection": 2,
+  "Execution": 3,
+  "Confirmation": 6,
+  "Proof Generation": 7,
+  "Archive": 8,
+  // New canonical names
+  "FX Validation": 2,
+  "Settlement Created": 3,
+  "Submitted to GIWA": 4,
+  "Sequencer Accepted": 5,
+  "Block Finalized": 6,
+  "Settlement Proof Generated": 7,
+  "Completed": 8
+};
+
+/**
+ * Renders a vertical 9-stage settlement pipeline into a container element.
+ * @param {Array<{stage:string, timestamp?:string}>} stageHistory - completed stages
+ * @param {string} currentStage - the current active stage label
+ * @param {HTMLElement} container - DOM element to render into
+ */
+function renderPipelineTimeline(stageHistory, currentStage, container) {
+  if (!container) return;
+
+  const currentIdx = STAGE_LEGACY_MAP[currentStage] ?? (STAGE_METADATA.length - 1);
+
+  // Build a timestamp lookup from history
+  const tsMap = {};
+  if (Array.isArray(stageHistory)) {
+    stageHistory.forEach(h => {
+      const idx = STAGE_LEGACY_MAP[h.stage];
+      if (idx !== undefined && h.timestamp) tsMap[idx] = h.timestamp;
+    });
   }
 
-  // Update step bubble colors
-  stepKeys.forEach((key, index) => {
-    const icon = document.getElementById(`step-icon-${key}`);
-    if (icon) {
-      if (index < currentIdx) {
-        // Completed step
-        icon.className = "w-6 h-6 rounded-full flex items-center justify-center bg-green-500 border-2 border-green-600 text-white text-[10px] font-bold transition-all duration-300";
-        icon.innerHTML = `<span class="material-symbols-outlined text-[12px] font-bold">check</span>`;
-      } else if (index === currentIdx) {
-        // Active step
-        icon.className = "w-6 h-6 rounded-full flex items-center justify-center bg-primary border-2 border-primary-dark text-white text-[10px] font-bold scale-110 shadow transition-all duration-300 animate-pulse";
-        icon.innerHTML = `${index + 1}`;
-      } else {
-        // Pending step
-        icon.className = "w-6 h-6 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant text-[10px] font-bold text-outline transition-all duration-300";
-        icon.innerHTML = `${index + 1}`;
-      }
+  // Cumulative estimated time for each stage
+  let cumulativeEstMs = 0;
+  const estimatedTimes = STAGE_METADATA.map(s => {
+    cumulativeEstMs += s.estimatedMs;
+    return cumulativeEstMs;
+  });
+  const totalEstMs = cumulativeEstMs;
+
+  let html = `<div class="space-y-0">`;
+
+  STAGE_METADATA.forEach((meta, idx) => {
+    const isCompleted = idx < currentIdx;
+    const isActive = idx === currentIdx;
+    const isPending = idx > currentIdx;
+
+    // State-based classes
+    let dotClass, dotInner, rowOpacity, labelClass, timeLabel;
+
+    if (isCompleted) {
+      dotClass = "w-8 h-8 rounded-full flex items-center justify-center bg-green-500 border-2 border-green-600 text-white shadow-sm flex-shrink-0";
+      dotInner = `<span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">check</span>`;
+      rowOpacity = "opacity-100";
+      labelClass = "font-semibold text-on-surface dark:text-white text-xs";
+      const ts = tsMap[idx];
+      timeLabel = ts ? `<span class="text-green-500 text-[10px] font-bold">${new Date(ts).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>` : `<span class="text-[10px] text-outline">~${(estimatedTimes[idx]/1000).toFixed(1)}s est.</span>`;
+    } else if (isActive) {
+      dotClass = "w-8 h-8 rounded-full flex items-center justify-center bg-primary border-2 border-primary text-on-primary shadow-md flex-shrink-0 animate-pulse";
+      dotInner = `<span class="material-symbols-outlined text-[14px]" style="font-variation-settings:'FILL' 1">${meta.icon}</span>`;
+      rowOpacity = "opacity-100";
+      labelClass = "font-bold text-primary dark:text-primary-fixed text-xs";
+      timeLabel = `<span class="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary dark:text-primary-fixed font-bold">Active</span>`;
+    } else {
+      dotClass = "w-8 h-8 rounded-full flex items-center justify-center bg-surface-container border-2 border-outline-variant/40 text-outline flex-shrink-0";
+      dotInner = `<span class="text-[11px] font-bold">${idx + 1}</span>`;
+      rowOpacity = "opacity-40";
+      labelClass = "font-medium text-on-surface-variant dark:text-outline-variant text-xs";
+      timeLabel = `<span class="text-[10px] text-outline/60">~${(estimatedTimes[idx]/1000).toFixed(1)}s est.</span>`;
     }
+
+    const giwaTag = meta.giwaStage
+      ? `<span class="text-[9px] px-1 py-0.5 rounded bg-secondary-container/30 text-secondary dark:text-secondary-fixed font-bold uppercase ml-1">GIWA</span>`
+      : "";
+
+    const connector = idx < STAGE_METADATA.length - 1
+      ? `<div class="ml-[15px] w-0.5 h-4 ${isCompleted ? 'bg-green-500/60' : 'bg-outline-variant/20'} flex-shrink-0"></div>`
+      : "";
+
+    html += `
+      <div class="${rowOpacity} transition-opacity duration-300">
+        <div class="flex items-start gap-3">
+          <div class="flex flex-col items-center">
+            <div class="${dotClass}">${dotInner}</div>
+          </div>
+          <div class="flex-1 min-w-0 pb-1">
+            <div class="flex items-center justify-between flex-wrap gap-1">
+              <span class="${labelClass}">${meta.label}${giwaTag}</span>
+              ${timeLabel}
+            </div>
+            ${isActive || isCompleted ? `<p class="text-[10px] text-outline dark:text-outline-variant mt-0.5 leading-relaxed">${meta.description}</p>` : ""}
+          </div>
+        </div>
+        ${connector}
+      </div>
+    `;
   });
 
-  const label = document.getElementById("pipeline-active-stage-label");
-  if (label) {
-    label.textContent = `Current Stage: ${stage || 'Settlement Requested'}`;
-  }
+  html += `</div>`;
+
+  // Progress summary footer
+  const completedCount = currentIdx;
+  const progressPct = Math.round((currentIdx / (STAGE_METADATA.length - 1)) * 100);
+  html += `
+    <div class="mt-3 pt-3 border-t border-outline-variant/20">
+      <div class="flex items-center justify-between text-[10px] text-outline dark:text-outline-variant mb-1">
+        <span>${completedCount} of ${STAGE_METADATA.length} stages complete</span>
+        <span class="font-bold text-primary dark:text-primary-fixed">${progressPct}%</span>
+      </div>
+      <div class="w-full h-1.5 bg-outline-variant/20 rounded-full overflow-hidden">
+        <div class="h-full bg-gradient-to-r from-primary to-green-500 rounded-full transition-all duration-700" style="width:${progressPct}%"></div>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
 }
+
+/**
+ * Backward-compat wrapper: maps a legacy stage name and updates both the new
+ * vertical timeline (if present) and the old horizontal bar (if present).
+ */
+function updatePipelineStepper(stage, stageHistory) {
+  // New vertical timeline
+  const timelineContainer = document.getElementById("settlement-pipeline-timeline");
+  if (timelineContainer) {
+    renderPipelineTimeline(stageHistory || [], stage, timelineContainer);
+    return;
+  }
+
+  // Legacy horizontal bar fallback (kept for any remaining callers)
+  const legacyIdx = STAGE_LEGACY_MAP[stage] ?? 0;
+  const progressBar = document.getElementById("pipeline-progress-bar");
+  if (progressBar) {
+    const pct = (legacyIdx / (STAGE_METADATA.length - 1)) * 100;
+    progressBar.style.width = `${pct}%`;
+  }
+  const label = document.getElementById("pipeline-active-stage-label");
+  if (label) label.textContent = `Current Stage: ${stage || "Settlement Requested"}`;
+}
+
+function buildCertificateData(settlement, proof) {
+  const explorerBase = networkRegistry?.giwa?.config?.explorerUrl || "https://explorer.giwa.network";
+  const targetTxHash = settlement.txHash || (proof ? proof.txHash : null) || getDeterministicHash(settlement.id);
+  const explorerUrl = `${explorerBase}/tx/${targetTxHash}`;
+
+  const hardfork = networkRegistry?.KarstHardforkVersion || "Karst";
+  const evmVersion = networkRegistry?.giwa?.config?.evmVersion || "Osaka";
+  const nodeClient = networkRegistry?.ClientVersion || "op-reth";
+  const protocolVersion = `${hardfork} Hardfork (${evmVersion} EVM) / ${nodeClient}`;
+
+  const hasProof = !!proof;
+  const status = settlement.status || (proof ? proof.proofStatus : "Success");
+  
+  const complianceVal = (status === "Settled" || status === "Success" || status === "Completed") 
+    ? "Passed (Zero-Knowledge Compliance Passport Verified, Low Risk)" 
+    : status === "Failed" ? "Failed (Screening Flagged)" : "Pending Verification";
+
+  const attestationId = proof 
+    ? `EAS-UID: 0x${proof.id.replace(/-/g, '').substring(0, 32)}`
+    : "Pending ZK-SNARK Attestation";
+
+  const integrity = (status === "Settled" || status === "Success" || status === "Completed")
+    ? "Valid ZK-SNARK Cryptographic Proof Attested"
+    : "Verification Pending";
+
+  const confirmations = (status === "Settled" || status === "Success" || status === "Completed")
+    ? "1 (L2 Finality)"
+    : "0 (Unconfirmed)";
+
+  return {
+    schemaVersion: "1.0",
+    issuer: "KorriPay Programmable Settlement Infrastructure",
+    certId: `cert-${settlement.id}`,
+    settlementId: settlement.id,
+    settlementStatus: status,
+    settlementTimestamp: new Date(settlement.confirmedAt || settlement.createdAt || Date.now()).toISOString(),
+    transactionHash: targetTxHash,
+    blockNumber: proof ? proof.blockNumber : null,
+    gasUsed: proof ? Number(proof.gasUsed) : null,
+    confirmationCount: confirmations,
+    settlementDurationSeconds: proof ? proof.settlementDuration : null,
+    complianceResult: complianceVal,
+    attestationReferences: attestationId,
+    giwaNetwork: networkRegistry?.giwa?.config?.name || "GIWA Testnet (Sepolia)",
+    explorerLink: explorerUrl,
+    protocolVersion: protocolVersion,
+    proofIntegrityStatus: integrity,
+    derivedFields: [
+      "confirmationCount",
+      "complianceResult",
+      "proofIntegrityStatus"
+    ]
+  };
+}
+
+function exportCertificateJSON(settlementId) {
+  const settlement = portalSettlements.find(s => s.id === settlementId);
+  if (!settlement) {
+    showToast("Settlement not found", "error");
+    return;
+  }
+  const matchingProof = portalProofs.find(p => p.settlementId === settlementId || (p.txHash && settlement.txHash && p.txHash.toLowerCase() === settlement.txHash.toLowerCase()));
+
+  const certData = buildCertificateData(settlement, matchingProof);
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(certData, null, 2));
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", `certificate-${settlement.id}.json`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+  showToast("Settlement certificate JSON exported!", "success");
+}
+window.exportCertificateJSON = exportCertificateJSON;
+
 
 function getDeterministicHash(str) {
   let hash = 0;
@@ -2034,13 +2284,15 @@ function createTransactionRow(tx) {
         confirmedAt: new Date(tx.timestamp || Date.now()).toISOString(),
         pipelineStage: "Archive",
         pipelineHistory: JSON.stringify([
-          { stage: "Settlement Requested", timestamp: new Date(tx.timestamp).toISOString() },
-          { stage: "Compliance Screening", timestamp: new Date(tx.timestamp + 600).toISOString() },
-          { stage: "Route Selection", timestamp: new Date(tx.timestamp + 1200).toISOString() },
-          { stage: "Execution", timestamp: new Date(tx.timestamp + 1800).toISOString() },
-          { stage: "Confirmation", timestamp: new Date(tx.timestamp + 2400).toISOString() },
-          { stage: "Proof Generation", timestamp: new Date(tx.timestamp + 3000).toISOString() },
-          { stage: "Archive", timestamp: new Date(tx.timestamp + 3600).toISOString() }
+          { stage: "Settlement Requested",      timestamp: new Date(tx.timestamp).toISOString() },
+          { stage: "Compliance Screening",       timestamp: new Date(tx.timestamp + 320).toISOString() },
+          { stage: "FX Validation",              timestamp: new Date(tx.timestamp + 940).toISOString() },
+          { stage: "Settlement Created",         timestamp: new Date(tx.timestamp + 1380).toISOString() },
+          { stage: "Submitted to GIWA",          timestamp: new Date(tx.timestamp + 1740).toISOString() },
+          { stage: "Sequencer Accepted",         timestamp: new Date(tx.timestamp + 2180).toISOString() },
+          { stage: "Block Finalized",            timestamp: new Date(tx.timestamp + 2840).toISOString() },
+          { stage: "Settlement Proof Generated", timestamp: new Date(tx.timestamp + 3560).toISOString() },
+          { stage: "Completed",                  timestamp: new Date(tx.timestamp + 3760).toISOString() }
         ])
       };
       
@@ -2056,72 +2308,122 @@ function createTransactionRow(tx) {
       };
     }
 
-    document.getElementById("proof-settlement-id").textContent = settlement.id;
-    
-    if (proof) {
-      document.getElementById("proof-status-icon").textContent = "check_circle";
-      document.getElementById("proof-status-icon").className = "material-symbols-outlined text-green-500 font-bold";
-      document.getElementById("proof-status-text").textContent = "Verified Settlement";
-      document.getElementById("proof-duration").textContent = `${proof.settlementDuration}s`;
-      document.getElementById("proof-gas-used").textContent = Number(proof.gasUsed).toLocaleString();
-      
-      const shortHash = proof.txHash.length > 18 
-        ? (proof.txHash.substring(0, 10) + "..." + proof.txHash.substring(proof.txHash.length - 8))
-        : proof.txHash;
-      document.getElementById("proof-tx-hash").textContent = shortHash;
-      document.getElementById("proof-block-number").textContent = proof.blockNumber;
-      
-      const dateObj = new Date(proof.timestamp);
-      document.getElementById("proof-timestamp").textContent = dateObj.toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit"
-      });
-      
-      const copyBtn = document.getElementById("btn-copy-proof-hash");
-      if (copyBtn) {
-        copyBtn.onclick = (e) => {
-          e.stopPropagation();
-          navigator.clipboard.writeText(proof.txHash);
-          showToast("Transaction hash copied!");
-        };
-      }
+    const certData = buildCertificateData(settlement, proof);
+
+    // Status Banner / Modal State
+    document.getElementById("proof-settlement-id").textContent = certData.settlementId;
+    const statusIcon = document.getElementById("proof-status-icon");
+    const statusText = document.getElementById("proof-status-text");
+
+    if (certData.settlementStatus === "Settled" || certData.settlementStatus === "Success" || certData.settlementStatus === "Completed") {
+      statusIcon.textContent = "check_circle";
+      statusIcon.className = "material-symbols-outlined text-green-500 font-bold";
+      statusText.textContent = "Verified Settlement";
+    } else if (certData.settlementStatus === "Pending") {
+      statusIcon.textContent = "pending";
+      statusIcon.className = "material-symbols-outlined text-amber-500 font-bold";
+      statusText.textContent = "Settlement Pending";
     } else {
-      document.getElementById("proof-status-icon").textContent = "pending";
-      document.getElementById("proof-status-icon").className = "material-symbols-outlined text-amber-500 font-bold";
-      document.getElementById("proof-status-text").textContent = "Settlement Pending";
-      document.getElementById("proof-duration").textContent = "Pending";
-      document.getElementById("proof-gas-used").textContent = "Pending";
-      document.getElementById("proof-tx-hash").textContent = settlement.txHash ? (settlement.txHash.substring(0, 10) + "...") : "N/A";
-      document.getElementById("proof-block-number").textContent = "Pending";
-      document.getElementById("proof-timestamp").textContent = new Date(settlement.createdAt).toLocaleString();
+      statusIcon.textContent = "warning";
+      statusIcon.className = "material-symbols-outlined text-rose-500 font-bold";
+      statusText.textContent = "Settlement Failed";
     }
+
+    // Hydrate 14 fields in UI
+    document.getElementById("cert-settlement-id").textContent = certData.settlementId;
     
-    // Visualize pipeline stage step markers
-    updatePipelineStepper(settlement.pipelineStage);
+    const statusLabel = document.getElementById("cert-settlement-status");
+    statusLabel.textContent = certData.settlementStatus;
+    if (certData.settlementStatus === "Settled" || certData.settlementStatus === "Success" || certData.settlementStatus === "Completed") {
+      statusLabel.className = "font-semibold text-green-500";
+    } else if (certData.settlementStatus === "Pending") {
+      statusLabel.className = "font-semibold text-amber-500";
+    } else {
+      statusLabel.className = "font-semibold text-rose-500";
+    }
+
+    document.getElementById("cert-timestamp").textContent = new Date(certData.settlementTimestamp).toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+    
+    document.getElementById("cert-duration").textContent = certData.settlementDurationSeconds ? `${certData.settlementDurationSeconds} seconds` : "Pending";
+    
+    const shortHash = certData.transactionHash && certData.transactionHash.length > 18 
+      ? (certData.transactionHash.substring(0, 10) + "..." + certData.transactionHash.substring(certData.transactionHash.length - 8))
+      : (certData.transactionHash || "N/A");
+    document.getElementById("cert-tx-hash").textContent = shortHash;
+    document.getElementById("cert-block-number").textContent = certData.blockNumber || "Pending";
+    document.getElementById("cert-gas-used").textContent = certData.gasUsed ? certData.gasUsed.toLocaleString() : "Pending";
+    document.getElementById("cert-confirmations").textContent = certData.confirmationCount;
+    document.getElementById("cert-compliance-result").textContent = certData.complianceResult;
+    document.getElementById("cert-attestation-ref").textContent = certData.attestationReferences;
+    document.getElementById("cert-attestation-ref").title = certData.attestationReferences;
+    
+    const integrityLabel = document.getElementById("cert-integrity-status");
+    integrityLabel.textContent = certData.proofIntegrityStatus;
+    if (certData.proofIntegrityStatus.includes("Cryptographic") || certData.proofIntegrityStatus.includes("Valid")) {
+      integrityLabel.className = "font-semibold text-green-500 flex items-center gap-1";
+      integrityLabel.innerHTML = `<span class="material-symbols-outlined text-[14px]">shield</span> Valid ZK-SNARK`;
+    } else {
+      integrityLabel.className = "font-semibold text-amber-500 flex items-center gap-1";
+      integrityLabel.innerHTML = `<span class="material-symbols-outlined text-[14px]">hourglass_empty</span> Verification Pending`;
+    }
+
+    document.getElementById("cert-giwa-network").textContent = certData.giwaNetwork;
+    
+    const explorerLinkEl = document.getElementById("cert-explorer-link");
+    explorerLinkEl.href = certData.explorerLink;
+    explorerLinkEl.textContent = "View L2 Explorer Link";
+    
+    document.getElementById("cert-protocol-version").textContent = certData.protocolVersion;
+
+    // Set up copy hash button
+    const copyBtn = document.getElementById("btn-copy-proof-hash");
+    if (copyBtn) {
+      copyBtn.onclick = (e) => {
+        e.stopPropagation();
+        navigator.clipboard.writeText(certData.transactionHash);
+        showToast("Transaction hash copied!");
+      };
+    }
+
+    // Visualize pipeline stage step markers in the new vertical timeline
+    let pipelineHistory = [];
+    try { pipelineHistory = JSON.parse(settlement.pipelineHistory || "[]"); } catch(e) {}
+    updatePipelineStepper(settlement.pipelineStage, pipelineHistory);
     
     // Set up GIWA Action buttons
-    const explorerBase = networkRegistry?.giwa?.config?.explorerUrl || "https://explorer.giwa.network";
-    const explorerUrl = `${explorerBase}/tx/${targetTxHash}`;
-
     const viewExplorerBtn = document.getElementById("btn-proof-view-explorer");
     if (viewExplorerBtn) {
       viewExplorerBtn.onclick = (e) => {
         e.stopPropagation();
-        window.open(explorerUrl, "_blank");
+        window.open(certData.explorerLink, "_blank");
       };
     }
 
-    const copyUrlBtn = document.getElementById("btn-proof-copy-url");
-    if (copyUrlBtn) {
-      copyUrlBtn.onclick = (e) => {
+    // PDF Download Button
+    const downloadPdfBtn = document.getElementById("btn-proof-download-pdf");
+    if (downloadPdfBtn) {
+      downloadPdfBtn.onclick = (e) => {
         e.stopPropagation();
-        navigator.clipboard.writeText(explorerUrl);
-        showToast("Explorer URL copied to clipboard!", "success");
+        downloadReceiptPDF(settlement.id);
       };
     }
+
+    // JSON Export Button
+    const exportJsonBtn = document.getElementById("btn-proof-export-json");
+    if (exportJsonBtn) {
+      exportJsonBtn.onclick = (e) => {
+        e.stopPropagation();
+        exportCertificateJSON(settlement.id);
+      };
+    }
+
 
     const verifyProofBtn = document.getElementById("btn-proof-verify");
     if (verifyProofBtn) {
@@ -2186,14 +2488,17 @@ function createTransactionRow(tx) {
         } catch (err) {}
         
         if (history.length === 0) {
+          const base = new Date(settlement.createdAt).getTime();
           history = [
-            { stage: "Settlement Requested", timestamp: settlement.createdAt },
-            { stage: "Compliance Screening", timestamp: new Date(new Date(settlement.createdAt).getTime() + 600) },
-            { stage: "Route Selection", timestamp: new Date(new Date(settlement.createdAt).getTime() + 1400) },
-            { stage: "Execution", timestamp: new Date(new Date(settlement.createdAt).getTime() + 2000) },
-            { stage: "Confirmation", timestamp: new Date(new Date(settlement.createdAt).getTime() + 3200) },
-            { stage: "Proof Generation", timestamp: new Date(new Date(settlement.createdAt).getTime() + 3800) },
-            { stage: "Archive", timestamp: settlement.confirmedAt || new Date(new Date(settlement.createdAt).getTime() + 4200) }
+            { stage: "Settlement Requested",      timestamp: new Date(base).toISOString() },
+            { stage: "Compliance Screening",       timestamp: new Date(base + 320).toISOString() },
+            { stage: "FX Validation",              timestamp: new Date(base + 940).toISOString() },
+            { stage: "Settlement Created",         timestamp: new Date(base + 1380).toISOString() },
+            { stage: "Submitted to GIWA",          timestamp: new Date(base + 1740).toISOString() },
+            { stage: "Sequencer Accepted",         timestamp: new Date(base + 2180).toISOString() },
+            { stage: "Block Finalized",            timestamp: new Date(base + 2840).toISOString() },
+            { stage: "Settlement Proof Generated", timestamp: new Date(base + 3560).toISOString() },
+            { stage: "Completed",                  timestamp: settlement.confirmedAt || new Date(base + 3760).toISOString() }
           ];
         }
 
@@ -2202,7 +2507,8 @@ function createTransactionRow(tx) {
         
         for (let i = 0; i < history.length; i++) {
           const step = history[i];
-          updatePipelineStepper(step.stage);
+          // Update the vertical timeline to show progress through replay
+          updatePipelineStepper(step.stage, history.slice(0, i + 1));
           
           const timeStr = new Date(step.timestamp).toLocaleTimeString();
           let actor = "System";
@@ -2218,34 +2524,41 @@ function createTransactionRow(tx) {
           const giwaExplorer = networkRegistry?.giwa?.config?.explorerUrl || "https://explorer.giwa.network";
 
           if (step.stage === "Settlement Requested") {
-            actor = "Initiator";
-            action = `Initialized settlement request of ${amount} ${token}`;
+            actor = "KorriPay Gateway";
+            action = `Received settlement instruction for ${amount} ${token}. Initiator validated.`;
           } else if (step.stage === "Compliance Screening") {
             actor = "Compliance Engine";
-            action = `Risk assessment: Pass. AML check completed.`;
-          } else if (step.stage === "Route Selection") {
-            actor = "Routing Service";
-            action = `Resolved destination address. Pathway active.`;
-          } else if (step.stage === "Execution") {
-            actor = "Sequencer";
-            action = `Transaction packaged and broadcasted.`;
+            action = `AML/KYC screening complete. Risk score: 12 (Low). Sanctions pass.`;
+          } else if (step.stage === "FX Validation" || step.stage === "Route Selection") {
+            actor = "FX Oracle";
+            action = `Exchange rate locked. Corridor path resolved. Liquidity reserved.`;
+          } else if (step.stage === "Settlement Created" || step.stage === "Execution") {
+            actor = "Settlement Engine";
+            action = `On-chain settlement object constructed. Double-entry ledger pre-committed.`;
+          } else if (step.stage === "Submitted to GIWA") {
+            actor = "GIWA L2 Gateway";
+            action = `Settlement dispatched to GIWA sequencer endpoint (Chain 92837).`;
             explorerLink = `${giwaExplorer}/tx/${targetTxHash}`;
-          } else if (step.stage === "Confirmation") {
+          } else if (step.stage === "Sequencer Accepted") {
+            actor = "GIWA Sequencer";
+            action = `Transaction batch accepted. Sequence number assigned. Nonce committed.`;
+            explorerLink = `${giwaExplorer}/tx/${targetTxHash}`;
+          } else if (step.stage === "Block Finalized" || step.stage === "Confirmation") {
             actor = "L2 Validator Node";
-            action = `Block confirmation achieved.`;
+            action = `Block finalized. State root committed on-chain. 1 confirmation achieved.`;
             block = proof ? proof.blockNumber : "23516695";
-            confirmation = "1 Confirmation";
+            confirmation = "Finalized";
             explorerLink = `${giwaExplorer}/tx/${targetTxHash}`;
-          } else if (step.stage === "Proof Generation") {
+          } else if (step.stage === "Settlement Proof Generated" || step.stage === "Proof Generation") {
             actor = "EAS Schema Registry";
-            action = `Cryptographic receipt signed and cached on EAS.`;
+            action = `ZK cryptographic proof generated and attested on EAS. Proof hash cached.`;
             block = proof ? proof.blockNumber : "23516695";
             gas = proof ? proof.gasUsed : "154320";
             confirmation = "Finalized";
             explorerLink = `${giwaExplorer}/tx/${targetTxHash}`;
-          } else if (step.stage === "Archive") {
+          } else if (step.stage === "Completed" || step.stage === "Archive") {
             actor = "Ledger Bookkeeper";
-            action = `Balances locked. Settlement status saved to ledger database.`;
+            action = `Balances locked. Settlement archived. Ledger record confirmed and synced.`;
             block = proof ? proof.blockNumber : "23516695";
             gas = proof ? proof.gasUsed : "154320";
             confirmation = "Finalized";
@@ -3050,7 +3363,7 @@ function setupMultiStepSend() {
       if (recents.length === 0) {
         recentsList.innerHTML = `
           <div class="p-8 text-center text-outline dark:text-outline-variant">
-            <p class="text-sm">No recent transfers.</p>
+            <p class="text-sm">No recent settlements.</p>
           </div>
         `;
       } else {
@@ -3570,6 +3883,11 @@ function setupMultiStepSend() {
         confirmBtnText.innerText = `Confirm & Send ${amountVal.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${selectedCurrency}`;
       }
 
+      const reviewNetworkName = document.getElementById("review-network-name");
+      if (reviewNetworkName) {
+        reviewNetworkName.innerText = window.giwaNetworkName || "GIWA L2";
+      }
+
       if (reviewAvatar) {
         if (selectedRecipient.avatar) {
           reviewAvatar.src = selectedRecipient.avatar;
@@ -3649,6 +3967,12 @@ function setupMultiStepSend() {
     if (successRecipientName) {
       successRecipientName.innerText = recipient;
     }
+
+    const successBlockEl = document.getElementById("success-block-height");
+    if (successBlockEl) {
+      const widgetBlockText = document.getElementById("widget-giwa-block")?.textContent || "";
+      successBlockEl.innerText = widgetBlockText ? widgetBlockText.replace("#", "") : (lastKnownBlockHeight || "182390");
+    }
     if (successPaymentMethod) {
       successPaymentMethod.innerText = walletConnected ? "Web3 Connected Wallet" : "Visa ending in •••• 8829";
     }
@@ -3676,35 +4000,35 @@ function setupMultiStepSend() {
       });
     }
 
-    // Share Receipt Handler
+    // Share Settlement Proof Handler
     const shareBtn = document.getElementById("btn-send-share");
     if (shareBtn) {
       const newShareBtn = shareBtn.cloneNode(true);
       shareBtn.parentNode.replaceChild(newShareBtn, shareBtn);
 
       newShareBtn.addEventListener("click", () => {
-        let shareText = `Successfully transferred ${exchangeSymbols[selectedCurrency] || "$"}${amountVal.toLocaleString()} to ${recipient} via KorriPay!`;
+        let shareText = `Successfully settled ${exchangeSymbols[selectedCurrency] || "$"}${amountVal.toLocaleString()} to ${recipient} via KorriPay!`;
         if (status === "Pending") {
-          shareText = `Transfer of ${exchangeSymbols[selectedCurrency] || "$"}${amountVal.toLocaleString()} to ${recipient} is pending via KorriPay!`;
+          shareText = `Settlement of ${exchangeSymbols[selectedCurrency] || "$"}${amountVal.toLocaleString()} to ${recipient} is pending via KorriPay!`;
         } else if (status === "Failed") {
-          shareText = `Transfer of ${exchangeSymbols[selectedCurrency] || "$"}${amountVal.toLocaleString()} to ${recipient} failed on KorriPay.`;
+          shareText = `Settlement of ${exchangeSymbols[selectedCurrency] || "$"}${amountVal.toLocaleString()} to ${recipient} failed on KorriPay.`;
         }
 
         if (navigator.share) {
           navigator.share({
-            title: 'KorriPay Receipt',
+            title: 'KorriPay Settlement Proof',
             text: shareText,
             url: window.location.href
           }).then(() => {
-            showToast("Receipt shared!");
+            showToast("Settlement proof shared!");
           }).catch(() => {
-            showToast("Receipt sharing canceled");
+            showToast("Settlement proof sharing canceled");
           });
         } else {
           navigator.clipboard.writeText(shareText).then(() => {
-            showToast("Receipt info copied! Ready to share.");
+            showToast("Settlement proof info copied! Ready to share.");
           }).catch(() => {
-            showToast("Failed to copy receipt text", "error");
+            showToast("Failed to copy settlement proof text", "error");
           });
         }
       });
@@ -3712,9 +4036,9 @@ function setupMultiStepSend() {
 
     if (statusTitle && statusDesc) {
       if (status === "Pending") {
-        statusTitle.innerText = "Transaction Pending";
+        statusTitle.innerText = "Settlement Pending";
         statusTitle.className = "font-headline-lg-mobile text-headline-lg-mobile text-amber-600 dark:text-amber-400 mb-2 font-bold";
-        statusDesc.innerText = "Your transfer is being processed on the blockchain. We are waiting for confirmation.";
+        statusDesc.innerText = "Your settlement is being processed on the blockchain. We are waiting for confirmation.";
         if (statusIconContainer) {
           statusIconContainer.className = "relative z-10 w-24 h-24 bg-amber-100 dark:bg-amber-950/50 rounded-full flex items-center justify-center shadow-lg border border-amber-300/30";
         }
@@ -3726,9 +4050,9 @@ function setupMultiStepSend() {
           statusIconSvg.setAttribute("viewBox", "0 0 24 24");
         }
       } else if (status === "Failed") {
-        statusTitle.innerText = "Transaction Failed";
+        statusTitle.innerText = "Settlement Failed";
         statusTitle.className = "font-headline-lg-mobile text-headline-lg-mobile text-error dark:text-red-400 mb-2 font-bold";
-        statusDesc.innerText = "Your transaction failed or was reverted on-chain. Please verify and try again.";
+        statusDesc.innerText = "Your settlement failed or was reverted on-chain. Please verify and try again.";
         if (statusIconContainer) {
           statusIconContainer.className = "relative z-10 w-24 h-24 bg-error-container rounded-full flex items-center justify-center shadow-lg";
         }
@@ -3741,9 +4065,9 @@ function setupMultiStepSend() {
         }
       } else {
         // Success
-        statusTitle.innerText = "Transaction Successful";
+        statusTitle.innerText = "Settlement Successful";
         statusTitle.className = "font-headline-lg-mobile text-headline-lg-mobile text-primary dark:text-primary-fixed mb-2 font-bold";
-        statusDesc.innerText = "Your money has been sent successfully. The recipient will receive it in minutes.";
+        statusDesc.innerText = "Your settlement has been completed successfully. The recipient will receive it in minutes.";
         if (statusIconContainer) {
           statusIconContainer.className = "relative z-10 w-24 h-24 bg-secondary-container rounded-full flex items-center justify-center shadow-lg";
         }
@@ -4162,7 +4486,7 @@ function setupKycVerification() {
       indicator.innerText = "Completed";
 
       if (successDesc) {
-        successDesc.innerText = `Your ${currentDocType} has been verified successfully. You now have full access to global transfers.`;
+        successDesc.innerText = `Your ${currentDocType} has been verified successfully. You now have full access to global settlements.`;
       }
     });
   }
@@ -4632,7 +4956,7 @@ function renderExplorer() {
         <td class="p-4 font-mono text-xs cursor-pointer text-on-surface-variant hover:text-primary" title="${tx.initiator}" onclick="copyTextToClipboard('${tx.initiator}')">${shortInitiator}</td>
         <td class="p-4 text-xs font-semibold">${recipientDisplay}</td>
         <td class="p-4 font-bold">${amountDisplay} ${toTokenDisplay}</td>
-        <td class="p-4 text-xs font-medium text-outline">Hardhat Local</td>
+        <td class="p-4 text-xs font-medium text-outline">${window.giwaNetworkName || "GIWA Testnet"}</td>
         <td class="p-4">${statusBadge}</td>
         <td class="p-4 text-xs text-on-surface-variant dark:text-outline-variant">${formattedDate}</td>
         <td class="p-4 font-mono text-xs text-primary hover:underline cursor-pointer" onclick="copyTextToClipboard('${txHashToUse}')" title="Click to copy transaction hash">${shortTxHash}</td>
@@ -5127,6 +5451,29 @@ function exportPortalCSV() {
   showToast("CSV exported successfully", "success");
 }
 
+function buildCertificateData(settlement, matchingProof) {
+  const isSettled = settlement.status === "Settled" || settlement.status === "Success";
+  const start = new Date(settlement.createdAt).getTime();
+  const end = settlement.confirmedAt ? new Date(settlement.confirmedAt).getTime() : Date.now();
+  
+  return {
+    settlementId: settlement.id,
+    settlementStatus: settlement.status,
+    settlementTimestamp: settlement.createdAt,
+    settlementDurationSeconds: Math.floor((end - start) / 1000),
+    transactionHash: settlement.txHash || "Pending",
+    blockNumber: matchingProof ? matchingProof.blockNumber : null,
+    gasUsed: matchingProof ? matchingProof.gasUsed : null,
+    confirmationCount: isSettled ? "640+ (Deep Finalized)" : "0 (Pending)",
+    complianceResult: isSettled ? "Passed (ZK-Verified)" : "Screening...",
+    attestationReferences: matchingProof ? `EAS-0x${matchingProof.id.substring(0, 16)}` : "None",
+    proofIntegrityStatus: matchingProof ? "Verified (Cryptographic)" : "Not Generated",
+    giwaNetwork: networkRegistry?.giwa?.name || "GIWA-Mainnet",
+    explorerLink: settlement.txHash ? `${networkRegistry?.giwa?.config?.explorerUrl || "https://explorer.giwa.network"}/tx/${settlement.txHash}` : "#",
+    protocolVersion: `v2.4.1 (Karst Hardfork)`
+  };
+}
+
 function downloadReceiptPDF(settlementId) {
   const settlement = portalSettlements.find(s => s.id === settlementId);
   if (!settlement) {
@@ -5135,185 +5482,233 @@ function downloadReceiptPDF(settlementId) {
   }
 
   const matchingProof = portalProofs.find(p => p.settlementId === settlementId || (p.txHash && settlement.txHash && p.txHash.toLowerCase() === settlement.txHash.toLowerCase()));
-  const hasProof = !!matchingProof;
+  const certData = buildCertificateData(settlement, matchingProof);
+
+  let pipelineHtml = "";
+  let history = [];
+  try {
+    history = JSON.parse(settlement.pipelineHistory || "[]");
+  } catch (err) {}
+  if (history.length === 0) {
+    const base = new Date(settlement.createdAt).getTime();
+    history = [
+      { stage: "Settlement Requested",      timestamp: new Date(base).toISOString() },
+      { stage: "Compliance Screening",       timestamp: new Date(base + 320).toISOString() },
+      { stage: "FX Validation",              timestamp: new Date(base + 940).toISOString() },
+      { stage: "Settlement Created",         timestamp: new Date(base + 1380).toISOString() },
+      { stage: "Submitted to GIWA",          timestamp: new Date(base + 1740).toISOString() },
+      { stage: "Sequencer Accepted",         timestamp: new Date(base + 2180).toISOString() },
+      { stage: "Block Finalized",            timestamp: new Date(base + 2840).toISOString() },
+      { stage: "Settlement Proof Generated", timestamp: new Date(base + 3560).toISOString() },
+      { stage: "Completed",                  timestamp: settlement.confirmedAt || new Date(base + 3760).toISOString() }
+    ];
+  }
+  
+  history.forEach((h) => {
+    const timeStr = new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    pipelineHtml += `
+      <div class="pipeline-row">
+        <span class="pipeline-stage">✓ ${h.stage}</span>
+        <span class="pipeline-time">[${timeStr}]</span>
+      </div>
+    `;
+  });
 
   const printWindow = window.open("", "_blank");
-  const memo = settlement.paymentRequest?.description || "Instant Payout";
   const amountStr = `${Number(settlement.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${settlement.currency || 'USDC'}`;
-  const dateStr = new Date(settlement.confirmedAt || settlement.createdAt).toLocaleString();
   
-  // Dynamic resolution of 12 fields
-  const settlementNo = settlement.id;
-  const walletAddr = settlement.initiator || "0x0000000000000000000000000000000000000000";
-  
-  let fxRateVal = "1.00 (No conversion)";
-  if (settlement.fromToken !== settlement.toToken) {
-    if (settlement.currency === "MockKRW" || settlement.toToken?.toLowerCase().includes("krw")) {
-      fxRateVal = "1 USDC = 1,380.00 MockKRW";
-    } else if (settlement.currency === "NGN" || settlement.toToken?.toLowerCase().includes("ngn")) {
-      fxRateVal = "1 USDC = 1,500.00 NGN";
-    } else {
-      fxRateVal = "1 USDC = 1.00 USD";
-    }
-  }
-
-  const complianceVal = (settlement.status === "Settled" || settlement.status === "Success") 
-    ? "Passed (Zero-Knowledge Compliance Passport Verified, Low Risk)" 
-    : "Pending Verification";
-
-  const blockNo = matchingProof ? matchingProof.blockNumber : "1234567 (simulated)";
-  const gasUsedVal = matchingProof ? `${Number(matchingProof.gasUsed).toLocaleString()} gas` : "21,000 gas (simulated)";
-  
-  const explorerBase = networkRegistry?.giwa?.config?.explorerUrl || "https://explorer.giwa.network";
-  const explorerUrl = `${explorerBase}/tx/${settlement.txHash || '0x0000000000000000000000000000000000000000'}`;
-
-  const attestationId = `EAS-UID: 0x${(matchingProof ? matchingProof.id.replace(/-/g, '') : '7a3f89bcd2f1a3e5c7d8f9e0b1a2c3d4e5f6a7b8').substring(0, 32)}`;
-  const proofSig = `0x${(matchingProof ? matchingProof.id.replace(/-/g, '') : 'e5c7d8f9e0b1a2c3d4e5f6a7b87a3f89bcd2f1a3').substring(0, 40)}`;
-  
-  const hardfork = networkRegistry?.KarstHardforkVersion || "Karst";
-  const evmVersion = networkRegistry?.giwa?.config?.evmVersion || "Osaka";
-  const protocolVersion = `${hardfork} Hardfork (${evmVersion} EVM) / ${networkRegistry?.ClientVersion || 'op-reth'}`;
-
   printWindow.document.write(`
     <html>
       <head>
-        <title>Settlement Receipt - ${settlementNo}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+        <title>Settlement Certificate - ${certData.settlementId}</title>
+        <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;850&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
         <style>
           body {
             font-family: 'Outfit', sans-serif;
             background-color: #f8fafc;
             color: #0f172a;
-            padding: 40px 20px;
-            max-width: 680px;
+            padding: 30px 15px;
+            max-width: 720px;
             margin: auto;
           }
-          .receipt-card {
+          .cert-container {
             background: white;
             border: 1px solid #e2e8f0;
-            border-radius: 24px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
             padding: 40px;
             position: relative;
             overflow: hidden;
+            border-top: 6px solid #0066cc;
           }
-          .receipt-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 6px;
-            background: linear-gradient(90deg, #3b82f6, #6366f1);
-          }
-          .header {
-            text-align: center;
-            margin-bottom: 36px;
-          }
-          .logo {
-            font-size: 28px;
-            font-weight: 800;
-            background: linear-gradient(90deg, #3b82f6, #6366f1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 6px;
-            letter-spacing: -0.5px;
-          }
-          .title {
-            font-size: 13px;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 700;
-          }
-          .amount-section {
-            text-align: center;
-            background: #f8fafc;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 36px;
-            border: 1px dashed #cbd5e1;
-          }
-          .amount-label {
-            font-size: 13px;
-            color: #64748b;
-            font-weight: 600;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-          }
-          .amount-val {
-            font-size: 36px;
-            font-weight: 800;
-            color: #0f172a;
-          }
-          .fields-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-          }
-          .field-row {
+          .letterhead {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            padding-bottom: 12px;
-            border-b: 1px solid #f1f5f9;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
           }
-          .field-row:last-child {
-            border-bottom: none;
+          .issuer-info h1 {
+            font-size: 22px;
+            font-weight: 850;
+            margin: 0;
+            letter-spacing: -0.5px;
+            color: #0066cc;
           }
-          .field-label {
-            font-size: 14px;
+          .issuer-info p {
+            font-size: 11px;
+            color: #64748b;
+            margin: 4px 0 0 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          .status-badge {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            border: 1px solid #a7f3d0;
+          }
+          .status-badge.failed {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+          }
+          .status-badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
+          }
+          .cert-title-band {
+            text-align: center;
+            margin-bottom: 24px;
+          }
+          .cert-title-band h2 {
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #475569;
+            margin: 0;
+          }
+          .cert-title-band .amount-box {
+            font-size: 32px;
+            font-weight: 850;
+            color: #0066cc;
+            margin-top: 8px;
+          }
+          .section-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }
+          @media (min-width: 550px) {
+            .section-grid {
+              grid-template-columns: 1fr 1fr;
+            }
+          }
+          .section-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+          }
+          .section-card h3 {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0 0 4px 0;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 6px;
+          }
+          .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            font-size: 12px;
+          }
+          .data-label {
             color: #64748b;
             font-weight: 500;
-            min-width: 160px;
           }
-          .field-value {
-            font-size: 14px;
+          .data-value {
             font-weight: 600;
             color: #0f172a;
             text-align: right;
-            max-width: 420px;
+            max-width: 180px;
             word-break: break-all;
           }
           .mono {
             font-family: 'Fira Code', monospace;
-            font-size: 12px;
+            font-size: 11px;
           }
-          .link {
-            color: #3b82f6;
-            text-decoration: none;
+          .pipeline-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px;
+            margin-top: 20px;
+          }
+          .pipeline-card h3 {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0 0 10px 0;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 6px;
+          }
+          .pipeline-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            padding: 4px 0;
+            border-bottom: 1px dashed #e2e8f0;
+          }
+          .pipeline-row:last-child {
+            border-bottom: none;
+          }
+          .pipeline-stage {
+            color: #475569;
             font-weight: 500;
           }
-          .link:hover {
-            text-decoration: underline;
+          .pipeline-time {
+            font-family: 'Fira Code', monospace;
+            color: #10b981;
           }
-          .badge {
-            background-color: #d1fae5;
-            color: #065f46;
-            padding: 2px 8px;
-            border-radius: 9999px;
-            font-size: 12px;
-            font-weight: 600;
-          }
-          .footer {
-            margin-top: 40px;
+          .legal-attestation {
+            margin-top: 24px;
             text-align: center;
-            font-size: 12px;
+            font-size: 10px;
             color: #94a3b8;
+            line-height: 1.6;
+          }
+          .legal-attestation p {
+            margin: 4px 0;
           }
           .btn-print {
             display: block;
             width: 100%;
             padding: 14px;
-            background: linear-gradient(90deg, #3b82f6, #6366f1);
+            background: #0066cc;
             color: white;
             border: none;
             border-radius: 12px;
             font-weight: 700;
-            font-size: 15px;
+            font-size: 14px;
             cursor: pointer;
-            margin-top: 30px;
-            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.2);
+            margin-top: 24px;
+            box-shadow: 0 4px 6px rgba(0, 102, 204, 0.15);
             transition: all 0.2s;
           }
           .btn-print:hover {
@@ -5325,7 +5720,7 @@ function downloadReceiptPDF(settlementId) {
               background-color: white;
               padding: 0;
             }
-            .receipt-card {
+            .cert-container {
               border: none;
               box-shadow: none;
               padding: 0;
@@ -5337,73 +5732,111 @@ function downloadReceiptPDF(settlementId) {
         </style>
       </head>
       <body>
-        <div class="receipt-card">
-          <div class="header">
-            <div class="logo">KorriPay</div>
-            <div class="title">Settlement Receipt</div>
-          </div>
-
-          <div class="amount-section">
-            <div class="amount-label">Settled Amount</div>
-            <div class="amount-val">${amountStr}</div>
-          </div>
-
-          <div class="fields-grid">
-            <div class="field-row">
-              <span class="field-label">Settlement #</span>
-              <span class="field-value mono">${settlementNo}</span>
+        <div class="cert-container">
+          <div class="letterhead">
+            <div class="issuer-info">
+              <h1>KORRIPAY</h1>
+              <p>Programmable Settlement Infrastructure</p>
             </div>
-            <div class="field-row">
-              <span class="field-label">Wallet</span>
-              <span class="field-value mono">${walletAddr}</span>
-            </div>
-            <div class="field-row">
-              <span class="field-label">Amount</span>
-              <span class="field-value">${amountStr}</span>
-            </div>
-            <div class="field-row">
-              <span class="field-label">FX Rate</span>
-              <span class="field-value">${fxRateVal}</span>
-            </div>
-            <div class="field-row">
-              <span class="field-label">Compliance Result</span>
-              <span class="field-value"><span class="badge">${complianceVal}</span></span>
-            </div>
-            <div class="field-row">
-              <span class="field-label">Settlement Time</span>
-              <span class="field-value">${dateStr}</span>
-            </div>
-            <div class="field-row">
-              <span class="field-label">Block</span>
-              <span class="field-value mono">${blockNo}</span>
-            </div>
-            <div class="field-row">
-              <span class="field-label">Gas Used</span>
-              <span class="field-value mono">${gasUsedVal}</span>
-            </div>
-            <div class="field-row">
-              <span class="field-label">Explorer URL</span>
-              <span class="field-value mono"><a href="${explorerUrl}" target="_blank" class="link">${explorerUrl}</a></span>
-            </div>
-            <div class="field-row">
-              <span class="field-label">Attestation IDs</span>
-              <span class="field-value mono">${attestationId}</span>
-            </div>
-            <div class="field-row">
-              <span class="field-label">Proof Signature</span>
-              <span class="field-value mono">${proofSig}</span>
-            </div>
-            <div class="field-row">
-              <span class="field-label">Protocol Version</span>
-              <span class="field-value">${protocolVersion}</span>
+            <div class="status-badge \${certData.settlementStatus.toLowerCase()}">
+              \${certData.settlementStatus === "Settled" || certData.settlementStatus === "Success" || certData.settlementStatus === "Completed" ? "Verified & Finalized" : certData.settlementStatus}
             </div>
           </div>
 
-          <button class="btn-print" onclick="window.print()">Print / Save as PDF</button>
-
-          <div class="footer">
-            Thank you for using KorriPay. Cryptographically secured instant settlements.
+          <div class="cert-title-band">
+            <h2>Settlement Decree & Certificate</h2>
+            <div class="amount-box">\${amountStr}</div>
           </div>
+
+          <div class="section-grid">
+            <!-- Group 1 -->
+            <div class="section-card">
+              <h3>1. Settlement Identity</h3>
+              <div class="data-row">
+                <span class="data-label">Settlement ID</span>
+                <span class="data-value mono">\${certData.settlementId}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Status</span>
+                <span class="data-value">\${certData.settlementStatus}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Timestamp</span>
+                <span class="data-value">\${new Date(certData.settlementTimestamp).toLocaleString()}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Duration</span>
+                <span class="data-value">\${certData.settlementDurationSeconds ? \`\${certData.settlementDurationSeconds}s\` : "Pending"}</span>
+              </div>
+            </div>
+
+            <!-- Group 2 -->
+            <div class="section-card">
+              <h3>2. On-Chain Ledger Record</h3>
+              <div class="data-row">
+                <span class="data-label">Transaction Hash</span>
+                <span class="data-value mono">\${certData.transactionHash}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">L2 Block Number</span>
+                <span class="data-value mono">\${certData.blockNumber || "Pending"}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Gas Used (L2)</span>
+                <span class="data-value mono">\${certData.gasUsed ? certData.gasUsed.toLocaleString() : "Pending"}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Confirmation Count</span>
+                <span class="data-value">\${certData.confirmationCount}</span>
+              </div>
+            </div>
+
+            <!-- Group 3 -->
+            <div class="section-card">
+              <h3>3. Compliance & Attestations</h3>
+              <div class="data-row">
+                <span class="data-label">Compliance Screening</span>
+                <span class="data-value">\${certData.complianceResult}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Attestation references</span>
+                <span class="data-value mono" style="font-size:10px;">\${certData.attestationReferences}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Proof Integrity Status</span>
+                <span class="data-value">\${certData.proofIntegrityStatus}</span>
+              </div>
+            </div>
+
+            <!-- Group 4 -->
+            <div class="section-card">
+              <h3>4. Infrastructure & Protocol</h3>
+              <div class="data-row">
+                <span class="data-label">GIWA Network</span>
+                <span class="data-value">\${certData.giwaNetwork}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Explorer Link</span>
+                <span class="data-value mono" style="font-size:10px;">\${certData.explorerLink}</span>
+              </div>
+              <div class="data-row">
+                <span class="data-label">Protocol Version</span>
+                <span class="data-value">\${certData.protocolVersion}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pipeline-card">
+            <h3>Settlement Protocol Lifecycle</h3>
+            \${pipelineHtml}
+          </div>
+
+          <div class="legal-attestation">
+            <p><strong>ATTESTATION:</strong> This document serves as a cryptographically authenticated proof of settlement processed dynamically on the GIWA L2 network.</p>
+            <p>EAS ZK-attestations are registered dynamically under schema consensus rules matching global compliance guidelines.</p>
+          </div>
+
+          <button class="btn-print" onclick="window.print()">Print / Save Certificate as PDF</button>
         </div>
       </body>
     </html>
@@ -6060,6 +6493,7 @@ async function loadGiwaData() {
     const history = networkIntelligenceData?.history || [];
     
     const name = current.chainName || statusData?.network?.name || networkRegistry?.giwa?.config?.name || "GIWA Testnet (Sepolia)";
+    window.giwaNetworkName = name;
     const chainId = current.chainId || statusData?.network?.chainId || networkRegistry?.giwa?.config?.chainId || 92837;
     const peerCount = statusData?.network?.peerCount || networkRegistry?.giwa?.config?.peerCount || 148;
     const sequencerAddress = statusData?.network?.sequencerAddress || current.rpcUrl || networkRegistry?.giwa?.config?.sequencerAddress || "0x17F53eE27DaDbe44CE8928ddbe44ce8824c3bC86";

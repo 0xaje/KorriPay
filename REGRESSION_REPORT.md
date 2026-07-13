@@ -29,7 +29,7 @@ All critical workflows have been systematically executed and verified against in
 
 ### 2.3 FX Conversion & Ledger Accounting
 * **Status:** `PASSED`
-* **Features Verified:** Live base conversion calculation, fee quotes, and multi-currency available/locked/pending ledger transfers.
+* **Features Verified:** Live base conversion calculation, fee quotes, and multi-currency available/locked/pending ledger settlements.
 * **Observations:** Ledger running balances match mathematical values under zero-precision conversions.
 
 ### 2.4 Compliance & KYC Screening
