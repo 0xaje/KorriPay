@@ -405,7 +405,7 @@
                   <th class="py-3.5 px-5">Wallet Address</th>
                   <th class="py-3.5 px-5">USD Available</th>
                   <th class="py-3.5 px-5">USD Locked</th>
-                  <th class="py-3.5 px-5">MockKRW Balance</th>
+                  <th class="py-3.5 px-5">KRW Coin Balance</th>
                   <th class="py-3.5 px-5">Savings</th>
                   <th class="py-3.5 px-5">Last Updated</th>
                 </tr>
@@ -1011,7 +1011,7 @@
             </td>
             <td class="py-4 px-5 text-xs font-semibold">
               <div class="text-primary dark:text-white">$${usdAvail.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
-              <div class="text-zinc-500">${mockkrwAvail.toLocaleString('en-US')} MockKRW</div>
+              <div class="text-zinc-500">${mockkrwAvail.toLocaleString('en-US')} KRWC</div>
             </td>
             <td class="py-4 px-5 space-y-1">
               <div class="flex items-center gap-1.5">
@@ -1338,7 +1338,7 @@
             $${Number(w.usdLocked).toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </td>
           <td class="py-4 px-5 font-semibold text-secondary">
-            ${Number(w.mockkrwAvailable).toLocaleString('en-US')} MockKRW
+            ${Number(w.mockkrwAvailable).toLocaleString('en-US')} KRWC
           </td>
           <td class="py-4 px-5 text-zinc-500">
             $${Number(w.savings).toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -1593,7 +1593,7 @@
         let filename = `korripay-${activeTab}-export.csv`;
 
         if (activeTab === "users") {
-          headers = ["User ID", "Name", "Email", "Role", "Suspended", "USD Available", "MockKRW Available", "Created At"];
+          headers = ["User ID", "Name", "Email", "Role", "Suspended", "USD Available", "KRW Coin Available", "Created At"];
           rows = currentUsers.map(u => [
             u.id,
             u.name,
@@ -1637,7 +1637,7 @@
             k.updatedAt
           ]);
         } else if (activeTab === "wallets") {
-          headers = ["User Name", "Wallet Address", "USD Available", "USD Locked", "MockKRW Available", "Savings", "Last Updated"];
+          headers = ["User Name", "Wallet Address", "USD Available", "USD Locked", "KRW Coin Available", "Savings", "Last Updated"];
           rows = currentWallets.map(w => [
             w.user?.name || "Unknown",
             w.user?.walletAddress || "Custodial Balance",

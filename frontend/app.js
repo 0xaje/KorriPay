@@ -773,7 +773,7 @@ const _CURRENCY_META = {
   USD:     { symbol: '$',  flag: '🇺🇸', name: 'US Dollar',            decimals: 2,  color: 'text-blue-500',   bg: 'bg-blue-50 dark:bg-blue-900/20' },
   KRW:     { symbol: '₩', flag: '🇰🇷', name: 'Korean Won',            decimals: 0,  color: 'text-rose-500',   bg: 'bg-rose-50 dark:bg-rose-900/20' },
   NGN:     { symbol: '₦', flag: '🇳🇬', name: 'Nigerian Naira',        decimals: 2,  color: 'text-green-500',  bg: 'bg-green-50 dark:bg-green-900/20' },
-  MockKRW: { symbol: '₩', flag: '🔗', name: 'MockKRW (On-chain)',     decimals: 2,  color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
+  MockKRW: { symbol: '₩', flag: '🔗', name: 'KRW Coin (On-chain)',     decimals: 2,  color: 'text-purple-500', bg: 'bg-purple-50 dark:bg-purple-900/20' },
 };
 
 function renderWalletBalances() {
@@ -904,7 +904,7 @@ function updatePortfolioUI() {
   }
   const portfolioMockkrwQtyEl = document.getElementById("portfolio-asset-mockkrw-qty");
   if (portfolioMockkrwQtyEl) {
-    portfolioMockkrwQtyEl.textContent = `${state.mockkrwBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MockKRW`;
+    portfolioMockkrwQtyEl.textContent = `${state.mockkrwBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KRWC`;
   }
 
   // 3. Percentages
@@ -924,7 +924,7 @@ function updatePortfolioUI() {
   const usdcPctEl = document.getElementById("allocation-usdc-pct");
   if (usdcPctEl) usdcPctEl.textContent = `USDC (${Math.round(usdcPct)}%)`;
   const mockkrwPctEl = document.getElementById("allocation-mockkrw-pct");
-  if (mockkrwPctEl) mockkrwPctEl.textContent = `MockKRW (${Math.round(mockkrwPct)}%)`;
+  if (mockkrwPctEl) mockkrwPctEl.textContent = `KRW Coin (${Math.round(mockkrwPct)}%)`;
 
   // 5. Update Center digital assets percentage
   const digitalPctEl = document.getElementById("allocation-digital-center");
@@ -1108,7 +1108,7 @@ async function loadEnhancedDashboardData() {
           queueEl.innerHTML = pendingTx.map(tx => {
             const shortRecipient = tx.recipientDetails ? (tx.recipientDetails.length > 20 ? tx.recipientDetails.slice(0, 18) + "..." : tx.recipientDetails) : "Unknown";
             const amountFormatted = Number(tx.amount).toLocaleString('en-US', { minimumFractionDigits: 2 });
-            const toToken = tx.toToken === "0x0000000000000000000000000000000000000000" ? "ETH" : "MockKRW";
+            const toToken = tx.toToken === "0x0000000000000000000000000000000000000000" ? "ETH" : "KRWC";
             
             return `
               <div class="p-md flex items-center justify-between hover:bg-surface-container-low dark:hover:bg-on-background/10 transition-colors">
@@ -1345,7 +1345,7 @@ function setupSwap() {
     BTC: { name: "Bitcoin", icon: "currency_bitcoin", colorClass: "bg-[#F7931A]/10 text-[#F7931A]" },
     ETH: { name: "Ethereum", icon: "diamond", colorClass: "bg-[#627EEA]/10 text-[#627EEA]" },
     USDC: { name: "USD Coin", icon: "monetization_on", colorClass: "bg-[#2775CA]/10 text-[#2775CA]" },
-    MockKRW: { name: "Mock KRW", icon: "payments", colorClass: "bg-[#5cfd80]/10 text-[#006e2a]" },
+    MockKRW: { name: "KRW Coin", icon: "payments", colorClass: "bg-[#5cfd80]/10 text-[#006e2a]" },
     USD: { name: "US Dollar", icon: "attach_money", colorClass: "bg-surface-container dark:bg-on-background/25 text-primary dark:text-primary-fixed" }
   };
 
@@ -1576,7 +1576,7 @@ function setupSwap() {
 
     const selectMockkrwBal = document.getElementById("asset-select-balance-mockkrw");
     const selectMockkrwVal = document.getElementById("asset-select-value-mockkrw");
-    if (selectMockkrwBal) selectMockkrwBal.textContent = `${state.mockkrwBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MockKRW`;
+    if (selectMockkrwBal) selectMockkrwBal.textContent = `${state.mockkrwBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KRWC`;
     if (selectMockkrwVal) selectMockkrwVal.textContent = `$${(state.mockkrwBalance * prices.MockKRW).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     const selectUsdBal = document.getElementById("asset-select-balance-usd");
@@ -4538,10 +4538,10 @@ function setupDemoMode() {
 
   const demoScenarios = {
     "1": {
-      description: "Scenario 1: Korean worker sends 100,000 KRW to family. Simulates fiat KYC validation, conversion to MockKRW stablecoin, and initiating a smart contract settlement transaction with active indexer sync.",
+      description: "Scenario 1: Korean worker sends 100,000 KRW to family. Simulates fiat KYC validation, conversion to KRW stablecoin, and initiating a smart contract settlement transaction with active indexer sync.",
       steps: [
         { title: "KYC Verification", desc: "Checking sender identity, compliance logs, and liveness capture status" },
-        { title: "Wrapper Deposit", desc: "Depositing ₩100,000 to custodian and wrapping into MockKRW stablecoin" },
+        { title: "Wrapper Deposit", desc: "Depositing ₩100,000 to custodian and wrapping into KRW stablecoin" },
         { title: "Smart Contract Settlement", desc: "Invoking initiateSettlement contract transaction on-chain via wallet keys" },
         { title: "Indexer Capture", desc: "Indexer polling capturing the TransferCreated event and writing to PostgreSQL" },
         { title: "Dashboard Reconciled", desc: "Synchronizing dashboard balances and ledger listings instantly" }
