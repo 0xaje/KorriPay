@@ -21,6 +21,7 @@ import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
 import apiV1Router from './apiV1.js';
 import { networkIntelligence } from './src/services/networkIntelligenceService.js';
+import cookieParser from 'cookie-parser';
 
 // Environment validation
 if (!process.env.DATABASE_URL) {
@@ -61,6 +62,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 
 // Request ID Generation & Middleware
 app.use((req, res, next) => {
@@ -219,8 +221,11 @@ const sessions = new Map(); // token -> userId
 // Authentication Middleware
 async function requireAuth(req, res, next) {
   try {
-    const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    let token = req.cookies ? req.cookies.token : null;
+    if (!token) {
+      const authHeader = req.headers.authorization;
+      token = authHeader && authHeader.split(' ')[1];
+    }
 
     if (!token) {
       return res.status(401).json({ error: "Unauthorized. Session token required." });
@@ -619,6 +624,13 @@ app.post('/api/auth/verify', async (req, res) => {
     const sessionToken = "session-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     sessions.set(sessionToken, user.id);
 
+    res.cookie('token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000
+    });
+
     res.json({
       success: true,
       token: sessionToken,
@@ -668,6 +680,13 @@ app.post('/api/auth/demo', async (req, res) => {
 
     const sessionToken = "session-demo-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     sessions.set(sessionToken, user.id);
+
+    res.cookie('token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000
+    });
 
     res.json({
       success: true,
@@ -721,6 +740,13 @@ app.post('/api/auth/signup', async (req, res) => {
     const sessionToken = "session-demo-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     sessions.set(sessionToken, user.id);
 
+    res.cookie('token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000
+    });
+
     res.json({
       success: true,
       token: sessionToken,
@@ -750,6 +776,13 @@ app.post('/api/auth/signin', async (req, res) => {
     // Generate session token
     const sessionToken = "session-demo-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     sessions.set(sessionToken, user.id);
+
+    res.cookie('token', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000
+    });
 
     res.json({
       success: true,
@@ -1995,18 +2028,24 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Server and initialize database
-const server = app.listen(PORT, async () => {
-  console.log(`KorriPay backend server running on port ${PORT}`);
-  await initDatabase();
+// Start Server (only when not running as a Vercel serverless function)
+let server = null;
+if (!process.env.VERCEL) {
+  server = app.listen(PORT, async () => {
+    console.log(`KorriPay backend server running on port ${PORT}`);
+    await initDatabase();
+    scheduleDailyReport();
+  });
+} else {
+  // On Vercel: run init without binding a port
+  initDatabase().catch(err => console.error('[Vercel] DB init error:', err));
   scheduleDailyReport();
-});
+}
 
 // Graceful Shutdown Logic
 async function gracefulShutdown(signal) {
   console.log(`[Shutdown] Received ${signal}. Starting graceful shutdown...`);
-  server.close(async () => {
-    console.log('[Shutdown] HTTP server closed.');
+  const done = async () => {
     try {
       await prisma.$disconnect();
       console.log('[Shutdown] Database client disconnected.');
@@ -2015,7 +2054,12 @@ async function gracefulShutdown(signal) {
       console.error('[Shutdown] Database disconnect error:', err);
       process.exit(1);
     }
-  });
+  };
+  if (server) {
+    server.close(done);
+  } else {
+    await done();
+  }
 
   setTimeout(() => {
     console.error('[Shutdown] Forcefully terminating process after 10s timeout.');

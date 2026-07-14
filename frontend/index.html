@@ -15,8 +15,7 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>KorriPay - Programmable Settlement Infrastructure</title>
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="styles.css">
   
@@ -91,15 +90,15 @@
             "md": "24px"
           },
           "fontFamily": {
-            "headline-lg": ["Inter"],
-            "body-md": ["Inter"],
-            "label-md": ["Inter"],
-            "display-lg": ["Inter"],
-            "label-sm": ["Inter"],
-            "headline-md": ["Inter"],
-            "body-sm": ["Inter"],
-            "headline-lg-mobile": ["Inter"],
-            "body-lg": ["Inter"]
+            "headline-lg": ["Outfit", "sans-serif"],
+            "body-md": ["Inter", "sans-serif"],
+            "label-md": ["Inter", "sans-serif"],
+            "display-lg": ["Outfit", "sans-serif"],
+            "label-sm": ["Inter", "sans-serif"],
+            "headline-md": ["Outfit", "sans-serif"],
+            "body-sm": ["Inter", "sans-serif"],
+            "headline-lg-mobile": ["Outfit", "sans-serif"],
+            "body-lg": ["Inter", "sans-serif"]
           },
           "fontSize": {
             "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
@@ -126,6 +125,13 @@
     .bento-card:hover {
       box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08);
       transform: translateY(-2px);
+    }
+    .dark .bento-card {
+      background: rgba(20, 24, 33, 0.6);
+      border-color: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     }
     body {
       min-height: max(884px, 100dvh);
@@ -340,7 +346,7 @@
           </div>
           <div>
             <h3 class="font-headline-md text-label-md font-bold text-primary">Remittance Companies</h3>
-            <p class="font-body-sm text-body-sm text-outline text-xs mt-0.5">Replace SWIFT corridors with real-time L2 settlement and verifiable proof of transfer.</p>
+            <p class="font-body-sm text-body-sm text-outline text-xs mt-0.5">Replace SWIFT corridors with real-time L2 settlement and verifiable settlement proofs.</p>
           </div>
         </div>
         <div class="bento-card p-md rounded-xl flex items-start gap-3">
@@ -349,7 +355,7 @@
           </div>
           <div>
             <h3 class="font-headline-md text-label-md font-bold text-primary">Merchant Platforms</h3>
-            <p class="font-body-sm text-body-sm text-outline text-xs mt-0.5">Accept multi-currency digital payments with instant institutional-grade settlement receipts.</p>
+            <p class="font-body-sm text-body-sm text-outline text-xs mt-0.5">Accept multi-currency digital payments with instant institutional-grade settlement proofs.</p>
           </div>
         </div>
         <div class="bento-card p-md rounded-xl flex items-start gap-3">
@@ -409,83 +415,149 @@
   </button>
 
   <!-- ==================== MODALS ==================== -->
-  
+
   <!-- Overlay Base -->
-  <div id="modal-overlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90] hidden opacity-0 transition-opacity duration-300"></div>
+  <div id="modal-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-md z-[90] hidden opacity-0 transition-opacity duration-300"></div>
 
-  <!-- Wallet Connection Modal -->
-  <div id="modal-wallet" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] sm:max-w-md bg-white dark:bg-inverse-surface rounded-2xl z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 p-md space-y-sm shadow-2xl border border-outline-variant/30 max-h-[90vh] overflow-y-auto">
-    <div class="flex items-center justify-between border-b border-surface-container dark:border-on-surface-variant/20 pb-sm">
-      <h3 class="font-headline-md text-headline-md text-primary dark:text-primary-fixed flex items-center gap-2">
-        <span class="material-symbols-outlined text-primary">account_balance_wallet</span>
-        Access Settlement Console
-      </h3>
-      <button id="wallet-close-btn" class="material-symbols-outlined text-outline hover:text-primary rounded-full p-1 hover:bg-surface-container-low transition-colors">close</button>
+  <!-- Wallet Connection Modal — AppKit-inspired Premium Design -->
+  <div id="modal-wallet" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-24px)] sm:max-w-[400px] z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto rounded-3xl shadow-2xl"
+    style="background: linear-gradient(145deg, #ffffff 0%, #f4f7ff 100%); border: 1px solid rgba(0,30,64,0.08);">
+
+    <!-- Modal Header -->
+    <div class="flex items-center justify-between px-6 pt-6 pb-4" style="border-bottom: 1px solid rgba(0,30,64,0.07);">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #001e40 0%, #003366 100%);">
+          <span class="material-symbols-outlined text-white text-lg" style="font-size:18px;">account_balance_wallet</span>
+        </div>
+        <div>
+          <h3 class="font-bold text-base" style="color:#001e40; line-height:1.2;">Connect Wallet</h3>
+          <p class="text-xs" style="color:#737780;">KorriPay Settlement Console</p>
+        </div>
+      </div>
+      <button id="wallet-close-btn" class="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-gray-100 active:scale-90" style="color:#737780;">
+        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
+      </button>
     </div>
-    
-    <div class="space-y-sm pt-2" id="wallet-options">
-      <p class="text-sm text-on-surface-variant dark:text-outline-variant">Select a validator or API client to launch the KorriPay programmable settlement console.</p>
-      
-      <button class="w-full flex items-center justify-between p-3 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl hover:bg-surface-container-low transition-all active:scale-[0.98] wallet-opt-btn" data-name="Browser Wallet">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-surface-container-high dark:bg-surface-container-highest flex items-center justify-center text-primary font-bold text-sm">B</div>
-          <span class="font-semibold text-on-surface dark:text-white">Browser Wallet (Rabby, Zerion, etc.)</span>
+
+    <!-- Wallet Options Panel -->
+    <div id="wallet-options" class="px-5 py-4 space-y-2.5">
+
+      <!-- MetaMask -->
+      <button class="wallet-opt-btn w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all active:scale-[0.98] cursor-pointer group"
+        data-name="Browser Wallet"
+        style="border: 1px solid rgba(0,30,64,0.1); background: white;">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #F6851B 0%, #E2761B 100%);">
+          <!-- MetaMask fox SVG simplified -->
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21.6 2L13.2 8.2l1.5-3.6L21.6 2z" fill="#E17726"/><path d="M2.4 2l8.3 6.3-1.4-3.7L2.4 2z" fill="#E27625"/><path d="M18.6 16.8l-2.3 3.5 4.9 1.4 1.4-4.8-4 -.1z" fill="#E27625"/><path d="M1.4 16.9l1.4 4.8 4.9-1.4-2.3-3.5-4 .1z" fill="#E27625"/><path d="M7.4 10.8L6 13l4.8.2-.2-5.1-3.2 2.7z" fill="#E27625"/><path d="M16.6 10.8l-3.2-2.8-.1 5.2 4.8-.2-1.5-2.2z" fill="#E27625"/><path d="M7.7 20.3l2.9-1.4-2.5-1.9-.4 3.3z" fill="#E27625"/><path d="M13.4 18.9l2.9 1.4-.4-3.3-2.5 1.9z" fill="#E27625"/></svg>
         </div>
-        <span class="material-symbols-outlined text-outline">chevron_right</span>
+        <div class="flex-1 text-left">
+          <p class="font-semibold text-sm" style="color:#191c1e;">MetaMask / Browser Wallet</p>
+          <p class="text-xs mt-0.5" style="color:#737780;">Rabby, Zerion, Frame & more</p>
+        </div>
+        <span class="material-symbols-outlined text-sm opacity-40 group-hover:opacity-70 transition-opacity" style="font-size:16px; color:#191c1e;">chevron_right</span>
       </button>
 
-      <button class="w-full flex items-center justify-between p-3 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl hover:bg-surface-container-low transition-all active:scale-[0.98] wallet-opt-btn" data-name="Coinbase Wallet">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 font-bold text-sm">C</div>
-          <span class="font-semibold text-on-surface dark:text-white">Coinbase Wallet</span>
+      <!-- Coinbase Wallet -->
+      <button class="wallet-opt-btn w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all active:scale-[0.98] cursor-pointer group"
+        data-name="Coinbase Wallet"
+        style="border: 1px solid rgba(0,30,64,0.1); background: white;">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background: #0052FF;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="10" fill="#0052FF"/><path d="M12 6a6 6 0 100 12A6 6 0 0012 6zm0 9.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z" fill="white"/></svg>
         </div>
-        <span class="material-symbols-outlined text-outline">chevron_right</span>
+        <div class="flex-1 text-left">
+          <p class="font-semibold text-sm" style="color:#191c1e;">Coinbase Wallet</p>
+          <p class="text-xs mt-0.5" style="color:#737780;">Connect via Coinbase smart wallet</p>
+        </div>
+        <span class="material-symbols-outlined text-sm opacity-40 group-hover:opacity-70 transition-opacity" style="font-size:16px; color:#191c1e;">chevron_right</span>
       </button>
 
-      <button class="w-full flex items-center justify-between p-3 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl hover:bg-surface-container-low transition-all active:scale-[0.98] wallet-opt-btn" data-name="WalletConnect">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 font-bold text-sm">W</div>
-          <span class="font-semibold text-on-surface dark:text-white">WalletConnect</span>
+      <!-- WalletConnect -->
+      <button class="wallet-opt-btn w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all active:scale-[0.98] cursor-pointer group"
+        data-name="WalletConnect"
+        style="border: 1px solid rgba(0,30,64,0.1); background: white;">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #3B99FC 0%, #1567D3 100%);">
+          <svg width="22" height="14" viewBox="0 0 40 25" fill="white"><path d="M8.2 4.9C14.7-1.6 25.3-1.6 31.8 4.9l.7.7c.3.3.3.8 0 1.1l-2.5 2.5c-.2.2-.5.2-.7 0l-1-.9c-4.5-4.4-11.7-4.4-16.2 0l-1 1c-.2.2-.5.2-.7 0L7.9 6.8c-.3-.3-.3-.8 0-1.1l.3-.8zm20.9 5.9l2.2 2.2c.3.3.3.8 0 1.1l-10 10c-.3.3-.8.3-1.1 0l-7.1-7c-.1-.1-.3-.1-.4 0l-7.1 7c-.3.3-.8.3-1.1 0L.4 14.1c-.3-.3-.3-.8 0-1.1l2.2-2.2c.3-.3.8-.3 1.1 0l7.1 7c.1.1.3.1.4 0l7.1-7c.3-.3.8-.3 1.1 0l7.1 7c.1.1.3.1.4 0l7.1-7c.3-.4.8-.4 1.1-.1z"/></svg>
         </div>
-        <span class="material-symbols-outlined text-outline">chevron_right</span>
+        <div class="flex-1 text-left">
+          <p class="font-semibold text-sm" style="color:#191c1e;">WalletConnect</p>
+          <p class="text-xs mt-0.5" style="color:#737780;">Scan QR with 300+ mobile wallets</p>
+        </div>
+        <span class="material-symbols-outlined text-sm opacity-40 group-hover:opacity-70 transition-opacity" style="font-size:16px; color:#191c1e;">chevron_right</span>
       </button>
 
       <!-- Divider -->
-      <div class="flex items-center my-sm">
-        <hr class="flex-grow border-outline-variant/30 dark:border-on-surface-variant/20">
-        <span class="px-3 text-xs text-outline dark:text-outline-variant uppercase font-semibold">Demo Mode</span>
-        <hr class="flex-grow border-outline-variant/30 dark:border-on-surface-variant/20">
+      <div class="flex items-center gap-3 py-1">
+        <div class="flex-1 h-px" style="background:rgba(0,30,64,0.08);"></div>
+        <span class="text-xs font-semibold uppercase tracking-wider" style="color:#737780;">or continue with email</span>
+        <div class="flex-1 h-px" style="background:rgba(0,30,64,0.08);"></div>
       </div>
 
-      <!-- Demo Email Login & Signup Form -->
-      <div id="demo-login-form" class="space-y-xs pt-xs">
-        <div class="flex items-center justify-between border-b border-outline-variant/30 pb-2 mb-2">
-          <button type="button" id="tab-signin" class="w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-primary text-primary cursor-pointer">Sign In</button>
-          <button type="button" id="tab-signup" class="w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-transparent text-outline hover:text-primary cursor-pointer">Sign Up</button>
+      <!-- Email / Demo Login Form -->
+      <div id="demo-login-form" class="space-y-2">
+        <!-- Tabs -->
+        <div class="flex rounded-xl p-1 gap-1" style="background: rgba(0,30,64,0.05);">
+          <button type="button" id="tab-signin" class="flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all" style="background:white; color:#001e40; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">Sign In</button>
+          <button type="button" id="tab-signup" class="flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all" style="background:transparent; color:#737780;">Sign Up</button>
         </div>
-        <div class="flex flex-col gap-1 hidden" id="signup-name-group">
-          <label for="demo-name" class="text-xs font-bold text-on-surface-variant dark:text-outline-variant">Full Name</label>
-          <input type="text" id="demo-name" placeholder="John Doe" class="w-full p-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl bg-transparent text-on-surface dark:text-white text-sm focus:outline-none focus:border-primary">
+
+        <!-- Full Name (Sign Up only) -->
+        <div class="hidden" id="signup-name-group">
+          <label for="demo-name" class="block text-xs font-semibold mb-1" style="color:#191c1e;">Full Name</label>
+          <input type="text" id="demo-name" placeholder="John Doe"
+            class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none transition-all"
+            style="border: 1.5px solid rgba(0,30,64,0.15); background:white; color:#191c1e;"
+            onfocus="this.style.borderColor='#001e40'" onblur="this.style.borderColor='rgba(0,30,64,0.15)'">
         </div>
-        <div class="flex flex-col gap-1">
-          <label for="demo-email" class="text-xs font-bold text-on-surface-variant dark:text-outline-variant">Email Address</label>
-          <input type="email" id="demo-email" placeholder="judge@korri.pay" class="w-full p-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl bg-transparent text-on-surface dark:text-white text-sm focus:outline-none focus:border-primary">
+
+        <!-- Email -->
+        <div>
+          <label for="demo-email" class="block text-xs font-semibold mb-1" style="color:#191c1e;">Email Address</label>
+          <input type="email" id="demo-email" placeholder="judge@korri.pay"
+            class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none transition-all"
+            style="border: 1.5px solid rgba(0,30,64,0.15); background:white; color:#191c1e;"
+            onfocus="this.style.borderColor='#001e40'" onblur="this.style.borderColor='rgba(0,30,64,0.15)'">
         </div>
-        <div class="flex flex-col gap-1">
-          <label for="demo-password" class="text-xs font-bold text-on-surface-variant dark:text-outline-variant">Password</label>
-          <input type="password" id="demo-password" placeholder="••••••••" class="w-full p-2 border border-outline-variant dark:border-on-surface-variant/30 rounded-xl bg-transparent text-on-surface dark:text-white text-sm focus:outline-none focus:border-primary">
+
+        <!-- Password -->
+        <div>
+          <label for="demo-password" class="block text-xs font-semibold mb-1" style="color:#191c1e;">Password</label>
+          <input type="password" id="demo-password" placeholder="••••••••"
+            class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none transition-all"
+            style="border: 1.5px solid rgba(0,30,64,0.15); background:white; color:#191c1e;"
+            onfocus="this.style.borderColor='#001e40'" onblur="this.style.borderColor='rgba(0,30,64,0.15)'">
         </div>
-        <button id="btn-demo-login" class="w-full py-2 bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container rounded-xl font-bold hover:opacity-90 active:scale-95 transition-all text-sm cursor-pointer mt-2">
+
+        <!-- Submit -->
+        <button id="btn-demo-login"
+          class="w-full py-3 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] cursor-pointer mt-1"
+          style="background: linear-gradient(135deg, #001e40 0%, #003366 100%); color:white; letter-spacing:0.01em;">
           Sign In with Email
         </button>
+
+        <!-- Footer note -->
+        <p class="text-center text-xs pt-1" style="color:#737780;">
+          By connecting you agree to KorriPay's <span style="color:#001e40; text-decoration:underline; cursor:pointer;">Terms of Service</span>
+        </p>
       </div>
     </div>
 
-    <!-- Connecting Spinner state -->
-    <div class="hidden flex flex-col items-center justify-center p-xl space-y-md" id="wallet-connecting">
-      <div class="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-      <p class="font-semibold text-lg" id="connecting-status-text">Connecting...</p>
-      <p class="text-xs text-on-surface-variant">Please authorize the request on your device.</p>
+    <!-- Connecting Spinner State -->
+    <div class="hidden flex-col items-center justify-center px-6 py-12 gap-5" id="wallet-connecting">
+      <div class="relative">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, #001e40 0%, #003366 100%);">
+          <span class="material-symbols-outlined text-white" style="font-size:28px;">account_balance_wallet</span>
+        </div>
+        <div class="absolute -inset-2 rounded-3xl border-2 border-t-transparent animate-spin" style="border-color: rgba(0,30,64,0.2); border-top-color: #001e40;"></div>
+      </div>
+      <div class="text-center space-y-1">
+        <p class="font-bold text-base" id="connecting-status-text" style="color:#191c1e;">Connecting...</p>
+        <p class="text-xs" style="color:#737780;">Please authorize the request on your device.</p>
+      </div>
+      <div class="flex gap-1.5 mt-1">
+        <div class="w-1.5 h-1.5 rounded-full animate-bounce" style="background:#001e40; animation-delay:0ms;"></div>
+        <div class="w-1.5 h-1.5 rounded-full animate-bounce" style="background:#001e40; animation-delay:150ms;"></div>
+        <div class="w-1.5 h-1.5 rounded-full animate-bounce" style="background:#001e40; animation-delay:300ms;"></div>
+      </div>
     </div>
   </div>
 
@@ -507,14 +579,31 @@
     const walletConnecting = document.getElementById("wallet-connecting");
     const statusText = document.getElementById("connecting-status-text");
 
+    // Wallet button hover effects
+    document.querySelectorAll(".wallet-opt-btn").forEach(btn => {
+      btn.addEventListener("mouseenter", () => {
+        btn.style.background = "#f4f7ff";
+        btn.style.borderColor = "rgba(0,30,64,0.2)";
+        btn.style.transform = "translateY(-1px)";
+        btn.style.boxShadow = "0 4px 12px rgba(0,30,64,0.08)";
+      });
+      btn.addEventListener("mouseleave", () => {
+        btn.style.background = "white";
+        btn.style.borderColor = "rgba(0,30,64,0.1)";
+        btn.style.transform = "";
+        btn.style.boxShadow = "";
+      });
+    });
+
     function openWalletModal() {
       overlay.classList.remove("hidden");
       walletModal.classList.remove("hidden");
       walletOptions.classList.remove("hidden");
       walletConnecting.classList.add("hidden");
-      
+      walletConnecting.style.display = "";
+
       void overlay.offsetWidth; // force reflow
-      
+
       overlay.classList.add("opacity-100");
       walletModal.classList.add("opacity-100", "scale-100");
       walletModal.classList.remove("scale-95", "opacity-0");
@@ -540,7 +629,7 @@
     // Intercept dashboard links if not logged in
     document.querySelectorAll('a[href^="dashboard.html"]').forEach(link => {
       link.addEventListener('click', (e) => {
-        const token = localStorage.getItem("korripay_session_token");
+        const token = localStorage.getItem("korripay_logged_in");
         if (!token) {
           e.preventDefault();
           openWalletModal();
@@ -558,13 +647,21 @@
     function setAuthTab(mode) {
       currentAuthMode = mode;
       if (mode === 'signin') {
-        tabSignIn.className = "w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-primary text-primary cursor-pointer";
-        tabSignUp.className = "w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-transparent text-outline hover:text-primary cursor-pointer";
+        tabSignIn.style.background = 'white';
+        tabSignIn.style.color = '#001e40';
+        tabSignIn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+        tabSignUp.style.background = 'transparent';
+        tabSignUp.style.color = '#737780';
+        tabSignUp.style.boxShadow = 'none';
         nameGroup.classList.add("hidden");
         btnDemoLogin.innerText = "Sign In with Email";
       } else {
-        tabSignIn.className = "w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-transparent text-outline hover:text-primary cursor-pointer";
-        tabSignUp.className = "w-1/2 text-center text-sm font-bold pb-1 border-b-2 border-primary text-primary cursor-pointer";
+        tabSignUp.style.background = 'white';
+        tabSignUp.style.color = '#001e40';
+        tabSignUp.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+        tabSignIn.style.background = 'transparent';
+        tabSignIn.style.color = '#737780';
+        tabSignIn.style.boxShadow = 'none';
         nameGroup.classList.remove("hidden");
         btnDemoLogin.innerText = "Sign Up with Email";
       }
@@ -611,7 +708,7 @@
           }
 
           const authData = await res.json();
-          localStorage.setItem("korripay_session_token", authData.token);
+          localStorage.setItem("korripay_logged_in", "true");
           
           window.location.href = "dashboard.html#home";
         } catch (err) {

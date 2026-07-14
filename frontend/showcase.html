@@ -5,14 +5,13 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>KorriPay - Grant Showcase Deck</title>
   
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <!-- Chart.js for data visualization -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Google Fonts: Outfit & Inter -->
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
   <!-- Material Symbols -->
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css">
 
   <style>
     body {
@@ -685,9 +684,8 @@
     // Fetch operations health data
     async function fetchLiveOperations() {
       try {
-        const token = localStorage.getItem("korripay_session_token") || "session-demo-ops";
         const res = await fetch("http://localhost:5000/api/operations/status", {
-          headers: { "Authorization": `Bearer ${token}` }
+          credentials: "include"
         });
         if (!res.ok) throw new Error();
         const data = await res.json();

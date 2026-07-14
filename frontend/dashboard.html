@@ -15,8 +15,6 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>KorriPay Dashboard</title>
-  <!-- Tailwind CSS CDN with plugins -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <!-- QR Code library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
   <!-- Interactive Charting library -->
@@ -147,89 +145,134 @@
   <div class="md:flex md:min-h-screen">
     
     <!-- Desktop Left Sidebar -->
-    <aside class="hidden md:flex flex-col w-64 lg:w-72 bg-surface-container-lowest dark:bg-inverse-surface border-r border-outline-variant/20 h-screen sticky top-0 p-6 shrink-0 z-40 justify-between">
-      <div class="space-y-lg">
+    <aside class="hidden md:flex flex-col w-64 lg:w-72 sidebar-glass h-screen sticky top-0 p-5 shrink-0 z-40 justify-between">
+      <div class="flex flex-col h-full min-h-0 space-y-4">
         <!-- Logo Section -->
-        <div class="flex items-center gap-2 px-2 py-4 border-b border-outline-variant/20">
+        <a href="index.html" class="flex items-center gap-2.5 px-3 py-3 border-b border-outline-variant/10 dark:border-zinc-800/30 hover:opacity-85 transition-opacity cursor-pointer">
           <span class="material-symbols-outlined text-primary dark:text-primary-fixed text-3xl font-bold">rocket_launch</span>
-          <span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed">KorriPay</span>
-        </div>
+          <span class="font-headline font-bold text-lg tracking-tight text-primary dark:text-white">KorriPay <span class="text-secondary dark:text-secondary-fixed text-xs align-super font-mono font-medium">L2</span></span>
+        </a>
         
-        <!-- Nav Menu -->
-        <nav class="flex flex-col gap-2 pt-4">
-          <a id="side-nav-home" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed font-bold active:scale-95 transition-all duration-300">
-            <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
-            <span class="font-label-md text-label-md">Home</span>
-          </a>
-          <a id="side-nav-send" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">send</span>
-            <span class="font-label-md text-label-md">Send</span>
-          </a>
-          <a id="side-nav-history" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">history</span>
-            <span class="font-label-md text-label-md">History</span>
-          </a>
-          <a id="side-nav-portfolio" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">account_balance_wallet</span>
-            <span class="font-label-md text-label-md">Portfolio</span>
-          </a>
-          <a id="side-nav-explorer" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">explore</span>
-            <span class="font-label-md text-label-md">Explorer</span>
-          </a>
-          <a id="side-nav-merchant" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">storefront</span>
-            <span class="font-label-md text-label-md">Merchant</span>
-          </a>
-          <a id="side-nav-merchant-portal" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">payments</span>
-            <span class="font-label-md text-label-md">Settlement Portal</span>
-          </a>
-          <a id="side-nav-analytics" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">query_stats</span>
-            <span class="font-label-md text-label-md">Analytics</span>
-          </a>
-          <a id="side-nav-giwa" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">lan</span>
-            <span class="font-label-md text-label-md">GIWA Status</span>
-          </a>
-          <a id="side-nav-operations" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">settings_ethernet</span>
-            <span class="font-label-md text-label-md">Operations</span>
-          </a>
-          <a id="side-nav-compliance" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">gavel</span>
-            <span class="font-label-md text-label-md">Compliance</span>
-          </a>
-          <a id="side-nav-profile" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">person</span>
-            <span class="font-label-md text-label-md">Profile</span>
-          </a>
-          <a id="side-nav-treasury" href="/treasury" class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">account_balance</span>
-            <span class="font-label-md text-label-md font-bold">Treasury</span>
-          </a>
-          <a id="side-nav-organization" href="/organization" class="flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform">
-            <span class="material-symbols-outlined">corporate_fare</span>
-            <span class="font-label-md text-label-md font-bold">Organization</span>
-          </a>
-          <a id="side-nav-admin" href="admin.html" class="flex items-center gap-3 px-4 py-3 rounded-xl text-amber-605 dark:text-amber-400 hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-300 transition-colors active:scale-95 transition-transform hidden">
-            <span class="material-symbols-outlined">admin_panel_settings</span>
-            <span class="font-label-md text-label-md font-bold">Admin Console</span>
-          </a>
+        <!-- Nav Menu scroll container -->
+        <nav class="flex-grow overflow-y-auto pr-1 space-y-4 no-scrollbar min-h-0" style="scrollbar-width: none;">
+          <!-- Core Infrastructure Section -->
+          <div>
+            <div class="text-[9px] font-bold text-outline/50 dark:text-outline-variant/35 tracking-wider uppercase px-4 pb-1.5 select-none">
+              Core Infrastructure
+            </div>
+            <div class="space-y-1">
+              <a id="side-nav-home" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary-fixed/10 text-primary dark:text-primary-fixed font-bold border-l-4 border-primary dark:border-primary-fixed-dim pl-3 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+                <span class="font-label-md text-label-md">Home</span>
+              </a>
+              <a id="side-nav-send" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">send</span>
+                <span class="font-label-md text-label-md">Create Settlement</span>
+              </a>
+              <a id="side-nav-history" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">history</span>
+                <span class="font-label-md text-label-md">Settlement Ledger</span>
+              </a>
+              <a id="side-nav-portfolio" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">account_balance_wallet</span>
+                <span class="font-label-md text-label-md">Portfolio</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Merchant Suite Section -->
+          <div>
+            <div class="text-[9px] font-bold text-outline/50 dark:text-outline-variant/35 tracking-wider uppercase px-4 pb-1.5 select-none">
+              Merchant Suite
+            </div>
+            <div class="space-y-1">
+              <a id="side-nav-merchant" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">storefront</span>
+                <span class="font-label-md text-label-md">Merchant Terminal</span>
+              </a>
+              <a id="side-nav-merchant-portal" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">payments</span>
+                <span class="font-label-md text-label-md">Settlement Portal</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Network Intelligence Section -->
+          <div>
+            <div class="text-[9px] font-bold text-outline/50 dark:text-outline-variant/35 tracking-wider uppercase px-4 pb-1.5 select-none">
+              Network Intel
+            </div>
+            <div class="space-y-1">
+              <a id="side-nav-explorer" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">explore</span>
+                <span class="font-label-md text-label-md">Explorer</span>
+              </a>
+              <a id="side-nav-analytics" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">query_stats</span>
+                <span class="font-label-md text-label-md">Analytics</span>
+              </a>
+              <a id="side-nav-giwa" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">lan</span>
+                <span class="font-label-md text-label-md">GIWA Status</span>
+              </a>
+              <a id="side-nav-operations" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">settings_ethernet</span>
+                <span class="font-label-md text-label-md">Operations</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Trust & Governance Section -->
+          <div>
+            <div class="text-[9px] font-bold text-outline/50 dark:text-outline-variant/35 tracking-wider uppercase px-4 pb-1.5 select-none">
+              Trust & Governance
+            </div>
+            <div class="space-y-1">
+              <a id="side-nav-compliance" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">gavel</span>
+                <span class="font-label-md text-label-md">Compliance</span>
+              </a>
+              <a id="side-nav-profile" href="#" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">person</span>
+                <span class="font-label-md text-label-md">Profile</span>
+              </a>
+              <a id="side-nav-treasury" href="/treasury" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">account_balance</span>
+                <span class="font-label-md text-label-md">Treasury</span>
+              </a>
+              <a id="side-nav-organization" href="/organization" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200">
+                <span class="material-symbols-outlined">corporate_fare</span>
+                <span class="font-label-md text-label-md font-bold">Organization</span>
+              </a>
+              <a id="side-nav-admin" href="admin.html" class="side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-amber-600 dark:text-amber-400 hover:bg-amber-500/10 hover:text-amber-700 dark:hover:text-amber-300 hover:pl-5 transition-all active:scale-95 hidden">
+                <span class="material-symbols-outlined">admin_panel_settings</span>
+                <span class="font-label-md text-label-md font-bold">Admin Console</span>
+              </a>
+            </div>
+          </div>
         </nav>
       </div>
       
       <!-- User Quick Profile / Bottom Sidebar -->
-      <div class="border-t border-outline-variant/20 pt-4 space-y-4">
-        <div class="flex items-center gap-3 px-2">
-          <img class="w-10 h-10 rounded-full object-cover border border-outline-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjU_oa8Gj5nPXicWEicktSvkVShudC8QRJoUIVwWtWtHO-NK0STn4sBDKySKN745dlhyUA4FyqdhBn469mw8qYR5Hsfm7TE_g8GJWXg2ydPTb6fibQuns2T5-KReB4z7r38VXkoOkrV28o6AwzyEbMQ7huWeq6EXOX2MsLkJ3W8Mll4xloeYmiCGUYMotWx0nyz2YDQ2EN1dThfUEnAIk1D9Yd4GB-CdxkdK4ZLj3ZBmekvOlzIttOX9vJN9P_2Y_meomQmeaM3tA" alt="Profile"/>
-          <div class="overflow-hidden">
-            <span class="block font-label-md text-label-md text-on-surface dark:text-white truncate font-bold">Oyeolorun Paul</span>
-            <span id="sidebar-wallet-address" class="block text-xs text-outline dark:text-outline-variant truncate">0x71C8b...49A2</span>
+      <div class="border-t border-outline-variant/10 dark:border-zinc-800/30 pt-4 space-y-3">
+        <div class="glass-card bg-surface-container/30 dark:bg-zinc-900/30 border border-outline-variant/10 dark:border-zinc-800/30 p-3 rounded-2xl flex items-center justify-between gap-2 shadow-sm transition-all hover:border-primary/20 dark:hover:border-primary-fixed/10">
+          <div class="flex items-center gap-3 overflow-hidden">
+            <!-- Glowing status avatar container -->
+            <div class="relative flex-shrink-0">
+              <img class="w-10 h-10 rounded-full object-cover border-2 border-primary/20 dark:border-primary-fixed/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjU_oa8Gj5nPXicWEicktSvkVShudC8QRJoUIVwWtWtHO-NK0STn4sBDKySKN745dlhyUA4FyqdhBn469mw8qYR5Hsfm7TE_g8GJWXg2ydPTb6fibQuns2T5-KReB4z7r38VXkoOkrV28o6AwzyEbMQ7huWeq6EXOX2MsLkJ3W8Mll4xloeYmiCGUYMotWx0nyz2YDQ2EN1dThfUEnAIk1D9Yd4GB-CdxkdK4ZLj3ZBmekvOlzIttOX9vJN9P_2Y_meomQmeaM3tA" alt="Profile"/>
+              <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-surface-container-lowest dark:border-zinc-950 animate-pulse"></span>
+            </div>
+            <div class="overflow-hidden">
+              <span class="block font-label-md text-label-md text-on-surface dark:text-white truncate font-bold">Oyeolorun Paul</span>
+              <span id="sidebar-wallet-address" class="block text-xs font-mono text-outline dark:text-outline-variant truncate">0x71C8b...49A2</span>
+            </div>
           </div>
+          <!-- Copy Wallet Icon -->
+          <button id="btn-copy-sidebar-wallet" class="material-symbols-outlined text-outline hover:text-primary dark:hover:text-primary-fixed text-lg p-1.5 hover:bg-surface-container rounded-lg transition-colors cursor-pointer" title="Copy Wallet Address">
+            content_copy
+          </button>
         </div>
-        <button id="side-btn-disconnect" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl border border-error/20 text-error hover:bg-error/10 active:scale-95 transition-all text-sm font-semibold">
+        <button id="side-btn-disconnect" class="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-xl border border-error/20 text-error hover:bg-error/10 active:scale-95 transition-all text-sm font-semibold cursor-pointer">
           <span class="material-symbols-outlined text-sm">logout</span>
           Disconnect
         </button>
@@ -1500,7 +1543,7 @@
                   <span class="material-symbols-outlined text-[16px] text-error dark:text-red-400">trending_down</span>
                 </div>
                 <div>
-                  <p class="text-label-sm font-bold text-on-surface dark:text-white">Whale Transfer</p>
+                  <p class="text-label-sm font-bold text-on-surface dark:text-white">Whale Settlement</p>
                   <p class="text-[10px] text-on-surface-variant dark:text-outline-variant">150.00 BTC • To Unknown Wallet</p>
                 </div>
               </div>
@@ -2706,69 +2749,69 @@
   </div> <!-- End Responsive Layout Shell -->
 
   <!-- BottomNavBar -->
-  <nav class="md:hidden fixed bottom-0 w-full z-50 bg-surface-container-lowest dark:bg-inverse-surface shadow-lg flex justify-around items-center h-20 px-4 pb-2 rounded-t-xl max-w-2xl left-1/2 -translate-x-1/2">
+  <nav class="md:hidden fixed bottom-0 w-full z-50 bg-surface-container-lowest/95 dark:bg-inverse-surface/95 backdrop-blur-md shadow-lg flex items-center h-20 px-6 pb-2 rounded-t-xl max-w-2xl left-1/2 -translate-x-1/2 overflow-x-auto no-scrollbar gap-6 border-t border-outline-variant/15">
     <!-- Home (Active by default) -->
-    <a id="nav-home" href="#" class="nav-item flex flex-col items-center justify-center bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed rounded-full px-4 py-1.5 active:scale-90 transition-all duration-300">
+    <a id="nav-home" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed rounded-full px-4 py-1.5 active:scale-90 transition-all duration-300">
       <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
       <span class="font-label-md text-label-md">Home</span>
     </a>
     <!-- Send -->
-    <a id="nav-send" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-send" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">send</span>
-      <span class="font-label-md text-label-md">Send</span>
+      <span class="font-label-md text-label-md">Create Settlement</span>
     </a>
     <!-- History -->
-    <a id="nav-history" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-history" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">history</span>
-      <span class="font-label-md text-label-md">History</span>
+      <span class="font-label-md text-label-md">Settlement Ledger</span>
     </a>
     <!-- Portfolio -->
-    <a id="nav-portfolio" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-portfolio" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">account_balance_wallet</span>
       <span class="font-label-md text-label-md">Portfolio</span>
     </a>
     <!-- Explorer -->
-    <a id="nav-explorer" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-explorer" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">explore</span>
       <span class="font-label-md text-label-md">Explorer</span>
     </a>
     <!-- Merchant -->
-    <a id="nav-merchant" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-merchant" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">storefront</span>
       <span class="font-label-md text-label-md">Merchant</span>
     </a>
     <!-- Settlement Portal -->
-    <a id="nav-merchant-portal" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-merchant-portal" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">payments</span>
       <span class="font-label-md text-label-md">Settlements</span>
     </a>
     <!-- Analytics -->
-    <a id="nav-analytics" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-analytics" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">query_stats</span>
       <span class="font-label-md text-label-md">Analytics</span>
     </a>
     <!-- GIWA -->
-    <a id="nav-giwa" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-giwa" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">lan</span>
       <span class="font-label-md text-label-md">GIWA</span>
     </a>
     <!-- Operations -->
-    <a id="nav-operations" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-operations" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">settings_ethernet</span>
       <span class="font-label-md text-label-md">Ops</span>
     </a>
     <!-- Compliance -->
-    <a id="nav-compliance" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-compliance" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">gavel</span>
       <span class="font-label-md text-label-md">Compliance</span>
     </a>
     <!-- Profile -->
-    <a id="nav-profile" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-profile" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
       <span class="material-symbols-outlined">person</span>
       <span class="font-label-md text-label-md">Profile</span>
     </a>
     <!-- Admin -->
-    <a id="nav-admin" href="admin.html" class="flex flex-col items-center justify-center text-amber-600 dark:text-amber-400 px-4 py-1.5 hover:text-amber-700 dark:hover:text-amber-300 transition-colors active:scale-90 transition-transform hidden">
+    <a id="nav-admin" href="admin.html" class="flex flex-col items-center justify-center text-amber-600 dark:text-amber-400 px-4 py-1.5 hover:text-amber-700 dark:hover:text-amber-300 transition-colors active:scale-90 transition-transform hidden shrink-0">
       <span class="material-symbols-outlined">admin_panel_settings</span>
       <span class="font-label-md text-label-md font-bold">Admin</span>
     </a>

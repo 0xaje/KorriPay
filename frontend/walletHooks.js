@@ -171,7 +171,10 @@ function bindConnectButtons() {
 
       // Show connecting UI
       if (optionsPanel)    optionsPanel.classList.add("hidden");
-      if (connectingPanel) connectingPanel.classList.remove("hidden");
+      if (connectingPanel) {
+        connectingPanel.classList.remove("hidden");
+        connectingPanel.style.display = "flex";
+      }
       if (statusText)      statusText.textContent = `Connecting to ${name}...`;
 
       try {
@@ -184,9 +187,9 @@ function bindConnectButtons() {
         if (!nonceRes.ok) throw new Error("Failed to retrieve nonce from server");
         const { nonce, tempId } = await nonceRes.json();
 
-        if (statusText) statusText.textContent = "Please sign SIWE request in wallet...";
+        if (statusText) statusText.textContent = "Please sign GIWA request in wallet...";
 
-        // 2. Format SIWE message
+        // 2. Format GIWA message
         const message = `Sign in to KorriPay.\nHost: localhost:5000\nAddress: ${result.address}\nNonce: ${nonce}\nStatement: Authenticate session.`;
 
         // 3. Request signature from wallet
@@ -203,13 +206,13 @@ function bindConnectButtons() {
 
         if (!verifyRes.ok) {
           const verifyErr = await verifyRes.json();
-          throw new Error(verifyErr.error || "SIWE verification failed");
+          throw new Error(verifyErr.error || "GIWA verification failed");
         }
 
         const authData = await verifyRes.json();
 
-        // 5. Store session token
-        localStorage.setItem("korripay_session_token", authData.token);
+        // 5. Store session status
+        localStorage.setItem("korripay_logged_in", "true");
 
         if (statusText) statusText.textContent = "Authenticated successfully!";
         updateAddressDisplay(result.address);
@@ -219,9 +222,9 @@ function bindConnectButtons() {
         }, 800);
 
       } catch (err) {
-        console.error("[WalletHooks] SIWE Connection error:", err);
+        console.error("[WalletHooks] GIWA Connection error:", err);
 
-        // Disconnect wallet if connected but SIWE failed to ensure clean state
+        // Disconnect wallet if connected but GIWA failed to ensure clean state
         try { await window.WalletService.disconnect(); } catch (e) {}
 
         // Reset modal back to options
@@ -292,6 +295,7 @@ function bindDisconnectButtons() {
 
       try {
         await window.WalletService.disconnect();
+        localStorage.removeItem("korripay_logged_in");
 
         if (typeof showToast === "function") {
           showToast("Wallet disconnected.");
@@ -374,7 +378,7 @@ async function fetchBalance(address, chainId) {
 // ── Guard: require wallet to access dashboard ────────────────────────
 
 function requireWallet(redirectTo = "index.html") {
-  const token = localStorage.getItem("korripay_session_token");
+  const token = localStorage.getItem("korripay_logged_in");
   if (!token) {
     console.info("[WalletHooks] No session token found — redirecting to", redirectTo);
     window.location.href = redirectTo;

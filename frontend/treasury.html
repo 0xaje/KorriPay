@@ -17,12 +17,11 @@
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>KorriPay - Treasury Dashboard</title>
   
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <!-- Google Fonts, Material Symbols & Chart.js -->
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="styles.css">
   
   <script id="tailwind-config">
     tailwind.config = {
@@ -81,13 +80,13 @@
   <!-- Header -->
   <header class="sticky top-0 z-30 bg-white/70 dark:bg-zinc-900/70 backdrop-blur-md border-b border-outline-variant/30 dark:border-zinc-800 transition-colors">
     <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
+      <a href="index.html" class="flex items-center gap-3 hover:opacity-85 transition-opacity cursor-pointer">
         <span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim text-3xl font-bold">account_balance</span>
         <span class="font-headline font-bold text-xl text-primary dark:text-white">KorriPay <span class="text-secondary dark:text-secondary-fixed">Treasury</span></span>
-      </div>
+      </a>
 
       <div class="flex items-center gap-6">
-        <a href="/" class="text-xs font-semibold text-outline hover:text-primary dark:hover:text-white transition-colors">User Dashboard</a>
+        <a href="/dashboard.html" class="text-xs font-semibold text-outline hover:text-primary dark:hover:text-white transition-colors">User Dashboard</a>
         <a href="/trust" class="text-xs font-semibold text-outline hover:text-primary dark:hover:text-white transition-colors">Attestation Registry</a>
         <a href="/developers" class="text-xs font-semibold text-outline hover:text-primary dark:hover:text-white transition-colors">Developer Portal</a>
         <a href="/organization" class="text-xs font-semibold text-outline hover:text-primary dark:hover:text-white transition-colors">Organization</a>

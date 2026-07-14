@@ -16,9 +16,6 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>KorriPay - Admin Console</title>
-  
-  <!-- Tailwind CSS CDN with plugins -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <!-- Chart.js for data visualization -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Google Fonts & Material Symbols -->
@@ -707,16 +704,16 @@
 
     // Authenticated API requests wrapper
     async function authFetch(url, options = {}) {
-      const token = localStorage.getItem("korripay_session_token");
       const headers = { ...options.headers };
-      if (token) {
-        headers["Authorization"] = `Bearer ${token}`;
-      }
       headers["Content-Type"] = "application/json";
 
-      const res = await fetch(url, { ...options, headers });
+      const res = await fetch(url, {
+        ...options,
+        headers,
+        credentials: "include"
+      });
       if (res.status === 401) {
-        localStorage.removeItem("korripay_session_token");
+        localStorage.removeItem("korripay_logged_in");
         window.location.href = "index.html";
       }
       return res;
@@ -724,8 +721,8 @@
 
     // Role-based Access Check on Load
     async function checkAdminSession() {
-      const token = localStorage.getItem("korripay_session_token");
-      if (!token) {
+      const isLoggedIn = localStorage.getItem("korripay_logged_in");
+      if (!isLoggedIn) {
         window.location.href = "index.html";
         return;
       }

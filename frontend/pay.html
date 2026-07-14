@@ -11,11 +11,10 @@
   <meta charset="utf-8"/>
   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
   <title>KorriPay - Checkout</title>
-  <!-- Tailwind CSS CDN with plugins -->
-  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="styles.css">
   
   <script id="tailwind-config">
     tailwind.config = {
@@ -261,8 +260,8 @@
     }
 
     async function checkAuth() {
-      const token = localStorage.getItem("korripay_session_token");
-      if (!token) {
+      const isLoggedIn = localStorage.getItem("korripay_logged_in");
+      if (!isLoggedIn) {
         document.getElementById("auth-logged-out").classList.remove("hidden");
         document.getElementById("auth-logged-in").classList.add("hidden");
         return;
@@ -271,10 +270,10 @@
       // Fetch user profile info
       try {
         const res = await fetch(`${API_BASE}/dashboard`, {
-          headers: { "Authorization": `Bearer ${token}` }
+          credentials: "include"
         });
         if (!res.ok) {
-          localStorage.removeItem("korripay_session_token");
+          localStorage.removeItem("korripay_logged_in");
           checkAuth();
           return;
         }
@@ -314,11 +313,11 @@
         const res = await fetch(`${API_BASE}/auth/demo`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: "jane.doe@korri.pay", password: "demo" })
+          body: JSON.stringify({ email: "jane.doe@korri.pay", password: "demo" }),
+          credentials: "include"
         });
         if (res.ok) {
-          const data = await res.json();
-          localStorage.setItem("korripay_session_token", data.token);
+          localStorage.setItem("korripay_logged_in", "true");
           checkAuth();
         } else {
           alert("Demo login failed");
@@ -335,15 +334,14 @@
       btn.innerText = "Processing Payment...";
       btn.classList.add("opacity-50");
 
-      const token = localStorage.getItem("korripay_session_token");
       try {
         const res = await fetch(`${API_BASE}/merchant/pay`, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
+            "Content-Type": "application/json"
           },
-          body: JSON.stringify({ paymentRequestId: requestId })
+          body: JSON.stringify({ paymentRequestId: requestId }),
+          credentials: "include"
         });
 
         if (res.ok) {

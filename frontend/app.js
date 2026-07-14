@@ -109,7 +109,8 @@ async function authFetch(url, options = {}, retries = 3, backoff = 1000) {
       try {
         res = await fetch(url, {
           ...options,
-          headers
+          headers,
+          credentials: "include"
         });
 
         // Resolve if successful, or if not a transient 5xx error
@@ -129,6 +130,7 @@ async function authFetch(url, options = {}, retries = 3, backoff = 1000) {
 
     if (res && res.status === 401) {
       localStorage.removeItem("korripay_session_token");
+      localStorage.removeItem("korripay_logged_in");
       window.location.href = "index.html";
     }
     return res;
@@ -183,13 +185,9 @@ let state = {
 
 // Check if the user is an admin to show Admin Console navigation link
 async function checkAdminStatus() {
-  const token = localStorage.getItem("korripay_session_token");
-  if (!token) return;
   try {
-    const res = await fetch("http://localhost:5000/api/auth/me", {
-      headers: { "Authorization": `Bearer ${token}` }
-    });
-    if (res.ok) {
+    const res = await authFetch("http://localhost:5000/api/auth/me");
+    if (res && res.ok) {
       const user = await res.json();
       if (user.role === 'ADMIN') {
         const sideAdmin = document.getElementById("side-nav-admin");
@@ -422,6 +420,25 @@ function setupNavigation() {
       window.location.hash = "history";
     });
   }
+
+  // Copy sidebar wallet address listener
+  const btnCopyWallet = document.getElementById("btn-copy-sidebar-wallet");
+  if (btnCopyWallet) {
+    btnCopyWallet.addEventListener("click", () => {
+      if (state && state.walletAddress) {
+        navigator.clipboard.writeText(state.walletAddress).then(() => {
+          showToast("Wallet address copied to clipboard!");
+        });
+      } else {
+        const addressEl = document.getElementById("sidebar-wallet-address");
+        if (addressEl) {
+          navigator.clipboard.writeText(addressEl.title || addressEl.textContent).then(() => {
+            showToast("Wallet address copied to clipboard!");
+          });
+        }
+      }
+    });
+  }
 }
 
 function checkHashRoute() {
@@ -526,8 +543,10 @@ function switchTab(tabId) {
   tabContents.forEach(tab => {
     if (tab.id === tabId) {
       tab.classList.add("active");
+      tab.classList.remove("hidden");
     } else {
       tab.classList.remove("active");
+      tab.classList.add("hidden");
     }
   });
 
@@ -538,12 +557,12 @@ function switchTab(tabId) {
     const itemKey = item.id.replace("nav-", "");
     if (itemKey === navKey) {
       // Active styling
-      item.className = "nav-item flex flex-col items-center justify-center bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed rounded-full px-4 py-1.5 active:scale-90 transition-all duration-300";
+      item.className = "nav-item shrink-0 flex flex-col items-center justify-center bg-primary/10 dark:bg-primary-fixed/10 text-primary dark:text-primary-fixed rounded-full px-4 py-1.5 active:scale-90 transition-all duration-200";
       const icon = item.querySelector(".material-symbols-outlined");
       if (icon) icon.style.fontVariationSettings = "'FILL' 1";
     } else {
       // Inactive styling
-      item.className = "nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform";
+      item.className = "nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform";
       const icon = item.querySelector(".material-symbols-outlined");
       if (icon) icon.style.fontVariationSettings = "'FILL' 0";
     }
@@ -554,12 +573,12 @@ function switchTab(tabId) {
     const itemKey = item.id.replace("side-nav-", "");
     if (itemKey === navKey) {
       // Active styling
-      item.className = "side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed font-bold active:scale-95 transition-all duration-300";
+      item.className = "side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl bg-primary/10 dark:bg-primary-fixed/10 text-primary dark:text-primary-fixed font-bold border-l-4 border-primary dark:border-primary-fixed-dim pl-3 active:scale-95 transition-all duration-200";
       const icon = item.querySelector(".material-symbols-outlined");
       if (icon) icon.style.fontVariationSettings = "'FILL' 1";
     } else {
       // Inactive styling
-      item.className = "side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container dark:hover:bg-inverse-surface/30 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-95 transition-transform";
+      item.className = "side-nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant dark:text-outline-variant hover:bg-surface-container/40 dark:hover:bg-inverse-surface/10 hover:text-primary dark:hover:text-primary-fixed hover:pl-5 active:scale-95 transition-all duration-200";
       const icon = item.querySelector(".material-symbols-outlined");
       if (icon) icon.style.fontVariationSettings = "'FILL' 0";
     }
@@ -568,15 +587,19 @@ function switchTab(tabId) {
   // Update Desktop Title
   const desktopTitle = document.getElementById("desktop-page-title");
   if (desktopTitle) {
-    if (tabId === "tab-home") desktopTitle.textContent = "Dashboard";
+    if (tabId === "tab-home") desktopTitle.textContent = "Settlement Dashboard";
     else if (tabId === "tab-send") desktopTitle.textContent = "Create Settlement";
-    else if (tabId === "tab-history") desktopTitle.textContent = "Transactions";
+    else if (tabId === "tab-history") desktopTitle.textContent = "Settlement Ledger";
     else if (tabId === "tab-portfolio") desktopTitle.textContent = "Portfolio";
     else if (tabId === "tab-swap") desktopTitle.textContent = "Swap Assets";
     else if (tabId === "tab-swap-success") desktopTitle.textContent = "Swap Success";
-    else if (tabId === "tab-explorer") desktopTitle.textContent = "Explorer";
+    else if (tabId === "tab-explorer") desktopTitle.textContent = "Settlement Explorer";
     else if (tabId === "tab-merchant") desktopTitle.textContent = "Merchant Pay";
+    else if (tabId === "tab-merchant-portal") desktopTitle.textContent = "Settlement Portal";
     else if (tabId === "tab-analytics") desktopTitle.textContent = "Analytics Dashboard";
+    else if (tabId === "tab-giwa") desktopTitle.textContent = "GIWA Status";
+    else if (tabId === "tab-operations") desktopTitle.textContent = "Operations";
+    else if (tabId === "tab-compliance") desktopTitle.textContent = "Compliance";
     else if (tabId === "tab-profile") {
       desktopTitle.textContent = "My Profile";
       loadCompliancePassport();
@@ -671,31 +694,9 @@ function closeAllModals() {
   }, 300);
 }
 
-// Toast System
-function showToast(message, type = "success") {
-  const toast = document.getElementById("toast");
-  const toastMsg = document.getElementById("toast-message");
-  const toastIcon = document.getElementById("toast-icon");
-  
-  toastMsg.textContent = message;
-  
-  if (type === "success") {
-    toast.className = "fixed top-20 left-1/2 -translate-x-1/2 bg-on-secondary-container text-white py-3 px-6 rounded-full font-label-md text-label-md opacity-100 transition-all duration-300 z-[200] shadow-xl flex items-center gap-2 max-w-sm";
-    toastIcon.textContent = "check_circle";
-  } else {
-    toast.className = "fixed top-20 left-1/2 -translate-x-1/2 bg-error text-white py-3 px-6 rounded-full font-label-md text-label-md opacity-100 transition-all duration-300 z-[200] shadow-xl flex items-center gap-2 max-w-sm";
-    toastIcon.textContent = "error";
-  }
-
-  // Remove pointer events so it's not blocking clicks
-  toast.classList.remove("pointer-events-none");
-  
-  setTimeout(() => {
-    toast.classList.add("opacity-0", "pointer-events-none");
-    toast.classList.remove("opacity-100");
-  }, 3000);
-}
+import { showToast, copyTextToClipboard, sleep } from './src/utils.js';
 window.showToast = showToast;
+window.copyTextToClipboard = copyTextToClipboard;
 
 function saveLocalState() {
   localStorage.setItem("korripay_state", JSON.stringify(localState));
@@ -777,6 +778,11 @@ async function loadData() {
       if (meRes.ok) {
         const meData = await meRes.json();
         state.walletAddress = meData.walletAddress;
+        const sidebarAddr = document.getElementById("sidebar-wallet-address");
+        if (sidebarAddr && meData.walletAddress) {
+          sidebarAddr.textContent = meData.walletAddress.substring(0, 6) + "..." + meData.walletAddress.substring(meData.walletAddress.length - 4);
+          sidebarAddr.title = meData.walletAddress;
+        }
       }
     } catch (e) {
       console.warn("Failed to fetch me details", e);
@@ -873,7 +879,7 @@ function renderWalletBalances() {
   if (!container) return;
 
   const currencies = state.currencies || {};
-  const token = localStorage.getItem('korripay_session_token');
+  const isLoggedIn = localStorage.getItem('korripay_logged_in');
 
   container.innerHTML = Object.entries(_CURRENCY_META).map(([code, meta]) => {
     const bal     = currencies[code] ?? { available: 0, locked: 0, pending: 0 };
@@ -912,20 +918,20 @@ function renderWalletBalances() {
   }).join('');
 
   // Refresh from API if user is logged in
-  if (token && !_walletBalanceFetched) {
+  if (isLoggedIn && !_walletBalanceFetched) {
     _walletBalanceFetched = true;
-    fetch('http://localhost:5000/api/wallet/summary', {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(r => r.ok ? r.json() : null).then(data => {
-      if (!data) return;
-      state.currencies = {
-        USD:     { available: data.usd?.available ?? 0,     locked: data.usd?.locked ?? 0,     pending: data.usd?.pending ?? 0 },
-        KRW:     { available: data.krw?.available ?? 0,     locked: data.krw?.locked ?? 0,     pending: data.krw?.pending ?? 0 },
-        NGN:     { available: data.ngn?.available ?? 0,     locked: data.ngn?.locked ?? 0,     pending: data.ngn?.pending ?? 0 },
-        MockKRW: { available: data.mockkrw?.available ?? 0, locked: data.mockkrw?.locked ?? 0, pending: data.mockkrw?.pending ?? 0 },
-      };
-      renderWalletBalances();
-    }).catch(() => {});
+    authFetch('http://localhost:5000/api/wallet/summary')
+      .then(r => r && r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        state.currencies = {
+          USD:     { available: data.usd?.available ?? 0,     locked: data.usd?.locked ?? 0,     pending: data.usd?.pending ?? 0 },
+          KRW:     { available: data.krw?.available ?? 0,     locked: data.krw?.locked ?? 0,     pending: data.krw?.pending ?? 0 },
+          NGN:     { available: data.ngn?.available ?? 0,     locked: data.ngn?.locked ?? 0,     pending: data.ngn?.pending ?? 0 },
+          MockKRW: { available: data.mockkrw?.available ?? 0, locked: data.mockkrw?.locked ?? 0, pending: data.mockkrw?.pending ?? 0 },
+        };
+        renderWalletBalances();
+      }).catch(() => {});
   }
 }
 let _walletBalanceFetched = false;
@@ -4692,16 +4698,16 @@ function setupDemoMode() {
       }
     },
     "2": {
-      description: "Scenario 2: Freelancer receives consulting payment. Demonstrates SIWE session authentication, invoicing, checkout verification, and immediate wallet balance crediting.",
+      description: "Scenario 2: Freelancer receives consulting payment. Demonstrates GIWA session authentication, invoicing, checkout verification, and immediate wallet balance crediting.",
       steps: [
-        { title: "SIWE Authentication", desc: "Verifying secure session token creation via Web3 wallet signatures" },
+        { title: "GIWA Authentication", desc: "Verifying secure session token creation via Web3 wallet signatures" },
         { title: "Invoice Generation", desc: "Creating a unique invoice checkout link with specific payment amount" },
         { title: "USDC Checkout Payout", desc: "Customer scanning link and executing on-chain USDC contract transfer" },
         { title: "Prisma Ledger Log", desc: "Database capturing the payment and writing settlement log records" },
         { title: "Balance Updates", desc: "Updating general ledger history and refreshing current portfolio" }
       ],
       runner: async function(sleep) {
-        setStepActive(1, "Signing SIWE...");
+        setStepActive(1, "Signing GIWA...");
         await sleep(1500);
         setStepComplete(1, "Session Active");
 
@@ -5058,15 +5064,7 @@ function renderExplorer() {
   }).join("");
 }
 
-// Utility function to copy to clipboard
-function copyTextToClipboard(text) {
-  if (!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    showToast("Copied to clipboard!");
-  }).catch(err => {
-    console.error("Could not copy text: ", err);
-  });
-}
+
 
 // Set up event listeners for filters
 function setupExplorerListeners() {
@@ -5544,7 +5542,7 @@ function exportPortalCSV() {
   showToast("CSV exported successfully", "success");
 }
 
-function buildCertificateData(settlement, matchingProof) {
+function buildPortalCertificateData(settlement, matchingProof) {
   const isSettled = settlement.status === "Settled" || settlement.status === "Success";
   const start = new Date(settlement.createdAt).getTime();
   const end = settlement.confirmedAt ? new Date(settlement.confirmedAt).getTime() : Date.now();
@@ -5575,7 +5573,7 @@ function downloadReceiptPDF(settlementId) {
   }
 
   const matchingProof = portalProofs.find(p => p.settlementId === settlementId || (p.txHash && settlement.txHash && p.txHash.toLowerCase() === settlement.txHash.toLowerCase()));
-  const certData = buildCertificateData(settlement, matchingProof);
+  const certData = buildPortalCertificateData(settlement, matchingProof);
 
   let pipelineHtml = "";
   let history = [];
