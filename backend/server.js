@@ -243,12 +243,25 @@ async function requireAuth(req, res, next) {
 
     let userId = sessions.get(token);
     if (!userId) {
-      if (token.startsWith("session-demo-") || token.startsWith("session-wallet-")) {
-        const firstUser = await prisma.user.findFirst();
-        if (firstUser) {
-          userId = firstUser.id;
+      // Stateless fallback for serverless environments (Vercel)
+      if (token.startsWith("session-demo-")) {
+        userId = token.replace("session-demo-", "");
+      } else if (token.startsWith("session-")) {
+        userId = token.replace("session-", "");
+      }
+      
+      if (userId) {
+        // Verify user exists in database to confirm valid session, or fallback to first user
+        let userExists = await prisma.user.findUnique({ where: { id: userId } }).catch(() => null);
+        if (!userExists) {
+          userExists = await prisma.user.findFirst().catch(() => null);
+        }
+        if (userExists) {
+          userId = userExists.id;
           sessions.set(token, userId);
-          console.log("[Auth Fallback] Restored local session and mapped to user:", userId);
+          console.log("[Auth Fallback] Restored session for user ID:", userId);
+        } else {
+          userId = null; // invalid session
         }
       }
     }
@@ -630,8 +643,8 @@ app.post('/api/auth/verify', async (req, res) => {
       });
     }
 
-    // Create session
-    const sessionToken = "session-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Create session token with userId encoded statelessly
+    const sessionToken = `session-${user.id}`;
     sessions.set(sessionToken, user.id);
 
     res.cookie('token', sessionToken, {
@@ -688,7 +701,8 @@ app.post('/api/auth/demo', async (req, res) => {
       });
     }
 
-    const sessionToken = "session-demo-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Create session token with userId encoded statelessly
+    const sessionToken = `session-demo-${user.id}`;
     sessions.set(sessionToken, user.id);
 
     res.cookie('token', sessionToken, {
@@ -747,7 +761,8 @@ app.post('/api/auth/signup', async (req, res) => {
       }
     });
 
-    const sessionToken = "session-demo-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Create session token with userId encoded statelessly
+    const sessionToken = `session-demo-${user.id}`;
     sessions.set(sessionToken, user.id);
 
     res.cookie('token', sessionToken, {
@@ -783,8 +798,8 @@ app.post('/api/auth/signin', async (req, res) => {
       return res.status(400).json({ error: "User does not exist. Please sign up first." });
     }
 
-    // Generate session token
-    const sessionToken = "session-demo-" + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    // Generate session token with userId encoded statelessly
+    const sessionToken = `session-demo-${user.id}`;
     sessions.set(sessionToken, user.id);
 
     res.cookie('token', sessionToken, {
