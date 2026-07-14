@@ -12,7 +12,7 @@
 import { giwa } from './src/infrastructure/giwa/index.js';
 
 // ── Configuration ──────────────────────────────────────────────────
-const WALLETCONNECT_PROJECT_ID = "YOUR_WALLETCONNECT_PROJECT_ID"; // ← Replace this
+const WALLETCONNECT_PROJECT_ID = "cc5ad5fde754d49981d4d6d17e2098ce"; // ← Replace this
 
 const CDN = {
   wagmiCore:     "https://cdn.jsdelivr.net/npm/@wagmi/core@2.13.5/+esm",
