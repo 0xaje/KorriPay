@@ -419,130 +419,12 @@
   <!-- Overlay Base -->
   <div id="modal-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-md z-[90] hidden opacity-0 transition-opacity duration-300"></div>
 
-  <!-- Wallet Connection Modal — AppKit-inspired Premium Design -->
+  <!-- Wallet Connection Modal — Automated Signature Request Screen -->
   <div id="modal-wallet" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-24px)] sm:max-w-[400px] z-[100] hidden transform scale-95 opacity-0 transition-all duration-300 max-h-[92vh] overflow-y-auto rounded-3xl shadow-2xl"
     style="background: linear-gradient(145deg, #ffffff 0%, #f4f7ff 100%); border: 1px solid rgba(0,30,64,0.08);">
-
-    <!-- Modal Header -->
-    <div class="flex items-center justify-between px-6 pt-6 pb-4" style="border-bottom: 1px solid rgba(0,30,64,0.07);">
-      <div class="flex items-center gap-2.5">
-        <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #001e40 0%, #003366 100%);">
-          <span class="material-symbols-outlined text-white text-lg" style="font-size:18px;">account_balance_wallet</span>
-        </div>
-        <div>
-          <h3 class="font-bold text-base" style="color:#001e40; line-height:1.2;">Connect Wallet</h3>
-          <p class="text-xs" style="color:#737780;">KorriPay Settlement Console</p>
-        </div>
-      </div>
-      <button id="wallet-close-btn" class="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:bg-gray-100 active:scale-90" style="color:#737780;">
-        <span class="material-symbols-outlined" style="font-size:18px;">close</span>
-      </button>
-    </div>
-
-    <!-- Wallet Options Panel -->
-    <div id="wallet-options" class="px-5 py-4 space-y-2.5">
-
-      <!-- MetaMask -->
-      <button class="wallet-opt-btn w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all active:scale-[0.98] cursor-pointer group"
-        data-name="Browser Wallet"
-        style="border: 1px solid rgba(0,30,64,0.1); background: white;">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #F6851B 0%, #E2761B 100%);">
-          <!-- MetaMask fox SVG simplified -->
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21.6 2L13.2 8.2l1.5-3.6L21.6 2z" fill="#E17726"/><path d="M2.4 2l8.3 6.3-1.4-3.7L2.4 2z" fill="#E27625"/><path d="M18.6 16.8l-2.3 3.5 4.9 1.4 1.4-4.8-4 -.1z" fill="#E27625"/><path d="M1.4 16.9l1.4 4.8 4.9-1.4-2.3-3.5-4 .1z" fill="#E27625"/><path d="M7.4 10.8L6 13l4.8.2-.2-5.1-3.2 2.7z" fill="#E27625"/><path d="M16.6 10.8l-3.2-2.8-.1 5.2 4.8-.2-1.5-2.2z" fill="#E27625"/><path d="M7.7 20.3l2.9-1.4-2.5-1.9-.4 3.3z" fill="#E27625"/><path d="M13.4 18.9l2.9 1.4-.4-3.3-2.5 1.9z" fill="#E27625"/></svg>
-        </div>
-        <div class="flex-1 text-left">
-          <p class="font-semibold text-sm" style="color:#191c1e;">MetaMask / Browser Wallet</p>
-          <p class="text-xs mt-0.5" style="color:#737780;">Rabby, Zerion, Frame & more</p>
-        </div>
-        <span class="material-symbols-outlined text-sm opacity-40 group-hover:opacity-70 transition-opacity" style="font-size:16px; color:#191c1e;">chevron_right</span>
-      </button>
-
-      <!-- Coinbase Wallet -->
-      <button class="wallet-opt-btn w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all active:scale-[0.98] cursor-pointer group"
-        data-name="Coinbase Wallet"
-        style="border: 1px solid rgba(0,30,64,0.1); background: white;">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background: #0052FF;">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><circle cx="12" cy="12" r="10" fill="#0052FF"/><path d="M12 6a6 6 0 100 12A6 6 0 0012 6zm0 9.5a3.5 3.5 0 110-7 3.5 3.5 0 010 7z" fill="white"/></svg>
-        </div>
-        <div class="flex-1 text-left">
-          <p class="font-semibold text-sm" style="color:#191c1e;">Coinbase Wallet</p>
-          <p class="text-xs mt-0.5" style="color:#737780;">Connect via Coinbase smart wallet</p>
-        </div>
-        <span class="material-symbols-outlined text-sm opacity-40 group-hover:opacity-70 transition-opacity" style="font-size:16px; color:#191c1e;">chevron_right</span>
-      </button>
-
-      <!-- WalletConnect -->
-      <button class="wallet-opt-btn w-full flex items-center gap-3.5 p-3.5 rounded-2xl transition-all active:scale-[0.98] cursor-pointer group"
-        data-name="WalletConnect"
-        style="border: 1px solid rgba(0,30,64,0.1); background: white;">
-        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform" style="background: linear-gradient(135deg, #3B99FC 0%, #1567D3 100%);">
-          <svg width="22" height="14" viewBox="0 0 40 25" fill="white"><path d="M8.2 4.9C14.7-1.6 25.3-1.6 31.8 4.9l.7.7c.3.3.3.8 0 1.1l-2.5 2.5c-.2.2-.5.2-.7 0l-1-.9c-4.5-4.4-11.7-4.4-16.2 0l-1 1c-.2.2-.5.2-.7 0L7.9 6.8c-.3-.3-.3-.8 0-1.1l.3-.8zm20.9 5.9l2.2 2.2c.3.3.3.8 0 1.1l-10 10c-.3.3-.8.3-1.1 0l-7.1-7c-.1-.1-.3-.1-.4 0l-7.1 7c-.3.3-.8.3-1.1 0L.4 14.1c-.3-.3-.3-.8 0-1.1l2.2-2.2c.3-.3.8-.3 1.1 0l7.1 7c.1.1.3.1.4 0l7.1-7c.3-.3.8-.3 1.1 0l7.1 7c.1.1.3.1.4 0l7.1-7c.3-.4.8-.4 1.1-.1z"/></svg>
-        </div>
-        <div class="flex-1 text-left">
-          <p class="font-semibold text-sm" style="color:#191c1e;">WalletConnect</p>
-          <p class="text-xs mt-0.5" style="color:#737780;">Scan QR with 300+ mobile wallets</p>
-        </div>
-        <span class="material-symbols-outlined text-sm opacity-40 group-hover:opacity-70 transition-opacity" style="font-size:16px; color:#191c1e;">chevron_right</span>
-      </button>
-
-      <!-- Divider -->
-      <div class="flex items-center gap-3 py-1">
-        <div class="flex-1 h-px" style="background:rgba(0,30,64,0.08);"></div>
-        <span class="text-xs font-semibold uppercase tracking-wider" style="color:#737780;">or continue with email</span>
-        <div class="flex-1 h-px" style="background:rgba(0,30,64,0.08);"></div>
-      </div>
-
-      <!-- Email / Demo Login Form -->
-      <div id="demo-login-form" class="space-y-2">
-        <!-- Tabs -->
-        <div class="flex rounded-xl p-1 gap-1" style="background: rgba(0,30,64,0.05);">
-          <button type="button" id="tab-signin" class="flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all" style="background:white; color:#001e40; box-shadow: 0 1px 3px rgba(0,0,0,0.08);">Sign In</button>
-          <button type="button" id="tab-signup" class="flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all" style="background:transparent; color:#737780;">Sign Up</button>
-        </div>
-
-        <!-- Full Name (Sign Up only) -->
-        <div class="hidden" id="signup-name-group">
-          <label for="demo-name" class="block text-xs font-semibold mb-1" style="color:#191c1e;">Full Name</label>
-          <input type="text" id="demo-name" placeholder="John Doe"
-            class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none transition-all"
-            style="border: 1.5px solid rgba(0,30,64,0.15); background:white; color:#191c1e;"
-            onfocus="this.style.borderColor='#001e40'" onblur="this.style.borderColor='rgba(0,30,64,0.15)'">
-        </div>
-
-        <!-- Email -->
-        <div>
-          <label for="demo-email" class="block text-xs font-semibold mb-1" style="color:#191c1e;">Email Address</label>
-          <input type="email" id="demo-email" placeholder="judge@korri.pay"
-            class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none transition-all"
-            style="border: 1.5px solid rgba(0,30,64,0.15); background:white; color:#191c1e;"
-            onfocus="this.style.borderColor='#001e40'" onblur="this.style.borderColor='rgba(0,30,64,0.15)'">
-        </div>
-
-        <!-- Password -->
-        <div>
-          <label for="demo-password" class="block text-xs font-semibold mb-1" style="color:#191c1e;">Password</label>
-          <input type="password" id="demo-password" placeholder="••••••••"
-            class="w-full px-3 py-2.5 rounded-xl text-sm focus:outline-none transition-all"
-            style="border: 1.5px solid rgba(0,30,64,0.15); background:white; color:#191c1e;"
-            onfocus="this.style.borderColor='#001e40'" onblur="this.style.borderColor='rgba(0,30,64,0.15)'">
-        </div>
-
-        <!-- Submit -->
-        <button id="btn-demo-login"
-          class="w-full py-3 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] cursor-pointer mt-1"
-          style="background: linear-gradient(135deg, #001e40 0%, #003366 100%); color:white; letter-spacing:0.01em;">
-          Sign In with Email
-        </button>
-
-        <!-- Footer note -->
-        <p class="text-center text-xs pt-1" style="color:#737780;">
-          By connecting you agree to KorriPay's <span style="color:#001e40; text-decoration:underline; cursor:pointer;">Terms of Service</span>
-        </p>
-      </div>
-    </div>
-
-    <!-- Connecting Spinner State -->
-    <div class="hidden flex-col items-center justify-center px-6 py-12 gap-5" id="wallet-connecting">
+    
+    <!-- Connecting / Signing Spinner State -->
+    <div class="flex flex-col items-center justify-center px-6 py-12 gap-5" id="wallet-connecting">
       <div class="relative">
         <div class="w-16 h-16 rounded-2xl flex items-center justify-center" style="background: linear-gradient(135deg, #001e40 0%, #003366 100%);">
           <span class="material-symbols-outlined text-white" style="font-size:28px;">account_balance_wallet</span>
@@ -550,8 +432,8 @@
         <div class="absolute -inset-2 rounded-3xl border-2 border-t-transparent animate-spin" style="border-color: rgba(0,30,64,0.2); border-top-color: #001e40;"></div>
       </div>
       <div class="text-center space-y-1">
-        <p class="font-bold text-base" id="connecting-status-text" style="color:#191c1e;">Connecting...</p>
-        <p class="text-xs" style="color:#737780;">Please authorize the request on your device.</p>
+        <p class="font-bold text-base" id="connecting-status-text" style="color:#191c1e;">Requesting Auth Nonce...</p>
+        <p class="text-xs text-outline" style="color:#737780;">Please sign the verification request on your wallet.</p>
       </div>
       <div class="flex gap-1.5 mt-1">
         <div class="w-1.5 h-1.5 rounded-full animate-bounce" style="background:#001e40; animation-delay:0ms;"></div>
@@ -560,6 +442,7 @@
       </div>
     </div>
   </div>
+
 
   <script>
     // Header scroll effect
@@ -575,31 +458,12 @@
     // Modal Control Logic
     const overlay = document.getElementById("modal-overlay");
     const walletModal = document.getElementById("modal-wallet");
-    const walletOptions = document.getElementById("wallet-options");
     const walletConnecting = document.getElementById("wallet-connecting");
     const statusText = document.getElementById("connecting-status-text");
-
-    // Wallet button hover effects
-    document.querySelectorAll(".wallet-opt-btn").forEach(btn => {
-      btn.addEventListener("mouseenter", () => {
-        btn.style.background = "#f4f7ff";
-        btn.style.borderColor = "rgba(0,30,64,0.2)";
-        btn.style.transform = "translateY(-1px)";
-        btn.style.boxShadow = "0 4px 12px rgba(0,30,64,0.08)";
-      });
-      btn.addEventListener("mouseleave", () => {
-        btn.style.background = "white";
-        btn.style.borderColor = "rgba(0,30,64,0.1)";
-        btn.style.transform = "";
-        btn.style.boxShadow = "";
-      });
-    });
 
     function openWalletModal() {
       overlay.classList.remove("hidden");
       walletModal.classList.remove("hidden");
-      walletOptions.classList.remove("hidden");
-      walletConnecting.classList.add("hidden");
       walletConnecting.style.display = "";
 
       void overlay.offsetWidth; // force reflow
@@ -621,9 +485,12 @@
     }
 
     // Bind triggers
-    document.getElementById("btn-hero-connect").addEventListener("click", openWalletModal);
-    document.getElementById("btn-fab-connect").addEventListener("click", openWalletModal);
-    document.getElementById("wallet-close-btn").addEventListener("click", closeWalletModal);
+    document.getElementById("btn-hero-connect").addEventListener("click", () => {
+      window.WalletService?.open();
+    });
+    document.getElementById("btn-fab-connect").addEventListener("click", () => {
+      window.WalletService?.open();
+    });
     overlay.addEventListener("click", closeWalletModal);
 
     // Intercept dashboard links if not logged in
@@ -632,109 +499,10 @@
         const token = localStorage.getItem("korripay_logged_in");
         if (!token) {
           e.preventDefault();
-          openWalletModal();
+          window.WalletService?.open();
         }
       });
     });
-
-    // Email login/signup handler for demo mode
-    let currentAuthMode = 'signin';
-    const tabSignIn = document.getElementById("tab-signin");
-    const tabSignUp = document.getElementById("tab-signup");
-    const nameGroup = document.getElementById("signup-name-group");
-    const btnDemoLogin = document.getElementById("btn-demo-login");
-
-    function setAuthTab(mode) {
-      currentAuthMode = mode;
-      if (mode === 'signin') {
-        tabSignIn.style.background = 'white';
-        tabSignIn.style.color = '#001e40';
-        tabSignIn.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
-        tabSignUp.style.background = 'transparent';
-        tabSignUp.style.color = '#737780';
-        tabSignUp.style.boxShadow = 'none';
-        nameGroup.classList.add("hidden");
-        btnDemoLogin.innerText = "Sign In with Email";
-      } else {
-        tabSignUp.style.background = 'white';
-        tabSignUp.style.color = '#001e40';
-        tabSignUp.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
-        tabSignIn.style.background = 'transparent';
-        tabSignIn.style.color = '#737780';
-        tabSignIn.style.boxShadow = 'none';
-        nameGroup.classList.remove("hidden");
-        btnDemoLogin.innerText = "Sign Up with Email";
-      }
-    }
-
-    if (tabSignIn && tabSignUp) {
-      tabSignIn.addEventListener("click", () => setAuthTab('signin'));
-      tabSignUp.addEventListener("click", () => setAuthTab('signup'));
-    }
-
-    if (btnDemoLogin) {
-      btnDemoLogin.addEventListener("click", async () => {
-        const email = document.getElementById("demo-email").value;
-        const password = document.getElementById("demo-password").value;
-        const name = document.getElementById("demo-name") ? document.getElementById("demo-name").value : "";
-
-        if (!email || !password) {
-          alert("Please enter both email and password.");
-          return;
-        }
-
-        if (currentAuthMode === 'signup' && !name) {
-          alert("Please enter your name.");
-          return;
-        }
-
-        btnDemoLogin.disabled = true;
-        btnDemoLogin.innerText = currentAuthMode === 'signin' ? "Signing in..." : "Signing up...";
-
-        const endpoint = currentAuthMode === 'signin' 
-          ? "http://localhost:5000/api/auth/signin" 
-          : "http://localhost:5000/api/auth/signup";
-
-        try {
-          const res = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password, name })
-          });
-
-          if (!res.ok) {
-            const data = await res.json();
-            throw new Error(data.error || "Authentication failed");
-          }
-
-          const authData = await res.json();
-          localStorage.setItem("korripay_logged_in", "true");
-          
-          window.location.href = "dashboard.html#home";
-        } catch (err) {
-          alert(err.message);
-        } finally {
-          btnDemoLogin.disabled = false;
-          btnDemoLogin.innerText = currentAuthMode === 'signin' ? "Sign In with Email" : "Sign Up with Email";
-        }
-      });
-    }
-
-    // Option selection simulation disabled for real WalletService/WalletHooks integration
-    /*
-    document.querySelectorAll(".wallet-opt-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const name = btn.getAttribute("data-name");
-        walletOptions.classList.add("hidden");
-        walletConnecting.classList.remove("hidden");
-        statusText.textContent = `Connecting to ${name}...`;
-
-        setTimeout(() => {
-          window.location.href = "dashboard.html";
-        }, 1500);
-      });
-    });
-    */
 
     // Click interaction for bento cards
     document.querySelectorAll('.bento-card').forEach(card => {

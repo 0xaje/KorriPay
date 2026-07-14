@@ -1,15 +1,11 @@
 /**
  * KorriPay — walletService.js
  * ─────────────────────────────────────────────────────────────────
- * Wallet service layer using @wagmi/core + viem + WalletConnect.
+ * Wallet service layer using Reown AppKit (Web3Modal v5) + Wagmi.
  * Loaded as an ES module. Exposes window.WalletService for use by
  * non-module scripts (app.js, index.html inline scripts).
  *
- * Dependencies loaded from CDN — no build step required.
- *
- * SETUP REQUIRED:
- *   1. Get a free WalletConnect Project ID at https://cloud.walletconnect.com
- *   2. Replace WALLETCONNECT_PROJECT_ID below with your real ID.
+ * Dependencies loaded dynamically from CDN — no local bundler required.
  * ─────────────────────────────────────────────────────────────────
  */
 
@@ -19,10 +15,10 @@ import { giwa } from './src/infrastructure/giwa/index.js';
 const WALLETCONNECT_PROJECT_ID = "YOUR_WALLETCONNECT_PROJECT_ID"; // ← Replace this
 
 const CDN = {
-  wagmiCore:       "https://esm.sh/@wagmi/core@2.13.5",
-  wagmiConnectors: "https://esm.sh/@wagmi/connectors@5.3.5",
-  viem:            "https://esm.sh/viem@2.21.49",
-  viemChains:      "https://esm.sh/viem@2.21.49/chains",
+  wagmiCore:     "https://esm.sh/@wagmi/core@2.13.5",
+  viemChains:    "https://esm.sh/viem@2.21.49/chains",
+  appKit:        "https://esm.sh/@reown/appkit@1.8.22",
+  appKitAdapter: "https://esm.sh/@reown/appkit-adapter-wagmi@1.8.22",
 };
 
 // ── Supported networks ──────────────────────────────────────────────
@@ -44,8 +40,10 @@ const SUPPORTED_CHAINS = {
 // ── Internal state ──────────────────────────────────────────────────
 let _config        = null;   // wagmi config
 let _wagmi         = null;   // wagmi/core module
-let _connectors    = null;   // wagmi/connectors module
 let _chains        = null;   // viem/chains module
+let _appKit        = null;   // appKit module
+let _appKitAdapter = null;   // appKit adapter module
+let _appKitInstance= null;   // instantiated appKit modal
 let _initialised   = false;
 let _initialising  = false;
 let _account       = { address: null, chainId: null, status: "disconnected" };
@@ -62,13 +60,14 @@ async function loadModules() {
   if (_wagmi) return; // already loaded
 
   try {
-    [_wagmi, _connectors, _chains] = await Promise.all([
+    [_wagmi, _chains, _appKit, _appKitAdapter] = await Promise.all([
       import(CDN.wagmiCore),
-      import(CDN.wagmiConnectors),
       import(CDN.viemChains),
+      import(CDN.appKit),
+      import(CDN.appKitAdapter),
     ]);
   } catch (err) {
-    console.error("[WalletService] Failed to load wagmi modules from CDN:", err);
+    console.error("[WalletService] Failed to load modules from CDN:", err);
     throw new Error("Wallet library failed to load. Check your network connection.");
   }
 }
@@ -81,15 +80,9 @@ async function init() {
 
   await loadModules();
 
-  const {
-    createConfig,
-    http,
-    reconnect,
-    watchAccount,
-    watchChainId,
-  } = _wagmi;
-
-  const { injected, walletConnect } = _connectors;
+  const { watchAccount } = _wagmi;
+  const { createAppKit } = _appKit;
+  const { WagmiAdapter } = _appKitAdapter;
 
   const {
     mainnet,
@@ -100,10 +93,10 @@ async function init() {
     sepolia,
   } = _chains;
 
-  // Use user-configured or fallback project ID for demo purposes
+  // Use user-configured or fallback project ID
   const projectId = (WALLETCONNECT_PROJECT_ID && WALLETCONNECT_PROJECT_ID !== "YOUR_WALLETCONNECT_PROJECT_ID")
     ? WALLETCONNECT_PROJECT_ID
-    : "b56e18d47c72ab683b10814fe9495694"; // Fallback demo ID (safe for localhost)
+    : "b56e18d47c72ab683b10814fe9495694"; // Fallback demo ID
 
   const meta = giwa.getChainMetadata();
   const giwaChain = {
@@ -119,39 +112,32 @@ async function init() {
     }
   };
 
-  // Build wagmi config
-  _config = createConfig({
-    chains: [mainnet, polygon, arbitrum, optimism, base, sepolia, giwaChain],
-    connectors: [
-      injected({ target: "metaMask" }),
-      injected({ target: "coinbaseWallet" }),
-      injected(),
-      walletConnect({
-        projectId: projectId,
-        metadata: {
-          name:        "KorriPay",
-          description: "Institutional-grade fintech dashboard",
-          url:         window.location.origin,
-          icons:       [`${window.location.origin}/favicon.ico`],
-        },
-        showQrModal: true,
-      }),
-    ],
-    transports: {
-      [mainnet.id]:  http(),
-      [polygon.id]:  http(),
-      [arbitrum.id]: http(),
-      [optimism.id]: http(),
-      [base.id]:     http(),
-      [sepolia.id]:  http(),
-      [giwaChain.id]: http(),
+  const networks = [mainnet, polygon, arbitrum, optimism, base, sepolia, giwaChain];
+
+  // Set up Wagmi Adapter
+  const wagmiAdapter = new WagmiAdapter({
+    projectId,
+    networks,
+  });
+
+  _config = wagmiAdapter.wagmiConfig;
+
+  // Create AppKit Modal instance with social & email features enabled
+  _appKitInstance = createAppKit({
+    adapters: [wagmiAdapter],
+    networks,
+    projectId,
+    metadata: {
+      name:        "KorriPay",
+      description: "Institutional-grade fintech dashboard",
+      url:         window.location.origin,
+      icons:       [`${window.location.origin}/favicon.ico`],
     },
-    storage: {
-      // Persist session to localStorage under korripay namespace
-      getItem:    (key) => localStorage.getItem(`korripay_wallet_${key}`),
-      setItem:    (key, value) => localStorage.setItem(`korripay_wallet_${key}`, value),
-      removeItem: (key) => localStorage.removeItem(`korripay_wallet_${key}`),
-    },
+    features: {
+      analytics: false,
+      email: true,
+      socials: ['google', 'apple', 'x', 'github']
+    }
   });
 
   // Subscribe to account state changes
@@ -182,18 +168,11 @@ async function init() {
 
   _unwatch.push(unwatchAccount);
 
-  // Attempt to restore previous session from storage
-  try {
-    await reconnect(_config);
-  } catch {
-    // No previous session — that's fine
-  }
-
   _initialised  = true;
   _initialising = false;
 
   emit("ready", { account: { ..._account } });
-  console.info("[WalletService] Initialised. Status:", _account.status);
+  console.info("[WalletService] Initialised with Reown AppKit. Status:", _account.status);
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -215,51 +194,38 @@ function ensureInit() {
   if (!_initialised) throw new Error("[WalletService] Not initialised. Call WalletService.init() first.");
 }
 
-function resolveConnector(type) {
-  if (!_config) throw new Error("[WalletService] Config not ready.");
-
-  const connectors = _config.connectors;
-
-  if (type === "metamask") {
-    return connectors.find((c) => c.id === "metaMask") ?? connectors.find((c) => c.id === "injected") ?? connectors[0];
-  }
-  if (type === "coinbase") {
-    return connectors.find((c) => c.id === "coinbaseWallet") ?? connectors.find((c) => c.id === "injected") ?? connectors[0];
-  }
-  if (type === "walletconnect" || type === "wc") {
-    return connectors.find((c) => c.id === "walletConnect") ?? connectors[connectors.length - 1];
-  }
-  return connectors.find((c) => c.id === "injected") ?? connectors[0];
-}
 
 // ── Public API ───────────────────────────────────────────────────────
 
 /**
- * connect(type)
- * type: "metamask" | "coinbase" | "walletconnect" | "injected"
- * Returns: { address, chainId, network }
+ * open()
+ * Opens the Reown AppKit connection modal.
+ */
+function open() {
+  ensureInit();
+  if (_appKitInstance) {
+    _appKitInstance.open();
+  }
+}
+
+/**
+ * close()
+ * Closes the Reown AppKit connection modal.
+ */
+function close() {
+  ensureInit();
+  if (_appKitInstance) {
+    _appKitInstance.close();
+  }
+}
+
+/**
+ * connect()
+ * Retained for backwards-compatibility; simply opens the AppKit modal.
  */
 async function connect(type = "metamask") {
-  ensureInit();
-
-  const { connect: wagmiConnect } = _wagmi;
-  const connector = resolveConnector(type);
-
-  try {
-    const result = await wagmiConnect(_config, { connector });
-    const network = getNetworkInfo(result.chainId);
-
-    return {
-      address:  result.accounts[0],
-      chainId:  result.chainId,
-      network,
-    };
-  } catch (err) {
-    if (err.name === "ConnectorAlreadyConnectedError") {
-      return getAccount();
-    }
-    throw err;
-  }
+  open();
+  return getAccount();
 }
 
 /**
@@ -267,8 +233,9 @@ async function connect(type = "metamask") {
  */
 async function disconnect() {
   ensureInit();
-  const { disconnect: wagmiDisconnect } = _wagmi;
-  await wagmiDisconnect(_config);
+  if (_appKitInstance) {
+    await _appKitInstance.disconnect();
+  }
 }
 
 /**
@@ -367,6 +334,8 @@ function destroy() {
 // ── Attach to window ─────────────────────────────────────────────────
 window.WalletService = {
   init,
+  open,
+  close,
   connect,
   disconnect,
   getAccount,
@@ -391,4 +360,4 @@ window.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-export { init, connect, disconnect, getAccount, getBalance, switchNetwork, signMessage };
+export { init, open, close, connect, disconnect, getAccount, getBalance, switchNetwork, signMessage };

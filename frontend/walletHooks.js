@@ -151,98 +151,9 @@ function updateNetworkDisplay(network) {
  */
 function bindConnectButtons() {
   const optionButtons = document.querySelectorAll(".wallet-opt-btn");
-  const optionsPanel  = el("wallet-options");
-  const connectingPanel = el("wallet-connecting");
-  const statusText    = el("connecting-status-text");
-
   optionButtons.forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      if (!window.WalletService) {
-        alert("Wallet service is still loading. Please wait a moment.");
-        return;
-      }
-
-      const name = btn.getAttribute("data-name") ?? "";
-
-      let type = "injected";
-      if (name.toLowerCase().includes("metamask"))          type = "metamask";
-      if (name.toLowerCase().includes("coinbase"))          type = "coinbase";
-      if (name.toLowerCase().includes("walletconnect"))     type = "walletconnect";
-
-      // Show connecting UI
-      if (optionsPanel)    optionsPanel.classList.add("hidden");
-      if (connectingPanel) {
-        connectingPanel.classList.remove("hidden");
-        connectingPanel.style.display = "flex";
-      }
-      if (statusText)      statusText.textContent = `Connecting to ${name}...`;
-
-      try {
-        const result = await window.WalletService.connect(type);
-
-        if (statusText) statusText.textContent = "Requesting Auth Nonce...";
-
-        // 1. Get nonce from server
-        const nonceRes = await fetch("http://localhost:5000/api/auth/nonce");
-        if (!nonceRes.ok) throw new Error("Failed to retrieve nonce from server");
-        const { nonce, tempId } = await nonceRes.json();
-
-        if (statusText) statusText.textContent = "Please sign GIWA request in wallet...";
-
-        // 2. Format GIWA message
-        const message = `Sign in to KorriPay.\nHost: localhost:5000\nAddress: ${result.address}\nNonce: ${nonce}\nStatement: Authenticate session.`;
-
-        // 3. Request signature from wallet
-        const signature = await window.WalletService.signMessage(message);
-
-        if (statusText) statusText.textContent = "Verifying signature...";
-
-        // 4. Verify signature on server
-        const verifyRes = await fetch("http://localhost:5000/api/auth/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, signature, address: result.address, tempId })
-        });
-
-        if (!verifyRes.ok) {
-          const verifyErr = await verifyRes.json();
-          throw new Error(verifyErr.error || "GIWA verification failed");
-        }
-
-        const authData = await verifyRes.json();
-
-        // 5. Store session status
-        localStorage.setItem("korripay_logged_in", "true");
-
-        if (statusText) statusText.textContent = "Authenticated successfully!";
-        updateAddressDisplay(result.address);
-
-        setTimeout(() => {
-          window.location.href = `dashboard.html#home`;
-        }, 800);
-
-      } catch (err) {
-        console.error("[WalletHooks] GIWA Connection error:", err);
-
-        // Disconnect wallet if connected but GIWA failed to ensure clean state
-        try { await window.WalletService.disconnect(); } catch (e) {}
-
-        // Reset modal back to options
-        if (optionsPanel)    optionsPanel.classList.remove("hidden");
-        if (connectingPanel) connectingPanel.classList.add("hidden");
-        if (statusText)      statusText.textContent = "Connecting...";
-
-        let message = "Authentication failed.";
-        if (err.message?.includes("User rejected")) {
-          message = "Signature request cancelled by user.";
-        } else if (err.name === "ProviderNotFoundError" || err.message?.includes("Provider not found") || err.message?.includes("Connector not found")) {
-          message = `${name} extension was not found in your browser. Please install the ${name} extension, or select "WalletConnect" to scan with a mobile wallet.`;
-        } else {
-          message = err.message ?? "Authentication failed.";
-        }
-
-        alert(message);
-      }
+    btn.addEventListener("click", () => {
+      window.WalletService?.open();
     });
   });
 }
@@ -322,14 +233,7 @@ function bindHeroConnectButton() {
   if (!heroBtn) return;
 
   heroBtn.addEventListener("click", () => {
-    // Re-use existing wallet modal if present
-    const fabBtn = el("btn-fab-connect");
-    if (fabBtn) {
-      fabBtn.click();
-      return;
-    }
-    // Otherwise trigger WalletConnect directly
-    window.WalletService?.connect("walletconnect").catch(console.error);
+    window.WalletService?.open();
   });
 }
 
@@ -341,13 +245,110 @@ onStateChange(() => {
   updateNetworkDisplay(_state.network);
 });
 
-onConnect(({ address, chainId, network }) => {
+onConnect(async ({ address, chainId, network }) => {
   updateAddressDisplay(address);
   updateNetworkDisplay(network);
 
   if (typeof showToast === "function") {
     const networkName = network?.name ?? `Chain ${chainId}`;
     showToast(`Wallet connected on ${networkName}`);
+  }
+
+  // Check if they need authentication (if they aren't logged in on backend)
+  const isLoggedIn = localStorage.getItem("korripay_logged_in") === "true";
+  if (!isLoggedIn) {
+    // Show signature request dialog or overlay
+    const optionsPanel = el("wallet-options");
+    const connectingPanel = el("wallet-connecting");
+    const statusText = el("connecting-status-text");
+    const overlay = el("modal-overlay");
+    const walletModal = el("modal-wallet");
+
+    // Make sure overlay is visible
+    if (overlay && walletModal) {
+      overlay.classList.remove("hidden");
+      walletModal.classList.remove("hidden");
+      overlay.classList.add("opacity-100");
+      walletModal.classList.add("opacity-100", "scale-100");
+      walletModal.classList.remove("scale-95", "opacity-0");
+    }
+
+    if (optionsPanel) optionsPanel.classList.add("hidden");
+    if (connectingPanel) {
+      connectingPanel.classList.remove("hidden");
+      connectingPanel.style.display = "flex";
+    }
+    if (statusText) statusText.textContent = "Requesting Auth Nonce...";
+
+    try {
+      // 1. Get nonce from server
+      const nonceRes = await fetch("http://localhost:5000/api/auth/nonce");
+      if (!nonceRes.ok) throw new Error("Failed to retrieve nonce from server");
+      const { nonce, tempId } = await nonceRes.json();
+
+      if (statusText) statusText.textContent = "Please sign GIWA request in wallet...";
+
+      // 2. Format GIWA message
+      const message = `Sign in to KorriPay.\nHost: localhost:5000\nAddress: ${address}\nNonce: ${nonce}\nStatement: Authenticate session.`;
+
+      // 3. Request signature from wallet
+      const signature = await window.WalletService.signMessage(message);
+
+      if (statusText) statusText.textContent = "Verifying signature...";
+
+      // 4. Verify signature on server
+      const verifyRes = await fetch("http://localhost:5000/api/auth/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, signature, address, tempId })
+      });
+
+      if (!verifyRes.ok) {
+        const verifyErr = await verifyRes.json();
+        throw new Error(verifyErr.error || "GIWA verification failed");
+      }
+
+      const authData = await verifyRes.json();
+
+      // 5. Store session status
+      localStorage.setItem("korripay_logged_in", "true");
+
+      if (statusText) statusText.textContent = "Authenticated successfully!";
+      updateAddressDisplay(address);
+
+      setTimeout(() => {
+        window.location.href = `dashboard.html#home`;
+      }, 800);
+
+    } catch (err) {
+      console.error("[WalletHooks] GIWA Connection error during auto-sign:", err);
+      try { await window.WalletService.disconnect(); } catch (e) {}
+      localStorage.removeItem("korripay_logged_in");
+
+      // Reset modal UI
+      if (optionsPanel) optionsPanel.classList.remove("hidden");
+      if (connectingPanel) connectingPanel.classList.add("hidden");
+      if (statusText) statusText.textContent = "Connecting...";
+
+      // Hide modal
+      if (overlay && walletModal) {
+        overlay.classList.remove("opacity-100");
+        walletModal.classList.remove("opacity-100", "scale-100");
+        walletModal.classList.add("scale-95", "opacity-0");
+        setTimeout(() => {
+          overlay.classList.add("hidden");
+          walletModal.classList.add("hidden");
+        }, 300);
+      }
+
+      let errorMsg = "Authentication failed.";
+      if (err.message?.includes("User rejected")) {
+        errorMsg = "Signature request cancelled by user.";
+      } else {
+        errorMsg = err.message ?? "Authentication failed.";
+      }
+      alert(errorMsg);
+    }
   }
 });
 
