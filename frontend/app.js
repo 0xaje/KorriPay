@@ -3225,6 +3225,7 @@ const _debouncedFXRefresh = _debounce(refreshFXPreview, 400);
 
 // Legacy compatibility — used by Step 2 USD-equivalent calc
 const exchangeRates = { USD: 1.00, KRW: 1325.50, NGN: 1610.00 };
+const exchangeSymbols = { USD: "$", KRW: "₩", NGN: "₦" };
 
 function setupMultiStepSend() {
   const amountInput = document.getElementById("send-input-amount");
