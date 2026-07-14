@@ -2748,73 +2748,33 @@
     </div> <!-- End Main Content Area -->
   </div> <!-- End Responsive Layout Shell -->
 
-  <!-- BottomNavBar -->
-  <nav class="md:hidden fixed bottom-0 w-full z-50 bg-surface-container-lowest/95 dark:bg-inverse-surface/95 backdrop-blur-md shadow-lg flex items-center h-20 px-6 pb-2 rounded-t-xl max-w-2xl left-1/2 -translate-x-1/2 overflow-x-auto no-scrollbar gap-6 border-t border-outline-variant/15">
-    <!-- Home (Active by default) -->
-    <a id="nav-home" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center bg-secondary-container dark:bg-on-secondary-fixed-variant text-on-secondary-container dark:text-secondary-fixed rounded-full px-4 py-1.5 active:scale-90 transition-all duration-300">
+  <!-- BottomNavBar (Redesigned & Simplified for Mobile) -->
+  <nav class="md:hidden fixed bottom-0 w-full z-50 bg-surface-container-lowest/95 dark:bg-inverse-surface/95 backdrop-blur-md shadow-lg flex justify-around items-center h-20 px-4 pb-2 rounded-t-2xl max-w-2xl left-1/2 -translate-x-1/2 border-t border-outline-variant/15 select-none">
+    <!-- Home -->
+    <a id="nav-home" href="#" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-all active:scale-90 duration-300 rounded-xl">
       <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
-      <span class="font-label-md text-label-md">Home</span>
+      <span class="text-[10px] font-semibold mt-0.5">Home</span>
     </a>
     <!-- Send -->
-    <a id="nav-send" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-send" href="#send" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-all active:scale-90 duration-300 rounded-xl">
       <span class="material-symbols-outlined">send</span>
-      <span class="font-label-md text-label-md">Create Settlement</span>
+      <span class="text-[10px] font-semibold mt-0.5">Send</span>
     </a>
-    <!-- History -->
-    <a id="nav-history" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <!-- Ledger -->
+    <a id="nav-history" href="#history" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-all active:scale-90 duration-300 rounded-xl">
       <span class="material-symbols-outlined">history</span>
-      <span class="font-label-md text-label-md">Settlement Ledger</span>
-    </a>
-    <!-- Portfolio -->
-    <a id="nav-portfolio" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
-      <span class="material-symbols-outlined">account_balance_wallet</span>
-      <span class="font-label-md text-label-md">Portfolio</span>
-    </a>
-    <!-- Explorer -->
-    <a id="nav-explorer" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
-      <span class="material-symbols-outlined">explore</span>
-      <span class="font-label-md text-label-md">Explorer</span>
-    </a>
-    <!-- Merchant -->
-    <a id="nav-merchant" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
-      <span class="material-symbols-outlined">storefront</span>
-      <span class="font-label-md text-label-md">Merchant</span>
-    </a>
-    <!-- Settlement Portal -->
-    <a id="nav-merchant-portal" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
-      <span class="material-symbols-outlined">payments</span>
-      <span class="font-label-md text-label-md">Settlements</span>
-    </a>
-    <!-- Analytics -->
-    <a id="nav-analytics" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
-      <span class="material-symbols-outlined">query_stats</span>
-      <span class="font-label-md text-label-md">Analytics</span>
-    </a>
-    <!-- GIWA -->
-    <a id="nav-giwa" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
-      <span class="material-symbols-outlined">lan</span>
-      <span class="font-label-md text-label-md">GIWA</span>
-    </a>
-    <!-- Operations -->
-    <a id="nav-operations" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
-      <span class="material-symbols-outlined">settings_ethernet</span>
-      <span class="font-label-md text-label-md">Ops</span>
+      <span class="text-[10px] font-semibold mt-0.5">Ledger</span>
     </a>
     <!-- Compliance -->
-    <a id="nav-compliance" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
+    <a id="nav-compliance" href="#compliance" class="nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-all active:scale-90 duration-300 rounded-xl">
       <span class="material-symbols-outlined">gavel</span>
-      <span class="font-label-md text-label-md">Compliance</span>
+      <span class="text-[10px] font-semibold mt-0.5">Compliance</span>
     </a>
-    <!-- Profile -->
-    <a id="nav-profile" href="#" class="nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform">
-      <span class="material-symbols-outlined">person</span>
-      <span class="font-label-md text-label-md">Profile</span>
-    </a>
-    <!-- Admin -->
-    <a id="nav-admin" href="admin.html" class="flex flex-col items-center justify-center text-amber-600 dark:text-amber-400 px-4 py-1.5 hover:text-amber-700 dark:hover:text-amber-300 transition-colors active:scale-90 transition-transform hidden shrink-0">
-      <span class="material-symbols-outlined">admin_panel_settings</span>
-      <span class="font-label-md text-label-md font-bold">Admin</span>
-    </a>
+    <!-- More / Menu -->
+    <button id="nav-more-btn" class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-all active:scale-90 duration-300 rounded-xl cursor-pointer">
+      <span class="material-symbols-outlined">menu</span>
+      <span class="text-[10px] font-semibold mt-0.5">More</span>
+    </button>
   </nav>
 
   <!-- ==================== MODALS ==================== -->
@@ -3838,11 +3798,188 @@
     </div>
   </div>
 
+  <!-- More Menu Mobile Drawer -->
+  <div id="mobile-more-menu" class="md:hidden fixed inset-0 z-[150] hidden opacity-0 transition-opacity duration-300">
+    <!-- Overlay Backing -->
+    <div id="mobile-more-overlay" class="absolute inset-0 bg-black/60 backdrop-blur-md"></div>
+    
+    <!-- Drawer Content Sheet -->
+    <div id="mobile-more-sheet" class="absolute bottom-0 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-white dark:bg-zinc-950 rounded-t-3xl shadow-2xl transform translate-y-full transition-transform duration-300 flex flex-col max-h-[82vh] overflow-hidden"
+      style="border: 1px solid rgba(0,30,64,0.08);">
+      
+      <!-- Drag handle / top indicator -->
+      <div class="w-full flex justify-center py-3.5 border-b border-surface-container dark:border-zinc-900/50 shrink-0">
+        <div class="w-12 h-1.5 bg-gray-200 dark:bg-zinc-800 rounded-full"></div>
+      </div>
+      
+      <!-- Drawer Header -->
+      <div class="flex justify-between items-center px-6 py-4 border-b border-surface-container dark:border-zinc-900/50 shrink-0">
+        <div>
+          <h3 class="font-bold text-lg text-primary dark:text-primary-fixed">Settlement Hub</h3>
+          <p class="text-xs text-outline dark:text-outline-variant">Explore additional modules & features</p>
+        </div>
+        <button id="mobile-more-close" class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-zinc-800 transition-all cursor-pointer">
+          <span class="material-symbols-outlined text-outline dark:text-outline-variant text-lg">close</span>
+        </button>
+      </div>
+      
+      <!-- Drawer Scrollable Content -->
+      <div class="flex-grow overflow-y-auto px-6 py-5 space-y-6 no-scrollbar">
+        <!-- Section: Infrastructure -->
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-bold text-outline dark:text-outline-variant uppercase tracking-wider">Infrastructure</h4>
+          <div class="grid grid-cols-2 gap-3">
+            <a href="#portfolio" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary dark:text-primary-fixed flex items-center justify-center"><span class="material-symbols-outlined">account_balance_wallet</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">Portfolio</span>
+            </a>
+            <a href="#swap" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-primary/10 text-primary dark:text-primary-fixed flex items-center justify-center"><span class="material-symbols-outlined">swap_horiz</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">Swap Assets</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Section: Merchant Suite -->
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-bold text-outline dark:text-outline-variant uppercase tracking-wider">Merchant Suite</h4>
+          <div class="grid grid-cols-2 gap-3">
+            <a href="#merchant" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-green-500/10 text-green-600 dark:text-secondary-fixed flex items-center justify-center"><span class="material-symbols-outlined">storefront</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">Merchant Terminal</span>
+            </a>
+            <a href="#merchant-portal" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-green-500/10 text-green-600 dark:text-secondary-fixed flex items-center justify-center"><span class="material-symbols-outlined">payments</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">Settlement Portal</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Section: Network Intelligence -->
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-bold text-outline dark:text-outline-variant uppercase tracking-wider">Network Intel</h4>
+          <div class="grid grid-cols-2 gap-3">
+            <a href="#explorer" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-primary-fixed-dim flex items-center justify-center"><span class="material-symbols-outlined">explore</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">Explorer</span>
+            </a>
+            <a href="#analytics" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-primary-fixed-dim flex items-center justify-center"><span class="material-symbols-outlined">query_stats</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">Analytics</span>
+            </a>
+            <a href="#giwa" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-primary-fixed-dim flex items-center justify-center"><span class="material-symbols-outlined">lan</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">GIWA Status</span>
+            </a>
+            <a href="#operations" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 dark:text-primary-fixed-dim flex items-center justify-center"><span class="material-symbols-outlined">settings_ethernet</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">Operations</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Section: Governance & Account -->
+        <div class="space-y-3">
+          <h4 class="text-[10px] font-bold text-outline dark:text-outline-variant uppercase tracking-wider">Governance</h4>
+          <div class="grid grid-cols-2 gap-3">
+            <a href="#profile" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center"><span class="material-symbols-outlined">person</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">My Profile</span>
+            </a>
+            <a href="/treasury" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center"><span class="material-symbols-outlined">account_balance</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">Treasury</span>
+            </a>
+            <a href="/organization" class="more-menu-item flex items-center gap-3 p-3.5 bg-surface-container-low dark:bg-zinc-900 rounded-2xl hover:bg-surface-container dark:hover:bg-zinc-800 transition-all active:scale-[0.98]">
+              <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center"><span class="material-symbols-outlined">corporate_fare</span></div>
+              <span class="text-xs font-bold text-on-surface dark:text-inverse-on-surface">Organization</span>
+            </a>
+            <button id="mobile-more-disconnect" class="w-full flex items-center gap-3 p-3.5 bg-red-50 dark:bg-red-950/20 border border-red-500/20 rounded-2xl hover:bg-red-100 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 transition-all active:scale-[0.98] text-left cursor-pointer">
+              <div class="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center"><span class="material-symbols-outlined">logout</span></div>
+              <span class="text-xs font-bold">Disconnect</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Drawer Footer -->
+      <div class="p-6 border-t border-surface-container dark:border-zinc-900/50 bg-gray-50 dark:bg-zinc-900/10 shrink-0">
+        <div class="flex items-center gap-3">
+          <img class="w-9 h-9 rounded-full object-cover border border-primary/10 dark:border-zinc-800" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjU_oa8Gj5nPXicWEicktSvkVShudC8QRJoUIVwWtWtHO-NK0STn4sBDKySKN745dlhyUA4FyqdhBn469mw8qYR5Hsfm7TE_g8GJWXg2ydPTb6fibQuns2T5-KReB4z7r38VXkoOkrV28o6AwzyEbMQ7huWeq6EXOX2MsLkJ3W8Mll4xloeYmiCGUYMotWx0nyz2YDQ2EN1dThfUEnAIk1D9Yd4GB-CdxkdK4ZLj3ZBmekvOlzIttOX9vJN9P_2Y_meomQmeaM3tA" alt="Profile"/>
+          <div>
+            <p class="text-xs font-bold text-on-surface dark:text-white">Oyeolorun Paul</p>
+            <p id="mobile-wallet-display" class="text-[10px] font-mono text-outline dark:text-outline-variant">0x71C8b...49A2</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Success Feedback (Toast) -->
   <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 bg-on-surface text-surface py-3 px-6 rounded-full font-label-md text-label-md opacity-0 pointer-events-none transition-all duration-300 z-[200] shadow-xl flex items-center gap-2 max-w-sm text-center">
     <span id="toast-icon" class="material-symbols-outlined text-sm">check_circle</span>
     <span id="toast-message">Action processed successfully</span>
   </div>
+
+  <!-- Mobile Drawer Toggle Script -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const moreMenu = document.getElementById("mobile-more-menu");
+      const moreBtn = document.getElementById("nav-more-btn");
+      const moreClose = document.getElementById("mobile-more-close");
+      const moreOverlay = document.getElementById("mobile-more-overlay");
+      const moreSheet = document.getElementById("mobile-more-sheet");
+      const mobDisconnect = document.getElementById("mobile-more-disconnect");
+
+      if (moreBtn && moreMenu) {
+        moreBtn.addEventListener("click", () => {
+          moreMenu.classList.remove("hidden");
+          // Force layout reflow
+          void moreMenu.offsetWidth;
+          moreMenu.classList.add("opacity-100");
+          moreSheet.classList.remove("translate-y-full");
+          moreSheet.classList.add("translate-y-0");
+        });
+      }
+
+      const closeMore = () => {
+        moreMenu.classList.remove("opacity-100");
+        moreSheet.classList.remove("translate-y-0");
+        moreSheet.classList.add("translate-y-full");
+        setTimeout(() => {
+          moreMenu.classList.add("hidden");
+        }, 300);
+      };
+
+      if (moreClose) moreClose.addEventListener("click", closeMore);
+      if (moreOverlay) moreOverlay.addEventListener("click", closeMore);
+
+      // Close drawer on clicking any more menu link
+      const moreItems = document.querySelectorAll(".more-menu-item");
+      moreItems.forEach(item => {
+        item.addEventListener("click", () => {
+          closeMore();
+        });
+      });
+
+      // Disconnect trigger
+      if (mobDisconnect) {
+        mobDisconnect.addEventListener("click", () => {
+          closeMore();
+          document.getElementById("side-btn-disconnect")?.click();
+        });
+      }
+
+      // Sync wallet address in mobile footer when hooks load
+      window.addEventListener("korripay:wallet:stateChanged", (e) => {
+        const address = e.detail?.account?.address;
+        const displayEl = document.getElementById("mobile-wallet-display");
+        if (displayEl) {
+          displayEl.textContent = address ? `${address.slice(0, 7)}...${address.slice(-4)}` : "Not connected";
+        }
+      });
+    });
+  </script>
 
   <!-- Frontend logic -->
   <script type="module" src="src/components/CompliancePassport.js"></script>

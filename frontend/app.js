@@ -557,16 +557,31 @@ function switchTab(tabId) {
     const itemKey = item.id.replace("nav-", "");
     if (itemKey === navKey) {
       // Active styling
-      item.className = "nav-item shrink-0 flex flex-col items-center justify-center bg-primary/10 dark:bg-primary-fixed/10 text-primary dark:text-primary-fixed rounded-full px-4 py-1.5 active:scale-90 transition-all duration-200";
+      item.className = "nav-item flex flex-col items-center justify-center bg-primary/10 dark:bg-primary-fixed/10 text-primary dark:text-primary-fixed rounded-xl px-3 py-1.5 active:scale-90 transition-all duration-200";
       const icon = item.querySelector(".material-symbols-outlined");
       if (icon) icon.style.fontVariationSettings = "'FILL' 1";
     } else {
       // Inactive styling
-      item.className = "nav-item shrink-0 flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-4 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform";
+      item.className = "nav-item flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-colors active:scale-90 transition-transform rounded-xl";
       const icon = item.querySelector(".material-symbols-outlined");
       if (icon) icon.style.fontVariationSettings = "'FILL' 0";
     }
   });
+
+  // Highlight 'More' btn if current tab is a secondary page
+  const moreBtn = document.getElementById("nav-more-btn");
+  if (moreBtn) {
+    const mainNavKeys = ["home", "send", "history", "compliance"];
+    if (!mainNavKeys.includes(navKey)) {
+      moreBtn.className = "flex flex-col items-center justify-center bg-primary/10 dark:bg-primary-fixed/10 text-primary dark:text-primary-fixed rounded-xl px-3 py-1.5 active:scale-90 transition-all duration-200 cursor-pointer";
+      const icon = moreBtn.querySelector(".material-symbols-outlined");
+      if (icon) icon.style.fontVariationSettings = "'FILL' 1";
+    } else {
+      moreBtn.className = "flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-3 py-1.5 hover:text-primary dark:hover:text-primary-fixed transition-all active:scale-90 duration-300 rounded-xl cursor-pointer";
+      const icon = moreBtn.querySelector(".material-symbols-outlined");
+      if (icon) icon.style.fontVariationSettings = "'FILL' 0";
+    }
+  }
 
   // Update Sidebar Nav Items
   sideNavItems.forEach(item => {
