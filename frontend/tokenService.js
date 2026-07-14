@@ -1,5 +1,3 @@
-import { readContract, writeContract, waitForTransactionReceipt } from "https://esm.sh/@wagmi/core@2.13.5";
-import { formatUnits, parseUnits } from "https://esm.sh/viem@2.21.49";
 import { networkRegistry } from "./src/infrastructure/giwa/index.js";
 
 // ── ERC20 Minimal ABI ──────────────────────────────────────────────
@@ -123,12 +121,6 @@ async function fetchTokenBalance(symbol, walletAddress, chainId) {
     return "0.00";
   }
 
-  const wagmiConfig = window.WalletService.getConfig();
-  if (!wagmiConfig) {
-    console.warn("[TokenService] Wagmi config not initialized in WalletService.");
-    return "0.00";
-  }
-
   const tokenAddress = getTokenAddress(symbol, chainId);
   if (!tokenAddress) {
     console.warn(`[TokenService] Token address not configured for ${symbol} on chain ${chainId}`);
@@ -136,7 +128,7 @@ async function fetchTokenBalance(symbol, walletAddress, chainId) {
   }
 
   try {
-    const balanceResult = await readContract(wagmiConfig, {
+    const balanceResult = await window.WalletService.readContract({
       abi: ERC20_ABI,
       address: tokenAddress,
       functionName: "balanceOf",
@@ -145,7 +137,7 @@ async function fetchTokenBalance(symbol, walletAddress, chainId) {
 
     let decimals = (symbol === "USDC") ? 6 : 18;
     try {
-      const decimalsResult = await readContract(wagmiConfig, {
+      const decimalsResult = await window.WalletService.readContract({
         abi: ERC20_ABI,
         address: tokenAddress,
         functionName: "decimals"
@@ -157,7 +149,7 @@ async function fetchTokenBalance(symbol, walletAddress, chainId) {
       console.warn(`[TokenService] Failed to fetch decimals for ${symbol}, using default ${decimals}:`, err);
     }
 
-    const formatted = formatUnits(balanceResult, decimals);
+    const formatted = window.WalletService.formatUnits(balanceResult, decimals);
     console.info(`[TokenService] Fetched balance for ${symbol}: ${formatted} (Address: ${tokenAddress})`);
     return formatted;
   } catch (error) {
@@ -177,11 +169,6 @@ async function sendSettlement(symbol, amount, recipientAddress) {
     throw new Error("Wallet not connected");
   }
 
-  const wagmiConfig = window.WalletService.getConfig();
-  if (!wagmiConfig) {
-    throw new Error("Wagmi config not initialized");
-  }
-
   const account = window.WalletService.getAccount();
   const chainId = account.chainId;
 
@@ -197,21 +184,21 @@ async function sendSettlement(symbol, amount, recipientAddress) {
   if (!isNative) {
     decimals = (symbol === "USDC") ? 6 : 18;
   }
-  const parsedAmount = parseUnits(amount.toString(), decimals);
+  const parsedAmount = window.WalletService.parseUnits(amount.toString(), decimals);
 
   console.info(`[TokenService] Preparing settlement for ${amount} ${symbol} (Parsed: ${parsedAmount.toString()})`);
 
   // Approval step for ERC20
   if (!isNative) {
     console.info(`[TokenService] Approving ${settlementAddress} to spend ${amount} ${symbol}...`);
-    const approveTx = await writeContract(wagmiConfig, {
+    const approveTx = await window.WalletService.writeContract({
       abi: ERC20_APPROVE_ABI,
       address: tokenAddress,
       functionName: "approve",
       args: [settlementAddress, parsedAmount]
     });
     console.info(`[TokenService] Waiting for approval transaction receipt for: ${approveTx}`);
-    await waitForTransactionReceipt(wagmiConfig, { hash: approveTx });
+    await window.WalletService.waitForTransactionReceipt({ hash: approveTx });
     console.info(`[TokenService] Approval confirmed.`);
   }
 
@@ -221,7 +208,7 @@ async function sendSettlement(symbol, amount, recipientAddress) {
   const toTokenParam = "0x0000000000000000000000000000000000000000";
   const valueParam = isNative ? parsedAmount : 0n;
 
-  const settlementTx = await writeContract(wagmiConfig, {
+  const settlementTx = await window.WalletService.writeContract({
     abi: KORRI_SETTLEMENT_ABI,
     address: settlementAddress,
     functionName: "initiateSettlement",
@@ -236,19 +223,14 @@ async function sendSettlement(symbol, amount, recipientAddress) {
 /**
  * Wait for a transaction confirmation
  * @param {string} txHash - Transaction hash to wait for
- * @param {object} [wagmiConfig] - Wagmi config (optional fallback to WalletService config)
  */
-async function waitForConfirmation(txHash, wagmiConfig) {
-  let config = wagmiConfig;
-  if (!config && window.WalletService) {
-    config = window.WalletService.getConfig();
-  }
-  if (!config) {
-    throw new Error("Wagmi config not initialized for confirmation wait");
+async function waitForConfirmation(txHash) {
+  if (!window.WalletService) {
+    throw new Error("WalletService not initialized for confirmation wait");
   }
 
   console.info(`[TokenService] Waiting for settlement transaction confirmation: ${txHash}`);
-  const receipt = await waitForTransactionReceipt(config, { hash: txHash });
+  const receipt = await window.WalletService.waitForTransactionReceipt({ hash: txHash });
   console.info(`[TokenService] Settlement confirmed:`, receipt);
   return receipt;
 }

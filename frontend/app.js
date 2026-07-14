@@ -407,6 +407,11 @@ function setupNavigation() {
   // Nav items click - update the hash in the URL
   navItems.forEach(item => {
     item.addEventListener("click", (e) => {
+      const href = item.getAttribute("href");
+      if (href && href !== "#" && !href.startsWith("#")) {
+        // Let normal browser navigation handle this link!
+        return;
+      }
       e.preventDefault();
       const targetHash = item.id.replace("side-nav-", "").replace("nav-", "");
       window.location.hash = targetHash;

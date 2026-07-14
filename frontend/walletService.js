@@ -16,6 +16,7 @@ const WALLETCONNECT_PROJECT_ID = "YOUR_WALLETCONNECT_PROJECT_ID"; // ← Replace
 
 const CDN = {
   wagmiCore:     "https://esm.sh/@wagmi/core@2.13.5",
+  viem:          "https://esm.sh/viem@2.21.49",
   viemChains:    "https://esm.sh/viem@2.21.49/chains",
   appKit:        "https://esm.sh/@reown/appkit@1.8.22",
   appKitAdapter: "https://esm.sh/@reown/appkit-adapter-wagmi@1.8.22",
@@ -40,6 +41,7 @@ const SUPPORTED_CHAINS = {
 // ── Internal state ──────────────────────────────────────────────────
 let _config        = null;   // wagmi config
 let _wagmi         = null;   // wagmi/core module
+let _viem          = null;   // viem module
 let _chains        = null;   // viem/chains module
 let _appKit        = null;   // appKit module
 let _appKitAdapter = null;   // appKit adapter module
@@ -60,8 +62,9 @@ async function loadModules() {
   if (_wagmi) return; // already loaded
 
   try {
-    [_wagmi, _chains, _appKit, _appKitAdapter] = await Promise.all([
+    [_wagmi, _viem, _chains, _appKit, _appKitAdapter] = await Promise.all([
       import(CDN.wagmiCore),
+      import(CDN.viem),
       import(CDN.viemChains),
       import(CDN.appKit),
       import(CDN.appKitAdapter),
@@ -348,6 +351,11 @@ window.WalletService = {
   destroy,
   SUPPORTED_CHAINS,
   getConfig: () => _config,
+  readContract: (...args) => _wagmi.readContract(_config, ...args),
+  writeContract: (...args) => _wagmi.writeContract(_config, ...args),
+  waitForTransactionReceipt: (...args) => _wagmi.waitForTransactionReceipt(_config, ...args),
+  formatUnits: (...args) => _viem.formatUnits(...args),
+  parseUnits: (...args) => _viem.parseUnits(...args),
 };
 
 // Auto-init on load
