@@ -10,7 +10,7 @@ export const GIWA_NETWORK_CONFIG = {
   rpcUrl: 'http://127.0.0.1:8545',
   explorerUrl: 'https://explorer.giwa.io',
   faucetUrl: 'https://faucet.giwa.io',
-  resolverUrl: 'http://localhost:5000/api/v1/resolve',
+  resolverUrl: window.location.origin + '/api/v1/resolve',
   stablecoinAddress: '0x9b3f5ce66f6d40dbbad1a8a56a3bf87f7d92837f',
   settlementAddress: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
   hardfork: 'Karst',

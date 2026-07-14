@@ -282,14 +282,14 @@ onConnect(async ({ address, chainId, network }) => {
 
     try {
       // 1. Get nonce from server
-      const nonceRes = await fetch("http://localhost:5000/api/auth/nonce");
+      const nonceRes = await fetch("/api/auth/nonce");
       if (!nonceRes.ok) throw new Error("Failed to retrieve nonce from server");
       const { nonce, tempId } = await nonceRes.json();
 
       if (statusText) statusText.textContent = "Please sign GIWA request in wallet...";
 
-      // 2. Format GIWA message
-      const message = `Sign in to KorriPay.\nHost: localhost:5000\nAddress: ${address}\nNonce: ${nonce}\nStatement: Authenticate session.`;
+      // 2. Format GIWA message using dynamic host
+      const message = `Sign in to KorriPay.\nHost: ${window.location.host}\nAddress: ${address}\nNonce: ${nonce}\nStatement: Authenticate session.`;
 
       // 3. Request signature from wallet
       const signature = await window.WalletService.signMessage(message);
@@ -297,7 +297,7 @@ onConnect(async ({ address, chainId, network }) => {
       if (statusText) statusText.textContent = "Verifying signature...";
 
       // 4. Verify signature on server
-      const verifyRes = await fetch("http://localhost:5000/api/auth/verify", {
+      const verifyRes = await fetch("/api/auth/verify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message, signature, address, tempId })

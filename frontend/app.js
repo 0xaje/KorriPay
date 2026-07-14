@@ -1,7 +1,7 @@
 // KorriPay Frontend Logic
 import { networkRegistry } from "./src/infrastructure/giwa/index.js";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE = window.location.origin + "/api";
 
 // Top Loader Progress Indicator
 function toggleGlobalLoader(show) {
@@ -186,7 +186,7 @@ let state = {
 // Check if the user is an admin to show Admin Console navigation link
 async function checkAdminStatus() {
   try {
-    const res = await authFetch("http://localhost:5000/api/auth/me");
+    const res = await authFetch(API_BASE + "/auth/me");
     if (res && res.ok) {
       const user = await res.json();
       if (user.role === 'ADMIN') {
@@ -935,7 +935,7 @@ function renderWalletBalances() {
   // Refresh from API if user is logged in
   if (isLoggedIn && !_walletBalanceFetched) {
     _walletBalanceFetched = true;
-    authFetch('http://localhost:5000/api/wallet/summary')
+    authFetch(API_BASE + '/wallet/summary')
       .then(r => r && r.ok ? r.json() : null)
       .then(data => {
         if (!data) return;
@@ -3186,7 +3186,7 @@ async function refreshFXPreview(amount, currency) {
   rateRowsEl.classList.add('hidden');
 
   try {
-    const res = await fetch('http://localhost:5000/api/fx/quote', {
+    const res = await fetch(API_BASE + '/fx/quote', {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ amount: amount || 1, fromCurrency: currency, toAsset }),

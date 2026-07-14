@@ -684,7 +684,7 @@
     // Fetch operations health data
     async function fetchLiveOperations() {
       try {
-        const res = await fetch("http://localhost:5000/api/operations/status", {
+        const res = await fetch(window.location.origin + "/api/operations/status", {
           credentials: "include"
         });
         if (!res.ok) throw new Error();

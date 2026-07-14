@@ -46,7 +46,7 @@ class CompliancePassport extends HTMLElement {
     this.isLoading = true;
 
     try {
-      const apiBase = window.API_BASE || 'http://localhost:5000/api';
+      const apiBase = window.API_BASE || (window.location.origin + '/api');
       const fetchFunc = window.authFetch || fetch;
 
       const res = await fetchFunc(`${apiBase}/compliance/passport`);
