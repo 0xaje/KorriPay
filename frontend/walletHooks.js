@@ -311,6 +311,7 @@ onConnect(async ({ address, chainId, network }) => {
       const authData = await verifyRes.json();
 
       // 5. Store session status
+      localStorage.setItem("korripay_session_token", authData.token);
       localStorage.setItem("korripay_logged_in", "true");
 
       if (statusText) statusText.textContent = "Authenticated successfully!";
@@ -353,6 +354,8 @@ onConnect(async ({ address, chainId, network }) => {
 });
 
 onDisconnect(() => {
+  localStorage.removeItem("korripay_session_token");
+  localStorage.removeItem("korripay_logged_in");
   updateAddressDisplay(null);
   updateNetworkDisplay(null);
 });
