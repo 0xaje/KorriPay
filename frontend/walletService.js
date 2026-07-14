@@ -15,11 +15,11 @@ import { giwa } from './src/infrastructure/giwa/index.js';
 const WALLETCONNECT_PROJECT_ID = "YOUR_WALLETCONNECT_PROJECT_ID"; // ← Replace this
 
 const CDN = {
-  wagmiCore:     "https://esm.sh/@wagmi/core@2.13.5",
-  viem:          "https://esm.sh/viem@2.21.49",
-  viemChains:    "https://esm.sh/viem@2.21.49/chains",
-  appKit:        "https://esm.sh/@reown/appkit@1.8.22",
-  appKitAdapter: "https://esm.sh/@reown/appkit-adapter-wagmi@1.8.22",
+  wagmiCore:     "https://cdn.jsdelivr.net/npm/@wagmi/core@2.13.5/+esm",
+  viem:          "https://cdn.jsdelivr.net/npm/viem@2.21.49/+esm",
+  viemChains:    "https://cdn.jsdelivr.net/npm/viem@2.21.49/chains/+esm",
+  appKit:        "https://cdn.jsdelivr.net/npm/@reown/appkit@1.8.22/+esm",
+  appKitAdapter: "https://cdn.jsdelivr.net/npm/@reown/appkit-adapter-wagmi@1.8.22/+esm",
 };
 
 // ── Supported networks ──────────────────────────────────────────────
@@ -96,10 +96,23 @@ async function init() {
     sepolia,
   } = _chains;
 
-  // Use user-configured or fallback project ID
-  const projectId = (WALLETCONNECT_PROJECT_ID && WALLETCONNECT_PROJECT_ID !== "YOUR_WALLETCONNECT_PROJECT_ID")
-    ? WALLETCONNECT_PROJECT_ID
-    : "b56e18d47c72ab683b10814fe9495694"; // Fallback demo ID
+  // Use dynamically configured Project ID from server, or fallback to demo ID
+  let projectId = "b56e18d47c72ab683b10814fe9495694"; // Fallback demo ID
+  if (WALLETCONNECT_PROJECT_ID && WALLETCONNECT_PROJECT_ID !== "YOUR_WALLETCONNECT_PROJECT_ID") {
+    projectId = WALLETCONNECT_PROJECT_ID;
+  } else {
+    try {
+      const configRes = await fetch("/api/config");
+      if (configRes.ok) {
+        const configData = await configRes.json();
+        if (configData.projectId && configData.projectId !== "YOUR_WALLETCONNECT_PROJECT_ID") {
+          projectId = configData.projectId;
+        }
+      }
+    } catch (err) {
+      console.warn("[WalletService] Failed to load config from server, using fallback:", err);
+    }
+  }
 
   const meta = giwa.getChainMetadata();
   const giwaChain = {

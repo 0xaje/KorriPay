@@ -186,6 +186,12 @@ app.get('/metrics', async (req, res) => {
 // Serve frontend static files
 app.use(express.static(__dirnamePath + '/../frontend'));
 
+app.get('/api/config', (req, res) => {
+  res.json({
+    projectId: process.env.WALLETCONNECT_PROJECT_ID || "b56e18d47c72ab683b10814fe9495694"
+  });
+});
+
 app.get('/showcase', (req, res) => {
   res.sendFile(pathModule.resolve(__dirnamePath, '../frontend/showcase.html'));
 });
