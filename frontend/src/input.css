@@ -1,6 +1,63 @@
 @import "tailwindcss";
 @config "../../tailwind.config.js";
 
+@theme {
+  /* Custom Spacings for Layout Alignment */
+  --spacing-xs: 8px;
+  --spacing-sm: 16px;
+  --spacing-md: 24px;
+  --spacing-lg: 32px;
+  --spacing-xl: 48px;
+  --spacing-gutter: 16px;
+  --spacing-container-margin: 20px;
+
+  /* Custom Typography / Font Sizes */
+  --font-size-headline-lg-mobile: 24px;
+  --font-size-headline-md: 20px;
+  --font-size-headline-sm: 16px;
+  --font-size-label-md: 14px;
+  --font-size-label-sm: 12px;
+  --font-size-body-sm: 14px;
+  --font-size-body-md: 16px;
+  --font-size-display-lg: 32px;
+
+  /* Custom Palette overrides for layout colors */
+  --color-primary: #001e40;
+  --color-secondary: #006e2a;
+  --color-tertiary: #0e1f32;
+  --color-background: #f7f9fb;
+  --color-surface: #f7f9fb;
+  --color-outline: #737780;
+  --color-error: #ba1a1a;
+  --color-on-primary: #ffffff;
+  --color-on-secondary: #ffffff;
+  --color-on-surface: #191c1e;
+  --color-on-background: #191c1e;
+  
+  --color-primary-container: #003366;
+  --color-secondary-container: #5cfd80;
+  --color-tertiary-container: #243448;
+  --color-error-container: #ffdad6;
+  
+  --color-on-primary-container: #799dd6;
+  --color-on-secondary-container: #00732c;
+  --color-on-surface-variant: #43474f;
+  
+  --color-primary-fixed: #d5e3ff;
+  --color-primary-fixed-dim: #a7c8ff;
+  --color-on-primary-fixed: #001b3c;
+  --color-on-primary-fixed-variant: #1f477b;
+
+  --color-inverse-surface: #2d3133;
+  --color-outline-variant: #c3c6d1;
+  --color-surface-container: #eceef0;
+  --color-surface-container-low: #f2f4f6;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-high: #e6e8ea;
+  --color-surface-container-highest: #e0e3e5;
+  --color-surface-dim: #d8dadc;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
