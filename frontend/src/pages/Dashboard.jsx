@@ -186,6 +186,11 @@ export default function Dashboard() {
 
   const executeFXConvert = async () => {
     if (!fxQuote) return;
+    const amountVal = parseFloat(fxAmount);
+    if (isNaN(amountVal) || amountVal <= 0) {
+      setFxError("Conversion amount must be a positive number.");
+      return;
+    }
     try {
       const res = await fetch('/api/fx/convert', {
         method: 'POST',
@@ -193,7 +198,7 @@ export default function Dashboard() {
         body: JSON.stringify({ 
           fromCurrency: fxFromAsset, 
           toAsset: fxToAsset, 
-          inputAmount: parseFloat(fxAmount) 
+          inputAmount: amountVal 
         })
       });
       if (res.ok) {
@@ -213,6 +218,17 @@ export default function Dashboard() {
 
   const createWebhook = async (e) => {
     e.preventDefault();
+    try {
+      const parsedUrl = new URL(newWebhookUrl);
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        showToast("Webhook URL must use http or https scheme.");
+        return;
+      }
+    } catch (err) {
+      showToast("Please enter a valid webhook URL.");
+      return;
+    }
+
     try {
       const res = await fetch('/api/v1/webhooks', {
         method: 'POST',
@@ -236,11 +252,22 @@ export default function Dashboard() {
 
   const addOrgMember = async (e) => {
     e.preventDefault();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(memberEmail)) {
+      showToast("Please enter a valid email address.");
+      return;
+    }
+    const limitVal = parseFloat(memberLimit);
+    if (isNaN(limitVal) || limitVal <= 0) {
+      showToast("Daily limit must be a positive number.");
+      return;
+    }
+
     try {
       const res = await fetch('/api/v1/organizations/members', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: memberEmail, role: memberRole, dailyLimit: memberLimit })
+        body: JSON.stringify({ email: memberEmail, role: memberRole, dailyLimit: limitVal })
       });
       const data = await res.json();
       if (res.ok) {
