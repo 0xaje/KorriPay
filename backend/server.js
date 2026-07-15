@@ -70,7 +70,7 @@ app.use(cookieParser());
 
 // Request ID Generation & Middleware
 app.use((req, res, next) => {
-  req.id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+  req.id = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(8).toString('hex');
   res.setHeader('X-Request-ID', req.id);
   next();
 });
@@ -184,7 +184,7 @@ app.get('/metrics', async (req, res) => {
 });
 
 // Serve frontend static files
-app.use(express.static(__dirnamePath + '/../frontend'));
+app.use(express.static(__dirnamePath + '/../frontend/dist'));
 
 app.get('/api/config', (req, res) => {
   res.json({
@@ -192,24 +192,8 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-app.get('/showcase', (req, res) => {
-  res.sendFile(pathModule.resolve(__dirnamePath, '../frontend/showcase.html'));
-});
-
-app.get('/trust', (req, res) => {
-  res.sendFile(pathModule.resolve(__dirnamePath, '../frontend/trust.html'));
-});
-
-app.get('/developers', (req, res) => {
-  res.sendFile(pathModule.resolve(__dirnamePath, '../frontend/developers.html'));
-});
-
-app.get('/treasury', (req, res) => {
-  res.sendFile(pathModule.resolve(__dirnamePath, '../frontend/treasury.html'));
-});
-
-app.get('/organization', (req, res) => {
-  res.sendFile(pathModule.resolve(__dirnamePath, '../frontend/organization.html'));
+app.get(['/showcase', '/trust', '/developers', '/treasury', '/organization', '/dashboard', '/admin'], (req, res) => {
+  res.sendFile(pathModule.resolve(__dirnamePath, '../frontend/dist/index.html'));
 });
 
 // ── FX Engine Router ──────────────────────────────────────────────────────
@@ -243,25 +227,27 @@ async function requireAuth(req, res, next) {
 
     let userId = sessions.get(token);
     if (!userId) {
-      // Stateless fallback for serverless environments (Vercel)
-      if (token.startsWith("session-demo-")) {
-        userId = token.replace("session-demo-", "");
-      } else if (token.startsWith("session-")) {
-        userId = token.replace("session-", "");
-      }
-      
-      if (userId) {
-        // Verify user exists in database to confirm valid session, or fallback to first user
-        let userExists = await prisma.user.findUnique({ where: { id: userId } }).catch(() => null);
-        if (!userExists) {
-          userExists = await prisma.user.findFirst().catch(() => null);
+      // Stateless fallback for serverless environments - only allowed in non-production
+      if (process.env.NODE_ENV !== 'production') {
+        if (token.startsWith("session-demo-")) {
+          userId = token.replace("session-demo-", "");
+        } else if (token.startsWith("session-")) {
+          userId = token.replace("session-", "");
         }
-        if (userExists) {
-          userId = userExists.id;
-          sessions.set(token, userId);
-          console.log("[Auth Fallback] Restored session for user ID:", userId);
-        } else {
-          userId = null; // invalid session
+        
+        if (userId) {
+          // Verify user exists in database to confirm valid session, or fallback to first user
+          let userExists = await prisma.user.findUnique({ where: { id: userId } }).catch(() => null);
+          if (!userExists) {
+            userExists = await prisma.user.findFirst().catch(() => null);
+          }
+          if (userExists) {
+            userId = userExists.id;
+            sessions.set(token, userId);
+            console.log("[Auth Fallback] Restored session for user ID:", userId);
+          } else {
+            userId = null; // invalid session
+          }
         }
       }
     }
@@ -585,8 +571,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.use('/api/v1', requireAuth, apiV1Router);
 
 app.get('/api/auth/nonce', (req, res) => {
-  const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-  const tempId = "temp-" + Date.now() + "-" + Math.random().toString(36).substring(2, 8);
+  const nonce = crypto.randomBytes(16).toString('hex');
+  const tempId = "temp-" + Date.now() + "-" + crypto.randomBytes(4).toString('hex');
   nonces.set(tempId, nonce);
   res.json({ nonce, tempId });
 });
@@ -1259,9 +1245,7 @@ app.post('/api/transactions/swap', requireAuth, async (req, res) => {
       data: updateData
     });
 
-    const hex = "0123456789abcdef";
-    let generatedHash = "0x";
-    for (let i = 0; i < 64; i++) generatedHash += hex[Math.floor(Math.random() * 16)];
+    const generatedHash = "0x" + crypto.randomBytes(32).toString('hex');
 
     const newTx = await prisma.transaction.create({
       data: {
@@ -1643,7 +1627,7 @@ app.post('/api/merchant/pay', requireAuth, async (req, res) => {
         status: "Paid",
         paidAt: new Date(),
         payerAddress: payerUser.walletAddress || "0xPayerAddress",
-        txHash: txHash || "0x" + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join("")
+        txHash: txHash || "0x" + crypto.randomBytes(20).toString('hex')
       }
     });
 

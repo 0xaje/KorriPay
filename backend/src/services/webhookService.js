@@ -1,7 +1,56 @@
 import { PrismaClient } from '@prisma/client';
 import crypto from 'crypto';
+import dns from 'dns';
+import { promisify } from 'util';
 
 const prisma = new PrismaClient();
+const dnsLookup = promisify(dns.lookup);
+
+async function isSafeUrl(urlStr) {
+  // If not running in production, allow localhost for development testing
+  if (process.env.NODE_ENV !== 'production') {
+    return true;
+  }
+  
+  try {
+    const url = new URL(urlStr);
+    const hostname = url.hostname;
+    
+    // 1. Resolve host to IP
+    const lookupResult = await dnsLookup(hostname).catch(() => null);
+    if (!lookupResult) return false;
+    
+    const ip = lookupResult.address;
+    
+    // 2. Check if IP is private/loopback
+    // Loopback
+    if (ip === '127.0.0.1' || ip === '::1' || ip.startsWith('127.')) {
+      return false;
+    }
+    // Private IPv4 ranges
+    // 10.0.0.0/8
+    if (ip.startsWith('10.')) return false;
+    // 172.16.0.0/12
+    if (ip.startsWith('172.')) {
+      const parts = ip.split('.');
+      const secondPart = parseInt(parts[1], 10);
+      if (secondPart >= 16 && secondPart <= 31) return false;
+    }
+    // 192.168.0.0/16
+    if (ip.startsWith('192.168.')) return false;
+    // Link-local 169.254.0.0/16
+    if (ip.startsWith('169.254.')) return false;
+    
+    // IPv6 private ranges (fc00::/7 or fe80::/10)
+    if (ip.startsWith('fe80:') || ip.startsWith('fc00:') || ip.startsWith('fd00:')) {
+      return false;
+    }
+    
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
 export class WebhookService {
   /**
@@ -102,6 +151,29 @@ export class WebhookService {
     let success = false;
     let lastStatus = null;
     let lastBody = '';
+
+    // Check SSRF safety
+    const safe = await isSafeUrl(sub.url);
+    if (!safe) {
+      lastStatus = 400;
+      lastBody = 'Blocked: SSRF protection active for private network destinations';
+      try {
+        await prisma.webhookDeliveryLog.create({
+          data: {
+            subscriptionId: sub.id,
+            event,
+            payload: payloadString,
+            responseStatus: lastStatus,
+            responseBody: lastBody,
+            attempts: 0,
+            success: false
+          }
+        });
+      } catch (err) {
+        console.error('[WebhookService] Failed to log blocked webhook:', err.message);
+      }
+      return;
+    }
 
     while (attempt < maxAttempts && !success) {
       attempt++;

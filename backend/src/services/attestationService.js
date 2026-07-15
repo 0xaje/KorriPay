@@ -1,8 +1,69 @@
 import { PrismaClient } from '@prisma/client';
 import { webhookService } from './webhookService.js';
+import { ethers } from 'ethers';
+import { giwa } from '../infrastructure/giwa/index.js';
 
 const prisma = new PrismaClient();
 const isTest = typeof global.it === 'function' || process.env.NODE_ENV === 'test' || process.env.PORT === '0';
+
+const EAS_WRITE_ABI = [
+  "function attest(((bytes32 schema, (address recipient, uint64 expirationTime, bool revocable, bytes32 refUID, bytes data, uint256 value) data) request)) external payable returns (bytes32)"
+];
+
+async function submitOnChainAttestation(issuer, subjectWallet, schema, details) {
+  try {
+    const rpcUrl = giwa.getRPC();
+    const provider = new ethers.JsonRpcProvider(rpcUrl);
+    const code = await provider.getCode(giwa.config.attestationAddress);
+    if (code !== '0x' && code !== '0x00' && code !== '0x0000000000000000000000000000000000000000') {
+      const signer = new ethers.Wallet('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', provider);
+      const contract = new ethers.Contract(giwa.config.attestationAddress, EAS_WRITE_ABI, signer);
+      
+      let schemaBytes32;
+      try {
+        schemaBytes32 = ethers.encodeBytes32String(schema.slice(0, 31));
+      } catch (e) {
+        schemaBytes32 = ethers.zeroPadValue(ethers.toBeHex(0), 32);
+      }
+
+      const detailsStr = details ? (typeof details === 'object' ? JSON.stringify(details) : details) : '';
+      const dataHex = ethers.hexlify(ethers.toUtf8Bytes(detailsStr));
+
+      const request = {
+        schema: schemaBytes32,
+        data: {
+          recipient: subjectWallet,
+          expirationTime: 0n,
+          revocable: true,
+          refUID: ethers.zeroPadValue(ethers.toBeHex(0), 32),
+          data: dataHex,
+          value: 0n
+        }
+      };
+
+      const tx = await contract.attest(request);
+      const receipt = await tx.wait();
+      
+      const contractInterface = new ethers.Interface(EAS_WRITE_ABI);
+      let uid = null;
+      for (const log of receipt.logs) {
+        try {
+          const parsed = contractInterface.parseLog(log);
+          if (parsed && parsed.name === 'Attested') {
+            uid = parsed.args.uid;
+            break;
+          }
+        } catch (e) {}
+      }
+      return uid || receipt.hash;
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === 'production') {
+      console.warn("[AttestationService] Failed to issue attestation on-chain, utilizing database fallback:", err.message);
+    }
+  }
+  return null;
+}
 
 const VALID_SCHEMAS = ['Identity', 'Merchant', 'Business', 'Payroll', 'Compliance'];
 const VALID_STATUSES = ['Active', 'Revoked', 'Expired'];
@@ -34,7 +95,12 @@ export class BaseAttestationProvider {
 export class MockTrustProvider extends BaseAttestationProvider {
   async issue({ issuer, subjectWallet, schema, details }) {
     const detailsStr = details ? (typeof details === 'object' ? JSON.stringify(details) : details) : null;
-    const proofVal = `mock-signature-ecdsa-sha256-0x${Buffer.from(issuer + subjectWallet + schema + Date.now()).toString('hex').slice(0, 40)}`;
+    let proofVal = `mock-signature-ecdsa-sha256-0x${Buffer.from(issuer + subjectWallet + schema + Date.now()).toString('hex').slice(0, 40)}`;
+
+    const onChainUid = await submitOnChainAttestation(issuer, subjectWallet, schema, details);
+    if (onChainUid) {
+      proofVal = onChainUid;
+    }
 
     const attestation = await prisma.attestation.create({
       data: {
@@ -108,7 +174,12 @@ export class DojangTrustProvider extends BaseAttestationProvider {
     detailsObj.liveness = detailsObj.liveness || "Passed";
     const detailsStr = JSON.stringify(detailsObj);
 
-    const proofVal = `dojang-proof-sig-0x${Buffer.from(dojangIssuer + subjectWallet + schema + Date.now()).toString('hex').slice(0, 40)}`;
+    let proofVal = `dojang-proof-sig-0x${Buffer.from(dojangIssuer + subjectWallet + schema + Date.now()).toString('hex').slice(0, 40)}`;
+
+    const onChainUid = await submitOnChainAttestation(dojangIssuer, subjectWallet, schema, details);
+    if (onChainUid) {
+      proofVal = onChainUid;
+    }
 
     const attestation = await prisma.attestation.create({
       data: {
@@ -130,7 +201,7 @@ export class DojangTrustProvider extends BaseAttestationProvider {
     if (!att) {
       return { valid: false, error: "Attestation not found" };
     }
-    const isDojangSig = att.proof && att.proof.startsWith("dojang-");
+    const isDojangSig = att.proof && (att.proof.startsWith("dojang-") || (att.proof.startsWith("0x") && att.proof.length === 66));
     if (!isDojangSig) {
       return { valid: false, error: "Invalid Dojang proof signature format" };
     }
@@ -186,7 +257,12 @@ export class EnterpriseTrustProvider extends BaseAttestationProvider {
     detailsObj.level = detailsObj.level || "Gold";
     const detailsStr = JSON.stringify(detailsObj);
 
-    const proofVal = `enterprise-kms-sig-0x${Buffer.from(entIssuer + subjectWallet + schema + Date.now()).toString('hex').slice(0, 40)}`;
+    let proofVal = `enterprise-kms-sig-0x${Buffer.from(entIssuer + subjectWallet + schema + Date.now()).toString('hex').slice(0, 40)}`;
+
+    const onChainUid = await submitOnChainAttestation(entIssuer, subjectWallet, schema, details);
+    if (onChainUid) {
+      proofVal = onChainUid;
+    }
 
     const attestation = await prisma.attestation.create({
       data: {
@@ -208,7 +284,7 @@ export class EnterpriseTrustProvider extends BaseAttestationProvider {
     if (!att) {
       return { valid: false, error: "Attestation not found" };
     }
-    const isEnterpriseSig = att.proof && att.proof.startsWith("enterprise-");
+    const isEnterpriseSig = att.proof && (att.proof.startsWith("enterprise-") || (att.proof.startsWith("0x") && att.proof.length === 66));
     if (!isEnterpriseSig) {
       return { valid: false, error: "Invalid Enterprise KMS signature format" };
     }

@@ -1,11 +1,93 @@
 import { PrismaClient } from '@prisma/client';
+import { ethers } from 'ethers';
+import { giwa } from '../infrastructure/giwa/index.js';
+
 const prisma = new PrismaClient();
+
+const EAS_ABI = [
+  "function getAttestation(bytes32 uid) external view returns ((bytes32 uid, bytes32 schema, uint64 time, uint64 expirationTime, uint64 revocationTime, bytes32 refUID, address recipient, address attester, bool revocable, bytes data))",
+  "function isAttestationValid(bytes32 uid) external view returns (bool)",
+  "event Attested(address indexed recipient, address indexed attester, bytes32 indexed schema, bytes32 uid)",
+  "event Revoked(address indexed recipient, address indexed attester, bytes32 indexed schema, bytes32 uid)"
+];
 
 export class EasAttestationAdapter {
   async fetchAttestations(subjectWallet) {
     const list = await prisma.attestation.findMany({
       where: subjectWallet ? { subjectWallet } : {}
     });
+
+    try {
+      const rpcUrl = giwa.getRPC();
+      const provider = new ethers.JsonRpcProvider(rpcUrl);
+      const code = await provider.getCode(giwa.config.attestationAddress);
+      if (code !== '0x' && code !== '0x00' && code !== '0x0000000000000000000000000000000000000000') {
+        const easContract = new ethers.Contract(giwa.config.attestationAddress, EAS_ABI, provider);
+        const filter = {
+          address: giwa.config.attestationAddress,
+          topics: [
+            ethers.id("Attested(address,address,bytes32,bytes32)"),
+            subjectWallet ? ethers.zeroPadValue(subjectWallet, 32) : null
+          ],
+          fromBlock: 0,
+          toBlock: 'latest'
+        };
+
+        const logs = await provider.getLogs(filter);
+        const onChainAttestations = [];
+
+        for (const log of logs) {
+          try {
+            const uid = log.data;
+            if (uid && uid !== '0x') {
+              const attData = await easContract.getAttestation(uid);
+              const isValid = await easContract.isAttestationValid(uid);
+              
+              let type = "IDENTITY";
+              const schemaBytes = attData.schema;
+              let schemaStr = "Identity";
+              try {
+                schemaStr = ethers.decodeBytes32String(schemaBytes);
+              } catch (e) {
+                schemaStr = schemaBytes;
+              }
+
+              const schemaUpper = schemaStr.toUpperCase();
+              if (schemaUpper.includes("KYC") || schemaUpper.includes("PASSPORT") || schemaUpper.includes("IDENTITY")) {
+                type = "IDENTITY";
+              } else if (schemaUpper.includes("MERCHANT") || schemaUpper.includes("STORE")) {
+                type = "MERCHANT";
+              } else if (schemaUpper.includes("BUSINESS") || schemaUpper.includes("REGISTRATION") || schemaUpper.includes("LLC")) {
+                type = "BUSINESS";
+              } else if (schemaUpper.includes("COMPLIANCE") || schemaUpper.includes("AML") || schemaUpper.includes("SANCTION")) {
+                type = "COMPLIANCE";
+              }
+
+              onChainAttestations.push({
+                id: uid,
+                provider: "Ethereum Attestation Service (EAS) - On-Chain",
+                issuer: attData.attester,
+                schema: schemaStr,
+                timestamp: new Date(Number(attData.time) * 1000),
+                status: isValid ? "Verified" : "Revoked",
+                type,
+                details: "Live EAS Registry Attestation"
+              });
+            }
+          } catch (e) {
+            console.warn("[EasAttestationAdapter] Failed to parse on-chain attestation log:", e.message);
+          }
+        }
+
+        if (onChainAttestations.length > 0) {
+          return onChainAttestations;
+        }
+      }
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production') {
+        console.warn("[EasAttestationAdapter] EAS contract or RPC query failed, using DB fallback:", err.message);
+      }
+    }
 
     return list.map(item => {
       let type = "IDENTITY";

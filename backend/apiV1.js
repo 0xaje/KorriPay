@@ -960,6 +960,9 @@ router.post('/organizations', async (req, res) => {
 // 3. Add organization member
 router.post('/organizations/members', getActiveOrg, async (req, res) => {
   try {
+    if (req.memberRole !== 'OWNER' && req.memberRole !== 'ADMIN') {
+      return res.status(403).json({ error: "Forbidden. Only organization OWNER or ADMIN can manage members." });
+    }
     const { email, role, dailyLimit } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
@@ -976,6 +979,9 @@ router.post('/organizations/members', getActiveOrg, async (req, res) => {
 // 4. Update organization member limit/role
 router.put('/organizations/members/:userId', getActiveOrg, async (req, res) => {
   try {
+    if (req.memberRole !== 'OWNER' && req.memberRole !== 'ADMIN') {
+      return res.status(403).json({ error: "Forbidden. Only organization OWNER or ADMIN can manage members." });
+    }
     const { role, dailyLimit } = req.body;
     const userId = req.userId || (req.user && req.user.id);
     const updated = await organizationService.updateMember(req.orgId, req.params.userId, role, parseFloat(dailyLimit), userId);
@@ -988,6 +994,9 @@ router.put('/organizations/members/:userId', getActiveOrg, async (req, res) => {
 // 5. Remove member from organization
 router.delete('/organizations/members/:userId', getActiveOrg, async (req, res) => {
   try {
+    if (req.memberRole !== 'OWNER' && req.memberRole !== 'ADMIN') {
+      return res.status(403).json({ error: "Forbidden. Only organization OWNER or ADMIN can manage members." });
+    }
     const userId = req.userId || (req.user && req.user.id);
     await organizationService.removeMember(req.orgId, req.params.userId, userId);
     res.json({ success: true });
