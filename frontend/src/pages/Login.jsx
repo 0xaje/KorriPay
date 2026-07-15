@@ -313,7 +313,7 @@ export default function Login() {
           />
 
           {/* Modal Container */}
-          <div className="w-full max-w-lg md:max-w-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl p-8 md:p-10 relative z-10 space-y-lg animate-scale-up">
+          <div className="w-full max-w-lg md:max-w-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl p-8 md:p-10 relative z-10 flex flex-col gap-6 animate-scale-up">
             
             {/* Close Button */}
             <button 
@@ -325,8 +325,8 @@ export default function Login() {
               <X size={18} />
             </button>
 
-            <div className="text-center space-y-sm">
-              <div className="inline-flex w-16 h-16 bg-secondary-container/20 rounded-2xl items-center justify-center text-secondary mb-xs">
+            <div className="text-center flex flex-col items-center justify-center gap-2">
+              <div className="w-16 h-16 bg-secondary-container/20 rounded-2xl flex items-center justify-center text-secondary mb-2">
                 <Shield size={28} className="fill-secondary/15" />
               </div>
               <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
@@ -344,10 +344,10 @@ export default function Login() {
               </div>
             )}
 
-            <form onSubmit={handleLogin} className="space-y-md">
+            <form onSubmit={handleLogin} className="space-y-4">
               {isSignUp && (
-                <div className="space-y-xs">
-                  <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider block mb-1">Institution Name</label>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block mb-1">Institution Name</label>
                   <input 
                     type="text" 
                     value={name}
@@ -359,10 +359,10 @@ export default function Login() {
                 </div>
               )}
 
-              <div className="space-y-xs">
-                <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider block mb-1">Corporate Email</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block mb-1">Corporate Email</label>
                 <div className="relative">
-                  <Mail size={16} className="absolute left-4 top-4 text-zinc-400 dark:text-zinc-500" />
+                  <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
                   <input 
                     type="email" 
                     value={email}
@@ -374,10 +374,10 @@ export default function Login() {
                 </div>
               </div>
 
-              <div className="space-y-xs">
-                <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider block mb-1">Security Password</label>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block mb-1">Security Password</label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-4 top-4 text-zinc-400 dark:text-zinc-500" />
+                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
                   <input 
                     type={showPassword ? "text" : "password"}
                     value={password}
@@ -389,7 +389,7 @@ export default function Login() {
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                   >
                     {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -399,20 +399,20 @@ export default function Login() {
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-secondary text-white font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-secondary/95 transition-all active:scale-95 shadow-md disabled:opacity-50 flex justify-center items-center gap-xs cursor-pointer mt-sm"
+                className="w-full bg-secondary text-white font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-secondary/95 transition-all active:scale-95 shadow-md disabled:opacity-50 flex justify-center items-center gap-xs cursor-pointer mt-4"
               >
                 {loading ? 'Requesting verify...' : (isSignUp ? 'Generate Credentials' : 'Verify Signature')}
               </button>
             </form>
 
-            <div className="relative flex items-center justify-center my-6">
+            <div className="relative flex items-center justify-center my-2">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-zinc-100 dark:border-zinc-800" />
               </div>
               <span className="relative px-3 bg-white dark:bg-zinc-900 text-[10px] text-zinc-400 dark:text-zinc-500 font-bold">OR</span>
             </div>
 
-            <div className="space-y-sm">
+            <div className="space-y-3">
               <button 
                 onClick={handleDemoSignIn}
                 disabled={loading}
