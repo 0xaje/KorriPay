@@ -313,21 +313,32 @@ export default function Login() {
           />
 
           {/* Modal Container */}
-          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-outline-variant/30 dark:border-zinc-800/50 rounded-3xl shadow-2xl p-lg relative z-10 space-y-md animate-scale-up">
+          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800/80 rounded-3xl shadow-2xl p-lg relative z-10 space-y-md animate-scale-up">
+            
+            {/* Close Button */}
+            <button 
+              type="button"
+              onClick={() => setShowAuthModal(false)}
+              className="absolute top-4 right-4 p-xs rounded-lg text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+
             <div className="text-center space-y-xs">
               <div className="inline-flex w-14 h-14 bg-secondary-container/20 rounded-2xl items-center justify-center text-secondary mb-xs">
                 <Shield size={24} className="fill-secondary/15" />
               </div>
-              <h2 className="text-headline-sm font-bold text-primary dark:text-white">
+              <h2 className="text-headline-sm font-extrabold text-zinc-900 dark:text-white">
                 {isSignUp ? 'Create Corporate Portal' : 'Access Corporate Portal'}
               </h2>
-              <p className="text-xs text-outline dark:text-zinc-400">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 Provide corporate signature verification credentials to sync ledger.
               </p>
             </div>
 
             {error && (
-              <div className="flex items-center gap-xs p-sm bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs">
+              <div className="flex items-center gap-xs p-sm bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-semibold">
                 <AlertCircle size={14} className="shrink-0" />
                 <span>{error}</span>
               </div>
@@ -336,49 +347,49 @@ export default function Login() {
             <form onSubmit={handleLogin} className="space-y-sm">
               {isSignUp && (
                 <div className="space-y-xs">
-                  <label className="text-[10px] font-bold text-outline dark:text-zinc-400 uppercase tracking-wider">Institution Name</label>
+                  <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">Institution Name</label>
                   <input 
                     type="text" 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Korri Institution Ltd" 
-                    className="w-full px-sm py-2.5 rounded-xl border border-outline-variant/30 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-950/30 focus:border-primary focus:outline-none dark:text-white transition-all text-xs"
+                    className="w-full px-sm py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none transition-all text-xs"
                     required
                   />
                 </div>
               )}
 
               <div className="space-y-xs">
-                <label className="text-[10px] font-bold text-outline dark:text-zinc-400 uppercase tracking-wider">Corporate Email</label>
+                <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">Corporate Email</label>
                 <div className="relative">
-                  <Mail size={14} className="absolute left-4 top-3.5 text-outline dark:text-zinc-500" />
+                  <Mail size={14} className="absolute left-4 top-3.5 text-zinc-400 dark:text-zinc-500" />
                   <input 
                     type="email" 
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="operations@korri.pay" 
-                    className="w-full pl-10 pr-sm py-2.5 rounded-xl border border-outline-variant/30 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-950/30 focus:border-primary focus:outline-none dark:text-white transition-all text-xs"
+                    className="w-full pl-10 pr-sm py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none transition-all text-xs"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-xs">
-                <label className="text-[10px] font-bold text-outline dark:text-zinc-400 uppercase tracking-wider">Security Password</label>
+                <label className="text-[10px] font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider">Security Password</label>
                 <div className="relative">
-                  <Lock size={14} className="absolute left-4 top-3.5 text-outline dark:text-zinc-500" />
+                  <Lock size={14} className="absolute left-4 top-3.5 text-zinc-400 dark:text-zinc-500" />
                   <input 
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••" 
-                    className="w-full pl-10 pr-12 py-2.5 rounded-xl border border-outline-variant/30 dark:border-zinc-800/60 bg-white/50 dark:bg-zinc-950/30 focus:border-primary focus:outline-none dark:text-white transition-all text-xs"
+                    className="w-full pl-10 pr-12 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none transition-all text-xs"
                     required
                   />
                   <button 
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-3.5 text-outline hover:text-primary dark:hover:text-white"
+                    className="absolute right-4 top-3.5 text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                   >
                     {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
@@ -388,7 +399,7 @@ export default function Login() {
               <button 
                 type="submit" 
                 disabled={loading}
-                className="w-full bg-secondary text-white font-bold py-2.5 px-md rounded-xl text-xs hover:bg-secondary/90 transition-all active:scale-95 shadow-md disabled:opacity-50 flex justify-center items-center gap-xs"
+                className="w-full bg-secondary text-white font-bold py-2.5 px-md rounded-xl text-xs hover:bg-secondary/95 transition-all active:scale-95 shadow-md disabled:opacity-50 flex justify-center items-center gap-xs cursor-pointer"
               >
                 {loading ? 'Requesting verify...' : (isSignUp ? 'Generate Credentials' : 'Verify Signature')}
               </button>
@@ -396,25 +407,26 @@ export default function Login() {
 
             <div className="relative flex items-center justify-center my-sm">
               <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-outline-variant/10 dark:border-zinc-800" />
+                <div className="w-full border-t border-zinc-100 dark:border-zinc-800" />
               </div>
-              <span className="relative px-2 bg-white dark:bg-zinc-900 text-[10px] text-outline font-bold">OR</span>
+              <span className="relative px-2 bg-white dark:bg-zinc-900 text-[10px] text-zinc-400 dark:text-zinc-500 font-bold">OR</span>
             </div>
 
             <div className="space-y-xs">
               <button 
                 onClick={handleDemoSignIn}
                 disabled={loading}
-                className="w-full bg-primary/10 dark:bg-zinc-800 hover:bg-primary/15 text-primary dark:text-white font-bold py-2.5 px-md rounded-xl text-xs transition-all active:scale-95 flex justify-center items-center gap-xs"
+                className="w-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white font-bold py-2.5 px-md rounded-xl text-xs transition-all active:scale-95 flex justify-center items-center gap-xs cursor-pointer"
               >
                 Sign In As Demo Institution
               </button>
               <button 
+                type="button"
                 onClick={() => {
                   setError('');
                   setIsSignUp(!isSignUp);
                 }}
-                className="w-full text-center text-[10px] text-secondary hover:underline font-bold"
+                className="w-full text-center text-[10px] text-secondary hover:underline font-bold cursor-pointer"
               >
                 {isSignUp ? 'Already registered? Verify signature' : 'Request new corporate credentials'}
               </button>
