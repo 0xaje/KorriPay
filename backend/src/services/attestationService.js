@@ -16,7 +16,8 @@ async function submitOnChainAttestation(issuer, subjectWallet, schema, details) 
     const provider = new ethers.JsonRpcProvider(rpcUrl);
     const code = await provider.getCode(giwa.config.attestationAddress);
     if (code !== '0x' && code !== '0x00' && code !== '0x0000000000000000000000000000000000000000') {
-      const signer = new ethers.Wallet('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', provider);
+      const attestationKey = process.env.GIWA_ATTESTATION_KEY || '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80';
+      const signer = new ethers.Wallet(attestationKey, provider);
       const contract = new ethers.Contract(giwa.config.attestationAddress, EAS_WRITE_ABI, signer);
       
       let schemaBytes32;
