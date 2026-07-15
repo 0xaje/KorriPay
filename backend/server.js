@@ -201,7 +201,10 @@ app.get('/api/config', (req, res) => {
   });
 });
 
-app.get(['/showcase', '/trust', '/developers', '/treasury', '/organization', '/dashboard', '/admin'], (req, res) => {
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api') || req.path.startsWith('/metrics') || req.path.startsWith('/health') || req.path.startsWith('/live') || req.path.startsWith('/ready')) {
+    return next();
+  }
   res.sendFile(pathModule.resolve(__dirnamePath, '../frontend/dist/index.html'));
 });
 
