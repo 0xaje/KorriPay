@@ -35,7 +35,7 @@ const FREE_TIER_USD_LIMIT = 5;
  * Fetch live exchange rates from the ExchangeRate-API (free tier).
  * Falls back to hardcoded emergency rates if the network request fails.
  *
- * @returns {Object} rates — { KRW: number, NGN: number, USD: number } all vs USD base
+ * @returns {Promise<any>} rates — { KRW: number, NGN: number, USD: number } all vs USD base
  */
 export async function fetchLiveRates() {
   const FALLBACK_RATES = {
@@ -80,7 +80,7 @@ export async function fetchLiveRates() {
  * @param {number}  amount        - Numeric amount in input currency
  * @param {string}  fromCurrency  - 'KRW' | 'USD' | 'NGN'
  * @param {string}  toAsset       - 'MockKRW' | 'USDC'
- * @returns {Object} Conversion breakdown
+ * @returns {Promise<any>} Conversion breakdown
  */
 export async function convertFX(amount, fromCurrency, toAsset) {
   if (!SUPPORTED_INPUTS.includes(fromCurrency)) {

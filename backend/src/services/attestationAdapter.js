@@ -82,10 +82,12 @@ export class EasAttestationAdapter {
         if (onChainAttestations.length > 0) {
           return onChainAttestations;
         }
+      } else if (process.env.NODE_ENV === 'production') {
+        throw new Error("EAS contract is offline or not deployed on the L2 network.");
       }
     } catch (err) {
       if (process.env.NODE_ENV === 'production') {
-        console.warn("[EasAttestationAdapter] EAS contract or RPC query failed, using DB fallback:", err.message);
+        throw new Error(`Critical EAS attestation query failure: ${err.message}`);
       }
     }
 

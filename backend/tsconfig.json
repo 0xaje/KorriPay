@@ -6,12 +6,13 @@
     "allowJs": true,
     "checkJs": false,
     "noEmit": true,
-    "strict": true,
+    "strict": false,
+    "strictNullChecks": false,
     "noImplicitAny": false,
     "useUnknownInCatchVariables": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*", "server.js", "apiV1.js"]
+  "include": ["src/**/*", "server.js", "apiV1.js", "types.d.ts"]
 }

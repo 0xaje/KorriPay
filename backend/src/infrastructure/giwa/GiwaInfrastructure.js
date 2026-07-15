@@ -215,8 +215,11 @@ export class KRWStablecoinIntegration {
  */
 export class GiwaInfrastructure {
   constructor(configProvider = new EnvironmentGiwaConfigProvider()) {
+    /** @type {any} */
     this.configProvider = configProvider;
+    /** @type {any} */
     this.config = this.configProvider.getConfig();
+    /** @type {GIWAServiceRegistry} */
     this.registry = new GIWAServiceRegistry();
     this.dojang = new DojangIntegration(this);
     this.krwStablecoin = new KRWStablecoinIntegration(this);

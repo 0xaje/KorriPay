@@ -73,18 +73,34 @@ const VALID_STATUSES = ['Active', 'Revoked', 'Expired'];
  * Base abstract class defining the Attestation Provider interface.
  */
 export class BaseAttestationProvider {
+  /**
+   * @param {any} data
+   * @returns {Promise<any>}
+   */
   async issue(data) {
     throw new Error("issue() not implemented on provider");
   }
 
+  /**
+   * @param {any} id
+   * @returns {Promise<any>}
+   */
   async verify(id) {
     throw new Error("verify() not implemented on provider");
   }
 
+  /**
+   * @param {any} id
+   * @returns {Promise<any>}
+   */
   async revoke(id) {
     throw new Error("revoke() not implemented on provider");
   }
 
+  /**
+   * @param {any} [filters]
+   * @returns {Promise<any>}
+   */
   async list(filters) {
     throw new Error("list() not implemented on provider");
   }
@@ -238,7 +254,7 @@ export class DojangTrustProvider extends BaseAttestationProvider {
     if (filters.status) {
       where.status = filters.status;
     }
-    where.issuer = { startsWith: 'did:dojang:', mode: 'insensitive' };
+    where.issuer = { startsWith: 'did:dojang:' };
 
     return prisma.attestation.findMany({
       where,
@@ -321,7 +337,7 @@ export class EnterpriseTrustProvider extends BaseAttestationProvider {
     if (filters.status) {
       where.status = filters.status;
     }
-    where.issuer = { startsWith: 'did:enterprise:', mode: 'insensitive' };
+    where.issuer = { startsWith: 'did:enterprise:' };
 
     return prisma.attestation.findMany({
       where,
@@ -410,14 +426,19 @@ export class AttestationService {
     const attestation = await prisma.attestation.findUnique({
       where: { id }
     });
-    if (attestation && attestation.details) {
+    if (!attestation) return null;
+    let parsedDetails = null;
+    if (attestation.details) {
       try {
-        attestation.parsedDetails = JSON.parse(attestation.details);
+        parsedDetails = JSON.parse(attestation.details);
       } catch (e) {
-        attestation.parsedDetails = attestation.details;
+        parsedDetails = attestation.details;
       }
     }
-    return attestation;
+    return {
+      ...attestation,
+      parsedDetails
+    };
   }
 
   async listAttestations(filters = {}) {

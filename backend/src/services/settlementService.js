@@ -33,7 +33,7 @@ class SettlementService extends EventEmitter {
     return new Promise((resolve) => {
       try {
         const url = new URL(urlStr);
-        const port = url.port || (url.protocol === 'https:' ? 443 : 80);
+        const port = Number(url.port || (url.protocol === 'https:' ? 443 : 80));
         const host = url.hostname;
         
         const socket = net.connect({ host, port, timeout: 800 }, () => {
