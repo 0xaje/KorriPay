@@ -312,124 +312,173 @@ export default function Login() {
             onClick={() => setShowAuthModal(false)}
           />
 
-          {/* Modal Container */}
-          <div className="w-full max-w-lg md:max-w-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl p-8 md:p-10 relative z-10 flex flex-col gap-6 animate-scale-up">
+          {/* Modal Wrapper with Gradient border outline */}
+          <div className="w-full max-w-4xl bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-950 p-[1px] rounded-[32px] shadow-2xl relative z-10 animate-scale-up overflow-hidden">
             
-            {/* Close Button */}
-            <button 
-              type="button"
-              onClick={() => setShowAuthModal(false)}
-              className="absolute top-6 right-6 p-2 rounded-xl text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-50 dark:bg-zinc-800 transition-colors"
-              aria-label="Close"
-            >
-              <X size={18} />
-            </button>
+            {/* Inner Content Grid */}
+            <div className="bg-white dark:bg-zinc-900 rounded-[31px] grid grid-cols-1 md:grid-cols-12 overflow-hidden">
+              
+              {/* Left Column: Cryptographic status (Desktop Only) */}
+              <div className="hidden md:flex md:col-span-5 bg-gradient-to-br from-primary to-zinc-900 dark:from-zinc-950 dark:to-zinc-900 p-8 flex-col justify-between text-white relative border-r border-zinc-100 dark:border-zinc-800/50">
+                <div className="space-y-md">
+                  <div className="flex items-center gap-xs">
+                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-secondary">
+                      <Shield size={16} className="fill-secondary/20" />
+                    </div>
+                    <span className="font-bold text-sm tracking-tight">KorriPay Integrity</span>
+                  </div>
 
-            <div className="text-center flex flex-col items-center justify-center gap-2">
-              <div className="w-16 h-16 bg-secondary-container/20 rounded-2xl flex items-center justify-center text-secondary mb-2">
-                <Shield size={28} className="fill-secondary/15" />
-              </div>
-              <h2 className="text-2xl font-extrabold text-zinc-900 dark:text-white tracking-tight">
-                {isSignUp ? 'Create Corporate Portal' : 'Access Corporate Portal'}
-              </h2>
-              <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
-                Provide corporate signature verification credentials to sync ledger.
-              </p>
-            </div>
-
-            {error && (
-              <div className="flex items-center gap-xs p-4 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-semibold">
-                <AlertCircle size={14} className="shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleLogin} className="space-y-4">
-              {isSignUp && (
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block mb-1">Institution Name</label>
-                  <input 
-                    type="text" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Korri Institution Ltd" 
-                    className="w-full px-4 py-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none transition-all text-xs font-medium"
-                    required
-                  />
+                  <div className="space-y-xs pt-md">
+                    <h3 className="text-xl font-bold tracking-tight">L2 Gatekeeper</h3>
+                    <p className="text-xs text-zinc-300 leading-relaxed">
+                      decentralized compliance screening matches receiver identity attestations dynamically on the GIWA network.
+                    </p>
+                  </div>
                 </div>
-              )}
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block mb-1">Corporate Email</label>
-                <div className="relative">
-                  <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
-                  <input 
-                    type="email" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="operations@korri.pay" 
-                    className="w-full pl-12 pr-4 py-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none transition-all text-xs font-medium"
-                    required
-                  />
+                <div className="space-y-sm border-t border-white/10 pt-md">
+                  <div className="flex items-center justify-between text-[10px] text-zinc-400 font-bold uppercase tracking-wider">
+                    <span>L2 Channel Status</span>
+                    <span className="text-secondary flex items-center gap-xs">
+                      <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" /> Online
+                    </span>
+                  </div>
+                  <div className="space-y-xs">
+                    <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                      <span>Attestation Standard</span>
+                      <span className="font-mono text-white">EAS v1.2</span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-zinc-400">
+                      <span>Integrity Locks</span>
+                      <span className="font-mono text-white">Pessimistic</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-zinc-700 dark:text-zinc-300 block mb-1">Security Password</label>
-                <div className="relative">
-                  <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500" />
-                  <input 
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••" 
-                    className="w-full pl-12 pr-12 py-3.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none transition-all text-xs font-medium"
-                    required
-                  />
+              {/* Right Column: Dynamic Form */}
+              <div className="col-span-1 md:col-span-7 p-8 md:p-10 flex flex-col gap-6 justify-between relative bg-white dark:bg-zinc-900">
+                
+                {/* Close Button */}
+                <button 
+                  type="button"
+                  onClick={() => setShowAuthModal(false)}
+                  className="absolute top-6 right-6 p-2 rounded-xl text-zinc-400 hover:text-zinc-900 dark:hover:text-white bg-zinc-50 dark:bg-zinc-800 transition-colors cursor-pointer"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+
+                {/* Form Header */}
+                <div className="space-y-xs pr-8">
+                  <h2 className="text-2xl font-black text-zinc-900 dark:text-white tracking-tight">
+                    {isSignUp ? 'Create Corporate Access' : 'Access Corporate Portal'}
+                  </h2>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Provide credentials to verification bridge to sync ledger channel.
+                  </p>
+                </div>
+
+                {error && (
+                  <div className="flex items-center gap-xs p-3.5 bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 rounded-xl text-xs font-semibold">
+                    <AlertCircle size={14} className="shrink-0" />
+                    <span>{error}</span>
+                  </div>
+                )}
+
+                {/* Authentication Form */}
+                <form onSubmit={handleLogin} className="space-y-md">
+                  {isSignUp && (
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">Institution Name</label>
+                      <input 
+                        type="text" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Korri Institution Ltd" 
+                        className="w-full px-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none transition-all text-xs font-medium"
+                        required
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">Corporate Email</label>
+                    <div className="relative">
+                      <Mail size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+                      <input 
+                        type="email" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="operations@korri.pay" 
+                        className="w-full pl-11 pr-4 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none transition-all text-xs font-medium"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider block mb-1">Security Password</label>
+                    <div className="relative">
+                      <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 pointer-events-none" />
+                      <input 
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••" 
+                        className="w-full pl-11 pr-12 py-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 focus:border-secondary focus:ring-1 focus:ring-secondary focus:outline-none transition-all text-xs font-medium"
+                        required
+                      />
+                      <button 
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={loading}
+                    className="w-full bg-secondary hover:bg-secondary/95 text-white font-bold py-3.5 px-4 rounded-xl text-xs transition-all active:scale-95 shadow-md disabled:opacity-50 flex justify-center items-center gap-xs cursor-pointer"
+                  >
+                    {loading ? 'Verifying Signature...' : (isSignUp ? 'Generate Credentials' : 'Verify Signature')}
+                  </button>
+                </form>
+
+                {/* Separator */}
+                <div className="relative flex items-center justify-center py-2">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-zinc-100 dark:border-zinc-800" />
+                  </div>
+                  <span className="relative px-3 bg-white dark:bg-zinc-900 text-[9px] text-zinc-400 dark:text-zinc-500 font-bold tracking-wider">OR</span>
+                </div>
+
+                {/* Demo & Footer actions */}
+                <div className="space-y-sm">
+                  <button 
+                    onClick={handleDemoSignIn}
+                    disabled={loading}
+                    className="w-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white font-bold py-3.5 px-4 rounded-xl text-xs transition-all active:scale-95 flex justify-center items-center gap-xs cursor-pointer"
+                  >
+                    Sign In As Demo Institution
+                  </button>
                   <button 
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                    onClick={() => {
+                      setError('');
+                      setIsSignUp(!isSignUp);
+                    }}
+                    className="w-full text-center text-[10px] text-secondary hover:underline font-bold cursor-pointer block"
                   >
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    {isSignUp ? 'Already registered? Verify signature' : 'Request new corporate credentials'}
                   </button>
                 </div>
+
               </div>
 
-              <button 
-                type="submit" 
-                disabled={loading}
-                className="w-full bg-secondary text-white font-bold py-3.5 px-4 rounded-xl text-xs hover:bg-secondary/95 transition-all active:scale-95 shadow-md disabled:opacity-50 flex justify-center items-center gap-xs cursor-pointer mt-4"
-              >
-                {loading ? 'Requesting verify...' : (isSignUp ? 'Generate Credentials' : 'Verify Signature')}
-              </button>
-            </form>
-
-            <div className="relative flex items-center justify-center my-2">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-zinc-100 dark:border-zinc-800" />
-              </div>
-              <span className="relative px-3 bg-white dark:bg-zinc-900 text-[10px] text-zinc-400 dark:text-zinc-500 font-bold">OR</span>
-            </div>
-
-            <div className="space-y-3">
-              <button 
-                onClick={handleDemoSignIn}
-                disabled={loading}
-                className="w-full bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-900 dark:text-white font-bold py-3.5 px-4 rounded-xl text-xs transition-all active:scale-95 flex justify-center items-center gap-xs cursor-pointer"
-              >
-                Sign In As Demo Institution
-              </button>
-              <button 
-                type="button"
-                onClick={() => {
-                  setError('');
-                  setIsSignUp(!isSignUp);
-                }}
-                className="w-full text-center text-[10px] text-secondary hover:underline font-bold cursor-pointer"
-              >
-                {isSignUp ? 'Already registered? Verify signature' : 'Request new corporate credentials'}
-              </button>
             </div>
           </div>
         </div>
