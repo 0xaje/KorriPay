@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { FileText, Play, CheckCircle, Clock, AlertTriangle, Database } from 'lucide-react';
+import { FileText, Play, Clock, Database } from 'lucide-react';
 
-export default function Showcase() {
+export default function SettlementSandbox() {
   const [simulationLogs, setSimulationLogs] = useState([]);
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -48,7 +48,7 @@ export default function Showcase() {
     <div className="space-y-lg animate-fade-in pb-lg">
       <div className="flex justify-between items-center pb-sm border-b border-outline-variant/30 dark:border-zinc-800/60">
         <div>
-          <h2 className="text-headline-lg font-bold text-primary dark:text-white">Interactive Showcase Deck</h2>
+          <h2 className="text-headline-lg font-bold text-primary dark:text-white">Settlement Sandbox</h2>
           <p className="text-xs text-outline">Simulate the 5-stage real-time settlement cycle with zero-knowledge verification</p>
         </div>
         <FileText size={24} className="text-secondary" />
@@ -89,7 +89,7 @@ export default function Showcase() {
         {/* Live logs console */}
         <div className="bg-zinc-950 text-zinc-300 p-md rounded-2xl border border-zinc-800/40 shadow-sm space-y-md font-mono text-xs h-[400px] flex flex-col justify-between">
           <div className="flex justify-between border-b border-zinc-800 pb-xs text-[10px] text-zinc-500">
-            <span>SIMULATION CONSOLE LOGS</span>
+            <span>SANDBOX CONSOLE LOGS</span>
             <Clock size={12} />
           </div>
           <div className="flex-1 overflow-y-auto space-y-xs py-sm pr-xs no-scrollbar">

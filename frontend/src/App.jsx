@@ -13,14 +13,21 @@ import {
   Building, 
   BarChart3, 
   CheckCircle2, 
-  AlertTriangle 
+  AlertTriangle,
+  Layers,
+  Activity
 } from 'lucide-react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import Developers from './pages/Developers';
 import Pay from './pages/Pay';
-import Showcase from './pages/Showcase';
+import SettlementSandbox from './pages/SettlementSandbox';
+import NetworkOperations from './pages/NetworkOperations';
+import SettlementEngine from './pages/SettlementEngine';
+import ProofVerification from './pages/ProofVerification';
+import ApiPlayground from './pages/ApiPlayground';
+import Organization from './pages/Organization';
 
 // Context for App State
 export const AppContext = createContext();
@@ -36,9 +43,13 @@ function MainLayout({ children }) {
 
   const navItems = [
     { name: 'Dashboard', path: '/dashboard', icon: BarChart3 },
+    { name: 'Organization Settings', path: '/organization', icon: Building },
+    { name: 'Settlement Sandbox', path: '/sandbox', icon: FileText },
+    { name: 'Settlement Engine', path: '/engine', icon: Layers },
+    { name: 'Network Operations', path: '/operations', icon: Activity },
+    { name: 'API Playground', path: '/playground', icon: Terminal },
+    { name: 'Proof Verification', path: '/verify', icon: CheckCircle2 },
     { name: 'Admin Console', path: '/admin', icon: Shield, role: 'ADMIN' },
-    { name: 'Developer Portal', path: '/developers', icon: Terminal },
-    { name: 'Showcase Deck', path: '/showcase', icon: FileText },
   ];
 
   const activeItem = navItems.find(item => location.pathname.startsWith(item.path)) || navItems[0];
@@ -266,7 +277,12 @@ export default function App() {
           <Route path="/dashboard" element={<AuthenticatedRoute><Dashboard /></AuthenticatedRoute>} />
           <Route path="/admin" element={<AuthenticatedRoute><Admin /></AuthenticatedRoute>} />
           <Route path="/developers" element={<AuthenticatedRoute><Developers /></AuthenticatedRoute>} />
-          <Route path="/showcase" element={<AuthenticatedRoute><Showcase /></AuthenticatedRoute>} />
+          <Route path="/sandbox" element={<AuthenticatedRoute><SettlementSandbox /></AuthenticatedRoute>} />
+          <Route path="/engine" element={<AuthenticatedRoute><SettlementEngine /></AuthenticatedRoute>} />
+          <Route path="/operations" element={<AuthenticatedRoute><NetworkOperations /></AuthenticatedRoute>} />
+          <Route path="/playground" element={<AuthenticatedRoute><ApiPlayground /></AuthenticatedRoute>} />
+          <Route path="/organization" element={<AuthenticatedRoute><Organization /></AuthenticatedRoute>} />
+          <Route path="/verify" element={user ? <MainLayout><ProofVerification /></MainLayout> : <div className="min-h-screen bg-background dark:bg-zinc-950 p-md lg:p-lg"><ProofVerification /></div>} />
           <Route path="/pay/:id" element={<Pay />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
