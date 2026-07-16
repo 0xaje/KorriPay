@@ -1,5 +1,5 @@
 {
-  "name": "@korripay/shared",
+  "name": "@korripay/database",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -17,9 +17,13 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "zod": "^3.24.1"
+    "@korripay/shared": "workspace:*",
+    "@korripay/errors": "workspace:*",
+    "@prisma/client": "^6.2.1"
   },
   "devDependencies": {
+    "@types/node": "^22.10.7",
+    "prisma": "^6.2.1",
     "typescript": "^5.7.3"
   }
 }

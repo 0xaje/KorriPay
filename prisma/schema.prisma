@@ -7,12 +7,696 @@ generator client {
   provider = "prisma-client-js"
 }
 
-model AuditLog {
-  id        String   @id @default(uuid())
-  action    String
-  actorId   String
-  metadata  Json?
-  createdAt DateTime @default(now())
+// ==========================================
+// CANONICAL ENUMS
+// ==========================================
 
+enum OrganizationType {
+  FINANCIAL_INSTITUTION
+  CORPORATE
+  PARTNER
+  SYSTEM_OPERATOR
+}
+
+enum RoleType {
+  SUPER_ADMIN
+  ADMIN
+  OPERATOR
+  COMPLIANCE_OFFICER
+  TREASURY_MANAGER
+  AUDITOR
+}
+
+enum LedgerAccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum LedgerEntryType {
+  DEBIT
+  CREDIT
+}
+
+enum TreasuryAccountType {
+  SETTLEMENT
+  RESERVE
+  CLEARING
+  FEE_COLLECTION
+}
+
+enum SettlementStatus {
+  REQUESTED
+  IDENTITY_VERIFIED
+  COMPLIANCE_APPROVED
+  LIQUIDITY_RESERVED
+  ROUTE_SELECTED
+  READY
+  SUBMITTED
+  ACCEPTED
+  FINALIZED
+  ATTESTED
+  PROOF_GENERATED
+  COMPLETED
+  FAILED
+  CANCELLED
+  REJECTED
+}
+
+enum ComplianceStatus {
+  PENDING
+  APPROVED
+  FLAGGED
+  REJECTED
+}
+
+enum KycStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum WebhookDeliveryStatus {
+  SUCCESS
+  FAILED
+  RETRIEVING
+}
+
+// ==========================================
+// IDENTITY DOMAIN
+// ==========================================
+
+model Organization {
+  id                    String               @id @default(uuid())
+  name                  String
+  type                  OrganizationType     @default(CORPORATE)
+  createdAt             DateTime             @default(now()) @map("created_at")
+  updatedAt             DateTime             @updatedAt @map("updated_at")
+  
+  // Relations
+  members               OrganizationMember[]
+  apiKeys               ApiKey[]
+  sessions              Session[]
+  settlements           Settlement[]
+  treasuryAccounts      TreasuryAccount[]
+  liquidityPools        LiquidityPool[]
+  ledgerAccounts        LedgerAccount[]
+  ledgerTransactions    LedgerTransaction[]
+  complianceAssessments ComplianceAssessment[]
+  complianceRules       ComplianceRule[]
+  riskAssessments       RiskAssessment[]
+  sanctionResults       SanctionResult[]
+  identityProfiles      IdentityProfile[]
+  credentials           Credential[]
+  attestations          Attestation[]
+  verificationRecords   VerificationRecord[]
+  settlementInstructions SettlementInstruction[]
+  settlementRoutes       SettlementRoute[]
+  settlementFees         SettlementFee[]
+  settlementEvents       SettlementEvent[]
+  reserveAllocations     ReserveAllocation[]
+  settlementProofs      SettlementProof[]
+  settlementCertificates SettlementCertificate[]
+  notifications         Notification[]
+  webhookEndpoints      WebhookEndpoint[]
+  auditLogs             AuditLog[]
+
+  @@map("organizations")
+}
+
+model Role {
+  id          String               @id @default(uuid())
+  name        RoleType             @unique
+  permissions Json
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  
+  // Relations
+  members     OrganizationMember[]
+
+  @@map("roles")
+}
+
+model User {
+  id           String               @id @default(uuid())
+  email        String               @unique
+  passwordHash String               @map("password_hash")
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  
+  // Relations
+  memberships  OrganizationMember[]
+  sessions     Session[]
+  profiles     IdentityProfile[]
+
+  @@map("users")
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  userId         String       @map("user_id")
+  roleId         String       @map("role_id")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           Role         @relation(fields: [roleId], references: [id])
+
+  @@unique([organizationId, userId])
+  @@map("organization_members")
+}
+
+model ApiKey {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  name           String
+  keyHash        String       @unique @map("key_hash")
+  expiresAt      DateTime?    @map("expires_at")
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@map("api_keys")
+}
+
+model Session {
+  id             String       @id @default(uuid())
+  userId         String       @map("user_id")
+  organizationId String       @map("organization_id")
+  tokenHash      String       @unique @map("token_hash")
+  expiresAt      DateTime     @map("expires_at")
+  ipAddress      String?      @map("ip_address")
+  userAgent      String?      @map("user_agent")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+  @@map("sessions")
+}
+
+// ==========================================
+// SETTLEMENT DOMAIN
+// ==========================================
+
+model Settlement {
+  id             String                 @id @default(uuid())
+  organizationId String                 @map("organization_id")
+  status         SettlementStatus       @default(REQUESTED)
+  amount         Decimal                @db.Decimal(18, 4)
+  currency       String
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  // Relations
+  organization   Organization           @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  instructions   SettlementInstruction[]
+  routes         SettlementRoute[]
+  fees           SettlementFee[]
+  events         SettlementEvent[]
+  compliance     ComplianceAssessment[]
+  proofs         SettlementProof[]
+  certificates   SettlementCertificate[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@map("settlements")
+}
+
+model SettlementInstruction {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  settlementId   String       @map("settlement_id")
+  payload        Json
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  settlement     Settlement   @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@unique([settlementId])
+  @@map("settlement_instructions")
+}
+
+model SettlementRoute {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  settlementId   String       @map("settlement_id")
+  providerId     String       @map("provider_id")
+  type           String
+  details        Json
+  cost           Decimal      @db.Decimal(18, 4)
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  settlement     Settlement   @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@map("settlement_routes")
+}
+
+model SettlementFee {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  settlementId   String       @map("settlement_id")
+  amount         Decimal      @db.Decimal(18, 4)
+  currency       String
+  description    String
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  settlement     Settlement   @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@map("settlement_fees")
+}
+
+model SettlementEvent {
+  id             String           @id @default(uuid())
+  organizationId String           @map("organization_id")
+  settlementId   String           @map("settlement_id")
+  status         SettlementStatus
+  description    String
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  settlement     Settlement       @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@map("settlement_events")
+}
+
+// ==========================================
+// TREASURY DOMAIN (Double-Entry Ledger)
+// ==========================================
+
+model TreasuryAccount {
+  id             String              @id @default(uuid())
+  organizationId String              @map("organization_id")
+  name           String
+  type           TreasuryAccountType @default(SETTLEMENT)
+  currency       String
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  allocations    ReserveAllocation[]
+
+  @@map("treasury_accounts")
+}
+
+model LiquidityPool {
+  id             String              @id @default(uuid())
+  organizationId String              @map("organization_id")
+  name           String
+  currency       String
+  balance        Decimal             @db.Decimal(18, 4) @default(0.0)
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  // Relations
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  allocations    ReserveAllocation[]
+
+  @@map("liquidity_pools")
+}
+
+model ReserveAllocation {
+  id             String          @id @default(uuid())
+  organizationId String          @map("organization_id")
+  poolId         String          @map("pool_id")
+  accountId      String          @map("account_id")
+  amount         Decimal         @db.Decimal(18, 4)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  pool           LiquidityPool   @relation(fields: [poolId], references: [id], onDelete: Cascade)
+  account        TreasuryAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@map("reserve_allocations")
+}
+
+model LedgerAccount {
+  id             String            @id @default(uuid())
+  organizationId String            @map("organization_id")
+  name           String
+  currency       String
+  type           LedgerAccountType
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  // Relations
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  entries        LedgerEntry[]
+
+  @@unique([organizationId, name])
+  @@map("ledger_accounts")
+}
+
+model LedgerTransaction {
+  id             String        @id @default(uuid())
+  organizationId String        @map("organization_id")
+  referenceId    String        @map("reference_id")
+  description    String
+  timestamp      DateTime      @default(now())
+  correlationId  String        @map("correlation_id")
+
+  // Relations
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  entries        LedgerEntry[]
+
+  @@index([organizationId])
+  @@index([referenceId])
+  @@map("ledger_transactions")
+}
+
+model LedgerEntry {
+  id                  String            @id @default(uuid())
+  ledgerTransactionId String            @map("ledger_transaction_id")
+  ledgerAccountId     String            @map("ledger_account_id")
+  type                LedgerEntryType
+  amount              Decimal           @db.Decimal(18, 4)
+  currency            String
+  createdAt           DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  transaction         LedgerTransaction @relation(fields: [ledgerTransactionId], references: [id], onDelete: Cascade)
+  account             LedgerAccount     @relation(fields: [ledgerAccountId], references: [id])
+
+  @@map("ledger_entries")
+}
+
+// ==========================================
+// COMPLIANCE DOMAIN
+// ==========================================
+
+model ComplianceAssessment {
+  id             String           @id @default(uuid())
+  organizationId String           @map("organization_id")
+  settlementId   String           @map("settlement_id")
+  status         ComplianceStatus @default(PENDING)
+  score          Int
+  details        Json
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  settlement     Settlement       @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([settlementId])
+  @@map("compliance_assessments")
+}
+
+model ComplianceRule {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  name           String
+  description    String
+  parameters     Json
+  isActive       Boolean      @default(true) @map("is_active")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("compliance_rules")
+}
+
+model RiskAssessment {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  targetId       String       @map("target_id")
+  targetType     String       @map("target_type")
+  score          Int
+  details        Json
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("risk_assessments")
+}
+
+model SanctionResult {
+  id             String           @id @default(uuid())
+  organizationId String           @map("organization_id")
+  query          String
+  hits           Json
+  details        Json
+  status         ComplianceStatus
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("sanction_results")
+}
+
+model CountryPolicy {
+  id          String   @id @default(uuid())
+  countryCode String   @unique @map("country_code")
+  blocked     Boolean  @default(false)
+  rules       Json
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("country_policies")
+}
+
+// ==========================================
+// IDENTITY & ATTESTATION
+// ==========================================
+
+model IdentityProfile {
+  id             String               @id @default(uuid())
+  organizationId String               @map("organization_id")
+  userId         String               @map("user_id")
+  kycLevel       String               @map("kyc_level")
+  documentHash   String               @map("document_hash")
+  status         KycStatus            @default(UNVERIFIED)
+  createdAt      DateTime             @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentials    Credential[]
+  verifications  VerificationRecord[]
+
+  @@unique([organizationId, userId])
+  @@map("identity_profiles")
+}
+
+model Credential {
+  id             String          @id @default(uuid())
+  organizationId String          @map("organization_id")
+  profileId      String          @map("profile_id")
+  type           String
+  dataHash       String          @map("data_hash")
+  issuer         String
+  expiresAt      DateTime?       @map("expires_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  profile        IdentityProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("credentials")
+}
+
+model Attestation {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  targetId       String       @map("target_id")
+  targetType     String       @map("target_type")
+  signature      String
+  schema         String
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("attestations")
+}
+
+model VerificationRecord {
+  id             String          @id @default(uuid())
+  organizationId String          @map("organization_id")
+  profileId      String          @map("profile_id")
+  status         KycStatus
+  inspector      String
+  details        Json
+  createdAt      DateTime        @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  profile        IdentityProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+
+  @@map("verification_records")
+}
+
+// ==========================================
+// PROOF DOMAIN
+// ==========================================
+
+model SettlementProof {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  settlementId   String       @map("settlement_id")
+  type           String
+  payload        Json
+  status         String
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  settlement     Settlement   @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@map("settlement_proofs")
+}
+
+model SettlementCertificate {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  settlementId   String       @map("settlement_id")
+  hash           String
+  signature      String
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  settlement     Settlement   @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@map("settlement_certificates")
+}
+
+// ==========================================
+// OPERATIONS DOMAIN
+// ==========================================
+
+model AuditLog {
+  id             String       @id @default(uuid())
+  event          String
+  entity         String
+  entityId       String       @map("entity_id")
+  userId         String?      @map("user_id")
+  organizationId String?      @map("organization_id")
+  timestamp      DateTime     @default(now())
+  correlationId  String       @map("correlation_id")
+  ipAddress      String?      @map("ip_address")
+  beforeState    Json?        @map("before_state")
+  afterState     Json?        @map("after_state")
+  hash           String
+
+  // Relations
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([entity, entityId])
   @@map("audit_logs")
+}
+
+model Notification {
+  id             String       @id @default(uuid())
+  organizationId String       @map("organization_id")
+  userId         String       @map("user_id")
+  title          String
+  message        String
+  status         String
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model WebhookEndpoint {
+  id             String            @id @default(uuid())
+  organizationId String            @map("organization_id")
+  url            String
+  secret         String
+  events         Json
+  isActive       Boolean           @default(true) @map("is_active")
+  createdAt      DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  deliveries     WebhookDelivery[]
+
+  @@map("webhook_endpoints")
+}
+
+model WebhookDelivery {
+  id             String                @id @default(uuid())
+  endpointId     String                @map("webhook_endpoint_id")
+  event          String
+  payload        Json
+  responseStatus Int?                  @map("response_status")
+  responseBody   String?               @map("response_body")
+  durationMs     Int                   @map("duration_ms")
+  status         WebhookDeliveryStatus
+  createdAt      DateTime              @default(now()) @map("created_at")
+
+  // Relations
+  endpoint       WebhookEndpoint       @relation(fields: [endpointId], references: [id], onDelete: Cascade)
+
+  @@map("webhook_deliveries")
+}
+
+model MetricSnapshot {
+  id         String   @id @default(uuid())
+  name       String
+  value      Float
+  dimensions Json
+  timestamp  DateTime @default(now())
+
+  @@index([name, timestamp])
+  @@map("metric_snapshots")
+}
+
+model NodeHealth {
+  id          String   @id @default(uuid())
+  nodeName    String   @map("node_name")
+  status      String
+  CPUUsage    Float    @map("cpu_usage")
+  MemoryUsage Float    @map("memory_usage")
+  DiskUsage   Float    @map("disk_usage")
+  timestamp   DateTime @default(now())
+
+  @@map("node_healths")
+}
+
+// ==========================================
+// SYSTEM CHORE & EVENTS
+// ==========================================
+
+model DomainEvent {
+  id            String   @id @default(uuid())
+  aggregateType String   @map("aggregate_type")
+  aggregateId   String   @map("aggregate_id")
+  eventType     String   @map("event_type")
+  payload       Json
+  timestamp     DateTime @default(now())
+  correlationId String   @map("correlation_id")
+  version       Int      @default(1)
+
+  @@index([aggregateType, aggregateId])
+  @@map("domain_events")
 }
