@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: korri-postgres-prod
+    environment:
+      POSTGRES_USER: ${DB_USER_PROD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD_PROD}
+      POSTGRES_DB: korripay_prod
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-prod:/var/lib/postgresql/data
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: korri-redis-prod
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata-prod:/data
+    restart: always
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/prod.Dockerfile
+    container_name: korri-api-prod
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${DB_USER_PROD}:${DB_PASSWORD_PROD}@postgres:5432/korripay_prod?schema=public
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/prod.Dockerfile
+    container_name: korri-web-prod
+    command: pnpm --filter @korripay/web preview --host
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    depends_on:
+      - api
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: korri-prometheus-prod
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: always
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: korri-grafana-prod
+    ports:
+      - "3002:3000"
+    depends_on:
+      - prometheus
+    restart: always
+
+volumes:
+  pgdata-prod:
+  redisdata-prod:

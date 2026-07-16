@@ -1,0 +1,32 @@
+{
+  "name": "korripay-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Enterprise-grade financial infrastructure and settlement engine",
+  "type": "module",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css,sol}\"",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "compile": "turbo run compile",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@typescript-eslint/eslint-plugin": "^8.64.0",
+    "@typescript-eslint/parser": "^8.64.0",
+    "eslint": "^9.18.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.4.1",
+    "prettier": "^3.4.2",
+    "prettier-plugin-solidity": "^2.3.1",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.64.0"
+  },
+  "packageManager": "pnpm@10.5.2"
+}

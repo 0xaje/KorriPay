@@ -1,0 +1,8 @@
+{
+  "extends": "../../packages/config/tsconfig.frontend.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "noEmit": true
+  },
+  "include": ["src/**/*"]
+}

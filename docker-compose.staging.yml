@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: korri-postgres-staging
+    environment:
+      POSTGRES_USER: korri_staging_user
+      POSTGRES_PASSWORD: korri_staging_pass
+      POSTGRES_DB: korripay_staging
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata-staging:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: korri-redis-staging
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata-staging:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/prod.Dockerfile
+    container_name: korri-api-staging
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NODE_ENV=staging
+      - DATABASE_URL=postgresql://korri_staging_user:korri_staging_pass@postgres:5432/korripay_staging?schema=public
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - postgres
+      - redis
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/prod.Dockerfile
+    container_name: korri-web-staging
+    command: pnpm --filter @korripay/web preview --host
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=staging
+    depends_on:
+      - api
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: korri-prometheus-staging
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: korri-grafana-staging
+    ports:
+      - "3002:3000"
+    depends_on:
+      - prometheus
+
+volumes:
+  pgdata-staging:
+  redisdata-staging:
