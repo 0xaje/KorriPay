@@ -1,23 +1,2 @@
-import pino from "pino";
-import { SYSTEM_NAME } from "@korripay/shared";
-
-export const logger = pino({
-  level: process.env.LOG_LEVEL || "info",
-  base: {
-    service: "treasury",
-    system: SYSTEM_NAME,
-  },
-  timestamp: pino.stdTimeFunctions.isoTime,
-});
-
-function main() {
-  logger.info(
-    {
-      event: "service_start",
-      status: "active",
-    },
-    "Treasury Service initialized successfully"
-  );
-}
-
-main();
+export { TreasuryEngine } from "./engine.js";
+export type { ReserveFundsCommand } from "./engine.js";

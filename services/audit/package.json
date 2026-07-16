@@ -1,13 +1,11 @@
 {
-  "name": "@korripay/attestation",
+  "name": "@korripay/audit-service",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
-    "dev": "tsc -w",
     "build": "tsc",
-    "start": "node ./dist/index.js",
     "type-check": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run"
@@ -15,13 +13,12 @@
   "dependencies": {
     "@korripay/shared": "workspace:*",
     "@korripay/errors": "workspace:*",
-    "pino": "^9.6.0",
     "@korripay/domain": "workspace:*",
-    "@korripay/database": "workspace:*"
+    "@korripay/database": "workspace:*",
+    "pino": "^9.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
-    "pino-pretty": "^13.0.0",
     "typescript": "^5.7.3",
     "vitest": "^2.1.8"
   }
